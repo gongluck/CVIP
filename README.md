@@ -1591,4 +1591,665 @@
   }
   ```
 
+### 5.设计模式
+
+#### 5.1 观察者模式
+
+![观察者模式](./images/观察者模式.png)
+
+- 定义对象间一种一对多的依赖关系，使得每当一个对象改变状态，则所有依赖于它的对象都会得到通知并被自动更新。
+
+- [代码](./code/designpattern/observer.cpp)
+
+  ```C++
+  // 简单变形示例——区别对待观察者
+  /*
+  1：范例需求
+  这是一个实际系统的简化需求：在一个水质监测系统中有这样一个功能，当水中的杂质为正常的时候，只是通知监测人员做记录；
+  当为轻度污染的时候，除了通知监测人员做记录外，还要通知预警人员，判断是否需要预警；当为中度或者高度污染的时候，
+  除了通知监测人员做记录外，还要通知预警人员，判断是否需要预警，同时还要通知监测部门领导做相应的处理。
+  */
+  #include <iostream>
+  #include <list>
+  using namespace std;
+  
+  class WaterQualitySubject;
+  
+  // 观察者的接口
+  /**
+   * 水质观察者接口定义
+   */
+  class WatcherObserver
+  {
+  public:
+      WatcherObserver() {}
+      virtual ~WatcherObserver() {}
+      /**
+       * 被通知的方法
+       * @param subject 传入被观察的目标对象
+       */
+      virtual void update(WaterQualitySubject *subject) = 0;
+  
+      // 和普通观察者模式， 增加了角色
+      /**
+       * 设置观察人员的职务
+       * @param job 观察人员的职务
+       */
+      virtual void setJob(string job) = 0;
+  
+      /**
+       * 获取观察人员的职务
+       * @return 观察人员的职务
+       */
+      virtual string getJob() = 0;
+  };
+  
+  /**
+  * 定义水质监测的目标对象
+  */
+  class WaterQualitySubject
+  {
+  public:
+      WaterQualitySubject() {}
+      virtual ~WaterQualitySubject() {}
+      /**
+      * 注册观察者对象
+       * @param observer 观察者对象
+       */
+      void attach(WatcherObserver *observer)
+      {
+          observers.push_back(observer);
+      }
+  
+      /**
+       * 删除观察者对象
+       * @param observer 观察者对象
+       */
+      void detach(WatcherObserver *observer)
+      {
+          observers.remove(observer);
+      }
+  
+      /**
+       * 通知相应的观察者对象
+       */
+      virtual void notifyWatchers() = 0;
+  
+      /**
+       * 获取水质污染的级别
+       * @return 水质污染的级别
+       */
+      virtual int getPolluteLevel() = 0;
+  
+  protected:
+      /**
+       * 用来保存注册的观察者对象
+       */
+      list<WatcherObserver *> observers;
+  };
+  
+  /**
+   * 具体的观察者实现
+   */
+  class Watcher : public WatcherObserver
+  {
+  public:
+      Watcher() {}
+      virtual ~Watcher() {}
+      string getJob()
+      {
+          return m_job;
+      }
+  
+      void setJob(string job)
+      {
+          m_job = job;
+      }
+  
+      virtual void update(WaterQualitySubject *subject)
+      {
+          //这里采用的是拉的方式
+          cout << m_job << " 获取到通知，当前污染级别为：" << subject->getPolluteLevel() << endl;
+      }
+  
+  private:
+      /**
+       * 职务
+       */
+      string m_job;
+  };
+  
+  /**
+   * 具体的水质监测对象
+   */
+  class WaterQuality : public WaterQualitySubject
+  {
+  public:
+      WaterQuality() {}
+      virtual ~WaterQuality() {}
+      /**
+       * 获取水质污染的级别
+       * @return 水质污染的级别
+       */
+      int getPolluteLevel()
+      {
+          return m_polluteLevel;
+      }
+  
+      /**
+       * 当监测水质情况后，设置水质污染的级别
+       * @param polluteLevel 水质污染的级别
+       */
+      virtual void setPolluteLevel(int polluteLevel)
+      {
+          m_polluteLevel = polluteLevel;
+          //通知相应的观察者
+          notifyWatchers();
+      }
+  
+      /**
+       * 通知相应的观察者对象
+       */
+  
+      virtual void notifyWatchers()
+      {
+          //循环所有注册的观察者
+          for (WatcherObserver *watcher : observers)
+          {
+              //开始根据污染级别判断是否需要通知，由这里总控
+              if (m_polluteLevel >= 0)
+              {
+                  //通知监测员做记录
+                  if (watcher->getJob().compare("监测人员") == 0)
+                  {
+                      watcher->update(this);
+                  }
+              }
+  
+              if (m_polluteLevel >= 1)
+              {
+                  //通知预警人员
+                  if (watcher->getJob().compare("预警人员") == 0)
+                  {
+                      watcher->update(this);
+                  }
+              }
+  
+              if (m_polluteLevel >= 2)
+              {
+                  //通知监测部门领导
+                  if (watcher->getJob().compare("监测部门领导") == 0)
+                  {
+                      watcher->update(this);
+                  }
+              }
+          }
+      }
+  
+  private:
+      /**
+       * 污染的级别，0表示正常，1表示轻度污染，2表示中度污染，3表示高度污染
+       */
+      int m_polluteLevel = 0;
+  };
+  
+  int main()
+  {
+      //创建水质主题对象
+      WaterQuality *subject = new WaterQuality();
+      //创建几个观察者, 观察者分了不同角色
+      WatcherObserver *watcher1 = new Watcher();
+      watcher1->setJob("监测人员");
+      WatcherObserver *watcher2 = new Watcher();
+      watcher2->setJob("预警人员");
+      WatcherObserver *watcher3 = new Watcher();
+      watcher3->setJob("监测部门领导");
+  
+      //注册观察者
+      subject->attach(watcher1);
+      subject->attach(watcher2);
+      subject->attach(watcher3);
+  
+      //填写水质报告
+      cout << "当水质为正常的时候------------------〉" << endl;
+      subject->setPolluteLevel(0);
+  
+      cout << "\n当水质为轻度污染的时候---------------〉" << endl;
+      subject->setPolluteLevel(1);
+  
+      cout << "\n当水质为中度污染的时候---------------〉" << endl;
+      subject->setPolluteLevel(2);
+  
+      // 释放观察者
+      subject->detach(watcher1);
+      subject->detach(watcher2);
+      subject->detach(watcher3);
+  
+      delete watcher1;
+      delete watcher2;
+      delete watcher3;
+  
+      delete subject;
+  
+      return 0;
+  }
+  ```
+
+#### 5.2 工厂模式
+
+![工厂模式](./images/工厂模式.png)
+
+- 定义一个用于创建对象的接口，让子类决定实例化哪一个类。工厂方法是一个类的实例化延迟到其子类。
+
+- [代码](./code/designpattern/factory.cpp)
+
+  ```C++
+  #include <iostream>
+  
+  using namespace std;
+  
+  class ExportFileProduct
+  {
+  public:
+      ExportFileProduct() {}
+      virtual ~ExportFileProduct() {}
+  
+      virtual bool Export(string data) = 0;
+  };
+  
+  // 保存成文件
+  class ExportTextProduct : public ExportFileProduct
+  {
+  public:
+      ExportTextProduct() {}
+      virtual ~ExportTextProduct() {}
+      virtual bool Export(string data)
+      {
+          cout << "导出数据:[" << data << "]保存成文本的方式" << endl;
+          return true;
+      }
+  };
+  
+  class ExportDBProduct : public ExportFileProduct
+  {
+  public:
+      ExportDBProduct() {}
+      virtual ~ExportDBProduct() {}
+      virtual bool Export(string data)
+      {
+          cout << "导出数据:[" << data << "]保存数据库的方式" << endl;
+          return true;
+      }
+  };
+  
+  class ExportFactory
+  {
+  public:
+      ExportFactory() {}
+      virtual ~ExportFactory() {}
+      /**
+       * @brief Export
+       * @param type 导出的类型
+       * @param data 具体的数据
+       * @return
+       */
+      virtual bool Export(int type, string data)
+      {
+          ExportFileProduct *product = nullptr;
+          product = factoryMethod(type);
+  
+          bool ret = false;
+          if (product)
+          {
+              ret = product->Export(data);
+              delete product;
+          }
+          else
+          {
+              cout << "没有对应的导出方式";
+          }
+          return ret;
+      }
+  
+  protected:
+      virtual ExportFileProduct *factoryMethod(int type)
+      {
+          ExportFileProduct *product = nullptr;
+          if (1 == type)
+          {
+              product = new ExportTextProduct();
+          }
+          else if (2 == type)
+          {
+              product = new ExportDBProduct();
+          }
+          return product;
+      }
+  };
+  
+  // 加一种新的导出方式:
+  // (1)修改原来的工厂方法
+  // (2)继承工厂方法去拓展
+  class ExportXMLProduct : public ExportFileProduct
+  {
+  public:
+      ExportXMLProduct() {}
+      virtual ~ExportXMLProduct() {}
+      virtual bool Export(string data)
+      {
+          cout << "导出数据:[" << data << "]保存XML的方式" << endl;
+          return true;
+      }
+  };
+  
+  class ExportPortobufferProduct : public ExportFileProduct
+  {
+  public:
+      ExportPortobufferProduct() {}
+      virtual ~ExportPortobufferProduct() {}
+      virtual bool Export(string data)
+      {
+          cout << "导出数据:[" << data << "]保存Portobuffer的方式" << endl;
+          return true;
+      }
+  };
+  
+  class ExportFactory2 : public ExportFactory
+  {
+  public:
+      ExportFactory2() {}
+      virtual ~ExportFactory2() {}
+  
+  protected:
+      virtual ExportFileProduct *factoryMethod(int type)
+      {
+          ExportFileProduct *product = nullptr;
+          if (3 == type)
+          {
+              product = new ExportXMLProduct();
+          }
+          else if (4 == type)
+          {
+              product = new ExportPortobufferProduct();
+          }
+          else
+          {
+              product = ExportFactory::factoryMethod(type);
+          }
+          return product;
+      }
+  };
+  
+  int main()
+  {
+      cout << "ExportFactory" << endl;
+      ExportFactory *factory = new ExportFactory();
+  
+      factory->Export(1, "上课人数");
+      factory->Export(2, "上课人数");
+      factory->Export(3, "上课人数");
+  
+      cout << "\nExportFactory2" << endl;
+      ExportFactory *factory2 = new ExportFactory2();
+  
+      factory2->Export(1, "上课人数");
+      factory2->Export(2, "上课人数");
+      factory2->Export(3, "上课人数");
+      factory2->Export(4, "上课人数");
+  
+      delete factory;
+      delete factory2;
+      return 0;
+  }
+  ```
+
+#### 5.3 单例模式
+
+- 确保某一个类只有一个实例，而且自行实例化并向整个系统提供这个实例。
+
+- [代码](./code/designpattern/singleton.cpp)
+
+  ```C++
+  #define SINGLETON_INDEX 6 // 开关，不同模式的开关
+  
+  /*
+   * 补充：
+   * =default: 用于显式要求编译器提供合成版本的四大函数(构造、拷贝、析构、赋值)
+   * =delete: 用于定义删除函数，在旧标准下，我们如果希望阻止拷贝可以通过显式声明拷贝构造函数和拷贝赋值函数为private，但新标准下允许我们定义删除函数
+   */
+  
+  // 反汇编举例 objdump -S -d 4-singleton-c++11 > 4-singleton-c++11.txt
+  // 直接汇编：g++ -S -o main2-2.s main2.cpp -std=c++11
+  
+  //1、原始懒汉式单例模式 懒汉式单例就是需要使用这个单例对象的时候才去创建这个单例对象。
+  #if SINGLETON_INDEX == 1
+  class Singleton
+  {
+  private:
+      static Singleton *m_singleton;
+      Singleton() = default;                             // 自动生成默认构造函数
+      Singleton(const Singleton &s) = delete;            // 禁用拷贝构造函数
+      Singleton &operator=(const Singleton &s) = delete; // 禁用拷贝赋值操作符
+  
+      class GarbageCollector
+      {
+      public:
+          ~GarbageCollector()
+          {
+              cout << "~GarbageCollector\n";
+              if (Singleton::m_singleton)
+              {
+                  cout << "free m_singleton\n";
+                  delete Singleton::m_singleton;
+                  Singleton::m_singleton = nullptr;
+              }
+          }
+      };
+      static GarbageCollector m_gc;
+  
+  public:
+      static Singleton *getInstance()
+      {
+          if (Singleton::m_singleton == nullptr)
+          {
+              std::this_thread::sleep_for(std::chrono::milliseconds(10)); //休眠，模拟创建实例的时间
+              m_singleton = new Singleton();
+          }
+          return m_singleton;
+      }
+  };
+  // 必须在类外初始化
+  Singleton *Singleton::m_singleton = nullptr;
+  Singleton::GarbageCollector Singleton::m_gc;
+  #elif SINGLETON_INDEX == 2
+  // 2 线程安全的懒汉式单例模式
+  //线程安全的懒汉式单例
+  
+  class Singleton
+  {
+  private:
+      static Singleton *m_singleton;
+      static mutex m_mutex;
+      Singleton() = default;
+      Singleton(const Singleton &s) = delete;            // 禁用拷贝构造函数
+      Singleton &operator=(const Singleton &s) = delete; // 禁用拷贝赋值操作符
+      class GarbageCollector
+      {
+      public:
+          ~GarbageCollector()
+          {
+              cout << "~GarbageCollector\n";
+              if (Singleton::m_singleton)
+              {
+                  cout << "free m_singleton\n";
+                  delete Singleton::m_singleton;
+                  Singleton::m_singleton = nullptr;
+              }
+          }
+      };
+      static GarbageCollector m_gc;
+  
+  public:
+      static Singleton *getInstance()
+      {                   // 加锁的粒度大，效率较低， 对高并发的访问
+          m_mutex.lock(); // 加锁，保证只有一个线程在访问下面的语句
+          if (Singleton::m_singleton == nullptr)
+          {
+              //std::this_thread::sleep_for(std::chrono::milliseconds(1000)); //休眠，模拟创建实例的时间
+              m_singleton = new Singleton();
+          }
+          m_mutex.unlock(); //解锁
+          return m_singleton;
+      }
+  };
+  Singleton *Singleton::m_singleton = nullptr;
+  mutex Singleton::m_mutex;
+  Singleton::GarbageCollector Singleton::m_gc;
+  #elif SINGLETON_INDEX == 3
+  // 3、锁住初始化实例语句之后再次检查实例是否被创建
+  /* 双检查锁，但由于内存读写reorder不安全 因为C++创建对象时，会执行1、分配内存，2 调用构造，3 赋值操作三步操作，
+  然而现代CPU和编译器高并发下可能会进行乱序重排操作，因而创建对象new CSingleton的第2步可能会晚于第3步进行指令调用，
+  因而导致出现未定义的的行为。*/
+  class Singleton
+  {
+  private:
+      static Singleton *m_singleton;
+      static mutex m_mutex;
+      Singleton() = default;
+      Singleton(const Singleton &s) = default;
+      Singleton &operator=(const Singleton &s) = default;
+      class GarbageCollector
+      {
+      public:
+          ~GarbageCollector()
+          {
+              cout << "~GarbageCollector\n";
+              if (Singleton::m_singleton)
+              {
+                  cout << "free m_singleton\n";
+                  delete Singleton::m_singleton;
+                  Singleton::m_singleton = nullptr;
+              }
+          }
+      };
+      static GarbageCollector m_gc;
+  
+  public:
+      void *getSingletonAddress()
+      {
+          return m_singleton;
+      }
+      static Singleton *getInstance()
+      {
+          if (Singleton::m_singleton == nullptr)
+          {
+              m_mutex.lock(); // 加锁，保证只有一个线程在访问线程内的代码
+              if (Singleton::m_singleton == nullptr)
+              {                                  //再次检查
+                  m_singleton = new Singleton(); // 对象的new不是原子操作 1、分配内存，2 调用构造，3 赋值操作，到第3步的时候才是m_singleton非空
+                                                 //  1、分配内存，2 赋值操作 3 调用构造，到第2步的时候才是m_singleton非空
+              }
+              m_mutex.unlock(); //解锁
+          }
+          return m_singleton;
+      }
+  };
+  Singleton *Singleton::m_singleton = nullptr;
+  mutex Singleton::m_mutex;
+  Singleton::GarbageCollector Singleton::m_gc;
+  #elif SINGLETON_INDEX == 4
+  // 4、C++ 11版本之后的跨平台实现
+  class Singleton
+  {
+  private:
+      static std::atomic<Singleton *> m_instance;
+      static std::mutex m_mutex;
+      Singleton() = default;
+      Singleton(const Singleton &s) = default;
+      Singleton &operator=(const Singleton &s) = default;
+      class GarbageCollector
+      {
+      public:
+          ~GarbageCollector()
+          {
+              cout << "~GarbageCollector\n";
+              Singleton *tmp = m_instance.load(std::memory_order_relaxed);
+              if (tmp)
+              {
+                  cout << "free m_singleton: " << tmp << endl;
+                  delete tmp;
+              }
+          }
+      };
+      static GarbageCollector m_gc;
+  
+  public:
+      void *getSingletonAddress()
+      {
+          return m_instance;
+      }
+      static Singleton *getInstance()
+      {
+          Singleton *tmp = m_instance.load(std::memory_order_relaxed);
+          std::atomic_thread_fence(std::memory_order_acquire); //获取内存fence
+          if (tmp == nullptr)
+          {
+              std::lock_guard<std::mutex> lock(m_mutex);
+              tmp = m_instance.load(std::memory_order_relaxed);
+              if (tmp == nullptr)
+              {
+                  tmp = new Singleton();                               // 1、分配内存，2 调用构造，3 赋值操作
+                  std::atomic_thread_fence(std::memory_order_release); //释放内存fence
+                  m_instance.store(tmp, std::memory_order_relaxed);
+              }
+          }
+          return tmp;
+      }
+  };
+  std::atomic<Singleton *> Singleton::m_instance;
+  std::mutex Singleton::m_mutex;
+  Singleton::GarbageCollector Singleton::m_gc;
+  #elif SINGLETON_INDEX == 5
+  // 懒汉式
+  class Singleton
+  {
+  private:
+      //Singleton() = default;  // 自动生成默认构造函数
+      Singleton()
+      { // 构造函数会影响局部静态变量，不能用隐式的构造函数
+          cout << "Singleton construct\n";
+      }
+      Singleton(const Singleton &s) = delete;            // 禁用拷贝构造函数
+      Singleton &operator=(const Singleton &s) = delete; // 禁用拷贝赋值操作符
+  public:
+      static Singleton *getInstance()
+      {
+          static Singleton s_singleton; // C++11线程安全，C++11之前不是线程安全  __cxa_guard_acquire 和 __cxa_guard_release
+          return &s_singleton;
+      }
+  };
+  #elif SINGLETON_INDEX == 6
+  // 饿汉式，在main函数运行前初始化，绝对安全
+  class Singleton
+  {
+  private:
+      //Singleton() = default;   //自动生成默认构造函数
+      Singleton()
+      {
+          cout << "Singleton construct\n";
+      }
+      Singleton(const Singleton &s) = delete;            // 禁用拷贝构造函数
+      Singleton &operator=(const Singleton &s) = delete; // 禁用拷贝赋值操作符
+      static Singleton m_singleton;
+  
+  public:
+      static Singleton *getInstance()
+      {
+          return &m_singleton;
+      }
+  };
+  Singleton Singleton::m_singleton;
+  #endif
+  ```
+
   
