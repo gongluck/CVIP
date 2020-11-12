@@ -3270,3 +3270,82 @@
   - frm文件是存放的表结构，表的定义信息
   - MYD文件是存放着表中的数据
   - MYI文件存放着表的索引信息
+
+### 3.Nginx反向代理负载均衡配置
+
+#### 3.1 安装编译
+
+```shell
+# 安装依赖
+sudo apt-get update
+sudo apt-get install build-essential libtool -y
+sudo apt-get install libpcre3 libpcre3-dev -y
+sudo apt-get install zlib1g-dev -y
+sudo apt-get install openssl -y
+#下载nginx
+wget http://nginx.org/download/nginx-1.19.0.tar.gz
+tar zxvf nginx-1.19.0.tar.gz
+cd nginx-1.19.0/
+# 配置
+./configure --prefix=/usr/local/nginx --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_gzip_static_module --with-http_secure_link_module --with-http_stub_status_module --with-stream --with-pcre #--with-zlib --with-openssl
+# 编译
+make -j 8
+# 安装
+sudo make install
+# 启动
+sudo /usr/local/nginx/sbin/nginx -c test.conf
+# 停止
+sudo /usr/local/nginx/sbin/nginx -s stop
+# 重新加载配置文件
+sudo /usr/local/nginx/sbin/nginx -s reload
+```
+
+#### 3.2 配置文件
+
+```nginx
+worker_processes 4;#工作进程数
+
+events {
+	worker_connections 1024;#单个工作进程可以允许同时建立外部连接的数量
+}
+
+#设定http服务器，利用它的反向代理功能提供负载均衡支持
+http {
+    #负载均衡配置
+	upstream test {
+        #upstream的负载均衡，weight是权重，可以根据机器配置定义权重。
+        #weigth参数表示权值，权值越高被分配到的几率越大。
+		server www.baidu.com weight=2;
+		server www.163.com weight=1;
+		server www.example7.com weight=1;
+	}
+
+	server {
+		listen 8888;
+		server_name localhost;
+		
+		client_max_body_size 100m;
+		
+        #反向代理
+		location / {
+#			root /usr/local/nginx/html/;
+#			proxy_pass http://172.20.106.204;
+			proxy_pass http://test;
+			
+#			proxy_redirect   off;
+			proxy_set_header Host             www.example7.com;
+#			proxy_set_header X-Real-IP        $remote_addr;
+#			proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
+		}
+
+		location /images/ {
+			root /usr/local/nginx/;#访问/usr/local/nginx/images/
+		}
+		
+		location ~ \.(mp3|mp4) {
+			root /usr/local/nginx/media/;#访问/usr/local/nginx/media/
+		}	
+	}
+}
+```
+
