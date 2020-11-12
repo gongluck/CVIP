@@ -22,6 +22,9 @@
 
 - [代码](./code/sort/sort.c)
 
+  <details>
+  <summary>希尔排序</summary>
+
   ```C
   int shell_sort(int *data, int length)
   {
@@ -48,16 +51,20 @@
       return 0;
   }
   ```
+  </details>
   
 #### 1.2 归并排序
 
 - 归并排序（Merge sort）是建立在归并操作上的一种有效的排序算法。该算法是采用分治法（Divide and Conquer）的一个非常典型的应用。
+
 - 作为一种典型的分而治之思想的算法应用，归并排序的实现由两种方法：
 
   - 自上而下的递归（所有递归的方法都可以用迭代重写，所以就有了第 2 种方法）；
 
   - 自下而上的迭代；
+  
 - 和选择排序一样，归并排序的性能不受输入数据的影响，但表现比选择排序好的多，因为始终都是 O(nlogn) 的时间复杂度。代价是需要额外的内存空间。
+
 - 算法步骤
   - 申请空间，使其大小为两个已经排序序列之和，该空间用来存放合并后的序列；
   - 设定两个指针，最初位置分别为两个已经排序序列的起始位置；
@@ -66,6 +73,9 @@
   - 将另一序列剩下的所有元素直接复制到合并序列尾。
 
 - [代码](./code/sort/sort.c)
+
+  <details>
+  <summary>归并排序</summary>
 
   ```C
   void merge(int *data, int *temp, int start, int middle, int end)
@@ -91,7 +101,7 @@
       {
           temp[k++] = data[j++];
       }
-  
+      
       for (i = start; i <= end; i++)
       {
           data[i] = temp[i];
@@ -110,6 +120,7 @@
       }
   }
   ```
+  </details>
 
 #### 1.3 快速排序
 
@@ -124,6 +135,9 @@
 
 - [代码](./code/sort/sort.c)
 
+  <details>
+  <summary>快速排序</summary>
+  
   ```C
   void quick(int *data, int left, int right)
   {
@@ -159,6 +173,7 @@
       quick(data, 0, length - 1);
   }
   ```
+  </details>
 
 #### 1.4 KMP算法
 
@@ -170,6 +185,9 @@
 
 - [代码](./code/search/kmp.c)
 
+  <details>
+  <summary>KMP算法</summary>
+  
   ```C
   void make_next(const char *pattern, int *next)
   {
@@ -228,7 +246,7 @@
       return i - q + 1;
   }
   ```
-
+  </details>
 
 ### 2.二叉树与红黑树
 
@@ -241,6 +259,9 @@
   - 即使树中某结点只有一棵子树，也要区分它是左子树还是右子树。
 
 - [代码](./code/tree/btree.c)
+
+  <details>
+  <summary>二叉树</summary>
 
   ```C
   typedef int KEY_VALUE;
@@ -323,7 +344,7 @@
       bstree_traversal(node->bst.right);
   }
   ```
-
+  </details>
 
 #### 2.2 红黑树
 
@@ -338,6 +359,9 @@
   - 从一个节点到该节点的子孙节点的所有路径上包含相同数目的黑节点。
 
 - [代码](./code/tree/rbtree.c)
+
+  <details>
+  <summary>红黑树</summary>
 
   ```C
   #define RED 1
@@ -712,6 +736,7 @@
       }
   }
   ```
+  </details>
 
 ### 3.B-树
 
@@ -727,6 +752,9 @@
 
 - [代码](./code/tree/b-tree.c)
 
+  <details>
+  <summary>B-树</summary>
+  
   ```C
   #define DEGREE 3
   typedef int KEY_VALUE;
@@ -1113,6 +1141,7 @@
       return 0;
   }
   ```
+  </details>
 
 ### 4.布隆过滤器
 
@@ -1138,6 +1167,9 @@
 
 - [代码](./code/bloomfilter/bloomfilter.h)
 
+  <details>
+  <summary>布隆过滤器</summary>
+  
   ```C
   /**
    *  BloomFilter使用例子：
@@ -1590,6 +1622,7 @@
       return 0;
   }
   ```
+  </details>
 
 ### 5.设计模式
 
@@ -1601,6 +1634,9 @@
 
 - [代码](./code/designpattern/observer.cpp)
 
+  <details>
+  <summary>观察者模式</summary>
+  
   ```C++
   // 简单变形示例——区别对待观察者
   /*
@@ -1834,6 +1870,7 @@
       return 0;
   }
   ```
+  </details>
 
 #### 5.2 工厂模式
 
@@ -1843,6 +1880,9 @@
 
 - [代码](./code/designpattern/factory.cpp)
 
+  <details>
+  <summary>工厂模式</summary>
+  
   ```C++
   #include <iostream>
   
@@ -2002,6 +2042,7 @@
       return 0;
   }
   ```
+  </details>
 
 #### 5.3 单例模式
 
@@ -2009,6 +2050,9 @@
 
 - [代码](./code/designpattern/singleton.cpp)
 
+  <details>
+  <summary>单例模式</summary>
+  
   ```C++
   #define SINGLETON_INDEX 6 // 开关，不同模式的开关
   
@@ -2251,7 +2295,7 @@
   Singleton Singleton::m_singleton;
   #endif
   ```
-
+  </details>
 
 ## 二、后台组件编程专栏
 
@@ -2352,6 +2396,9 @@
 
 - [头文件（/usr/include/mysql/mysql.h）](./code/mysql/mysql.h)
 
+  <details>
+  <summary>mysql.h</summary>
+  
   ```C
   /* Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
   
@@ -3095,9 +3142,13 @@
   
   #endif /* _mysql_h */
   ```
+  </details>
 
 - [例子代码](./code/mysql/mysql.c)
 
+  <details>
+  <summary>例子代码</summary>
+  
   ```C
   MYSQL *conn;
   MYSQL_RES *res;
@@ -3137,7 +3188,7 @@
   mysql_free_result(res);
   mysql_close(conn);
   ```
-
+  </details>
 
 ### 2.MySQL事务、索引、存储引擎
 
