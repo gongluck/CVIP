@@ -3402,3 +3402,306 @@ http {
 - RESTful架构应该遵循统一接口原则，统一接口包含了一组受限的预定义的操作，不论什么样的资源，都是通过使用相同的接口进行资源的访问。接口应该使用标准的HTTP方法如GET，PUT和POST，并遵循这些方法的语义。
 - 如果按照HTTP方法的语义来暴露资源，那么接口将会拥有安全性和幂等性的特性，例如GET和HEAD请求都是安全的，无论请求多少次，都不会改变服务器状态。而GET、HEAD、PUT和DELETE请求都是幂等的，无论对资源操作多少次，结果总是一样的，后面的请求并不会产生比第一次更多的影响。
 
+### 5.Redis操作和编程
+
+#### 5.1 Redis操作
+
+- REmote DIctionary Server（Redis）是一个由Salvatore Sanfilippo写的key-value存储系统。Redis是一个开源的使用ANSI C语言编写、遵守 BSD 协议、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。它通常被称为数据结构服务器，因为值（value）可以是字符串(String)、哈希(Hash)、列表(list)、集合(sets)和有序集合(sorted sets)等类型。
+
+- 编译安装
+
+  ```shell
+  # 下载源码
+  wget http://download.redis.io/releases/redis-6.0.0.tar.gz
+  tar zxvf redis-6.0.0.tar.gz
+  # 编译
+  cd redis-6.0.0/
+  make -j 8
+  # 安装（默认安装到/usr/local/bin/目录）
+  sudo make install
+  ```
+
+- 常用命令
+
+  - 查看版本
+
+    ```shell
+    redis-server -v
+    ```
+
+  - 启动
+
+    ```shell
+    redis-server redis.conf
+    ```
+
+- redis-cli
+
+  - 连接
+
+    ```shell
+    redis-cli -h 127.0.0.1 -p 6379 -a 123456
+    ```
+
+  - 停止服务
+
+    ```shell
+    redis-cli -h 127.0.0.1 -p 6379 shutdown
+    ```
+
+  - 内部命令
+
+    |                 命令                 |                             说明                             |
+    | :----------------------------------: | :----------------------------------------------------------: |
+    |               DEL key                |               该命令用于在key存在时删除 key。                |
+    |               DUMP key               |             序列化给定key，并返回被序列化的值。              |
+    |              EXISTS key              |                    检查给定key是否存在。                     |
+    |          EXPIRE key seconds          |               为给定key设置过期时间，以秒计。                |
+    |        EXPIREAT key timestamp        | EXPIREAT的作用和EXPIRE类似，都用于为key设置过期时间。不同在于EXPIREAT命令接受的时间参数是UNIX时间戳(unix timestamp)。 |
+    |       PEXPIRE key milliseconds       |                 设置key的过期时间以毫秒计。                  |
+    | PEXPIREAT key milliseconds-timestamp |      设置key过期时间的时间戳(unix timestamp) 以毫秒计。      |
+    |             KEYS pattern             |            查找所有符合给定模式( pattern)的key。             |
+    |             MOVE key db              |         将当前数据库的key移动到给定的数据库db当中。          |
+    |             PERSIST key              |              移除key的过期时间，key将持久保持。              |
+    |               PTTL key               |            以毫秒为单位返回key的剩余的过期时间。             |
+    |               TTL key                |  以秒为单位，返回给定key的剩余生存时间(TTL, time to live)。  |
+    |              RANDOMKEY               |               从当前数据库中随机返回一个key。                |
+    |          RENAME key newkey           |                       修改key的名称。                        |
+    |         RENAMENX key newkey          |           仅当newkey不存在时，将key改名为newkey。            |
+    |               TYPE key               |                  返回key所储存的值的类型。                   |
+
+- redis基本数据结构
+
+  ![redis基本数据结构](./images/redis基本数据结构.png)
+
+#### 5.2 hiredis编程
+
+- 编译安装hiredis
+
+  ```shell
+  cd deps/hiredis
+  make -j 8
+  sudo make install
+  sudo ldconfig
+  ```
+
+- [例子代码](./code/redis/hiredis.c)
+
+  <details>
+  <summary>例子代码</summary>
+
+  ```C
+  // 连接Redis服务
+  redisContext *context = redisConnect("127.0.0.1", 6379);
+  if (context == NULL || context->err)
+  {
+      if (context)
+      {
+          printf("%s\n", context->errstr);
+      }
+      else
+      {
+          printf("redisConnect error\n");
+      }
+      exit(EXIT_FAILURE);
+  }
+  printf("-----------------connect success--------------------\n");
+  
+  // REDIS_REPLY_STRING == 1 :返回值是字符串,字符串储存在redis->str当中,字符串长度为redis->len。
+  // REDIS_REPLY_ARRAY == 2 :返回值是数组,数组大小存在redis->elements里面,数组值存储在redis->element[i]里面。数组里面存储的是指向redisReply的指针,数组里面的返回值可以通过redis->element[i]->str来访问,数组的结果里全是type==REDIS_REPLY_STRING的redisReply对象指针。
+  // REDIS_REPLY_INTEGER == 3 :返回值为整数long long。
+  // REDIS_REPLY_NIL == 4 :返回值为空表示执行结果为空。
+  // REDIS_REPLY_STATUS == 5 :返回命令执行的状态,比如set foo bar返回的状态为OK,存储在str当中reply->str == "OK"。
+  // REDIS_REPLY_ERROR == 6 :命令执行错误,错误信息存放在reply->str当中。
+  
+  // 授权
+  redisReply *reply = redisCommand(context, "auth gongluck");
+  printf("type : %d\n", reply->type);
+  if (reply->type == REDIS_REPLY_STATUS)
+  {
+      printf("auth ok\n");
+  }
+  else if (reply->type == REDIS_REPLY_ERROR)
+  {
+      printf("auth err : %s\n", reply->str);
+  }
+  freeReplyObject(reply);
+  
+  // Set Key Value
+  char *key = "str";
+  char *val = "Hello World";
+  reply = redisCommand(context, "SET %s %s", key, val);
+  printf("type : %d\n", reply->type);
+  if (reply->type == REDIS_REPLY_STATUS)
+  {
+      printf("SET %s %s\n", key, val);
+  }
+  freeReplyObject(reply);
+  
+  // GET Key
+  reply = redisCommand(context, "GET %s", key);
+  if (reply->type == REDIS_REPLY_STRING)
+  {
+      printf("GET str %s\n", reply->str);
+      printf("GET len %ld\n", reply->len);
+  }
+  freeReplyObject(reply);
+  
+  // APPEND key value
+  char *append = " I am your GOD";
+  reply = redisCommand(context, "APPEND %s %s", key, append);
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("APPEND %s %s \n", key, append);
+  }
+  freeReplyObject(reply);
+  
+  reply = redisCommand(context, "GET %s", key);
+  if (reply->type == REDIS_REPLY_STRING)
+  {
+      printf("GET %s\n", reply->str);
+  }
+  freeReplyObject(reply);
+  
+  // INCR key
+  reply = redisCommand(context, "INCR counter");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("INCR counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  reply = redisCommand(context, "INCR counter");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("INCR counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  
+  // DECR key
+  reply = redisCommand(context, "DECR counter");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("DECR counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  reply = redisCommand(context, "DECR counter");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("DECR counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  
+  // DECRBY key decrement
+  reply = redisCommand(context, "DECRBY counter 5");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("DECRBY counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  reply = redisCommand(context, "DECRBY counter 5");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("DECRBY counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  
+  // INCRBY key increment
+  reply = redisCommand(context, "INCRBY counter 5");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("INCRBY counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  
+  reply = redisCommand(context, "INCRBY counter 5");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("INCRBY counter %lld\n", reply->integer);
+  }
+  freeReplyObject(reply);
+  
+  // GETRANGE key start end
+  reply = redisCommand(context, "GETRANGE str 0 5");
+  if (reply->type == REDIS_REPLY_STRING)
+  {
+      printf("GETRANGE %s %s\n", key, reply->str);
+  }
+  freeReplyObject(reply);
+  
+  // GETSET key value
+  reply = redisCommand(context, "GETSET %s %s", key, val);
+  if (reply->type == REDIS_REPLY_STRING)
+  {
+      printf("GETSET %s %s\n", key, reply->str);
+  }
+  freeReplyObject(reply);
+  
+  /*INCRBYFLOAT key increment*/
+  reply = redisCommand(context, "INCRBYFLOAT f 2.1");
+  if (reply->type == REDIS_REPLY_STRING)
+  {
+      printf("INCRBYFLOAT counter %s\n", reply->str);
+  }
+  freeReplyObject(reply);
+  
+  /*MSET key value [key value ...]*/
+  reply = redisCommand(context, "MSET k1 hello k2 world k3 good");
+  if (reply->type == REDIS_REPLY_STATUS)
+  {
+      printf("MSET k1 hello k2 world k3 good\n");
+  }
+  freeReplyObject(reply);
+  
+  /*MGET key [key ...]*/
+  reply = redisCommand(context, "MGET k1 k2 k3");
+  if (reply->type == REDIS_REPLY_ARRAY)
+  {
+      printf("MGET k1  k2  k3 \n");
+      redisReply **pReply = reply->element;
+      int i = 0;
+      size_t len = reply->elements;
+      //hello world good
+      for (; i < len; ++i)
+      {
+          printf("%s ", pReply[i]->str);
+      }
+      printf("\n");
+  }
+  freeReplyObject(reply);
+  
+  /*STRLEN key*/
+  reply = redisCommand(context, "STRLEN str");
+  if (reply->type == REDIS_REPLY_INTEGER)
+  {
+      printf("STRLEN str %lld \n", reply->integer);
+  }
+  freeReplyObject(reply);
+  
+  /*SETEX key seconds value*/
+  reply = redisCommand(context, "SETEX s 10 10seconds");
+  if (reply->type == REDIS_REPLY_STATUS)
+  {
+      printf("SETEX s 10 10seconds\n");
+      freeReplyObject(reply);
+      int i = 0;
+      while (i++ < 12)
+      {
+          reply = redisCommand(context, "GET s");
+          if (reply->type == REDIS_REPLY_STRING)
+          {
+              printf("%d s %s\n", i, reply->str);
+          }
+          else if (reply->type == REDIS_REPLY_NIL)
+          {
+              printf("%d s nil\n", i);
+          }
+          freeReplyObject(reply);
+          sleep(1);
+      }
+  }
+  
+  redisFree(context);
+  return EXIT_SUCCESS;
+  ```
+  </details>
+  
