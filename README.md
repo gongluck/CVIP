@@ -3705,3 +3705,187 @@ http {
   ```
   </details>
   
+
+### 6.MongoDB操作和编程
+
+#### 6.1 MongoDB操作
+
+- MongoDB概念
+
+  | SQL术语/概念 | MongoDB术语/概念 |              解释/说明               |
+  | :----------: | :--------------: | :----------------------------------: |
+  |   database   |     database     |                数据库                |
+  |    table     |    collection    |            数据库表/集合             |
+  |     row      |     document     |           数据记录行/文档            |
+  |    column    |      field       |             数据字段/域              |
+  |    index     |      index       |                 索引                 |
+  | table joins  |        -         |        表连接，MongoDB不支持         |
+  | primary key  |   primary key    | 主键，MongoDB自动将_id字段设置为主键 |
+
+- 安装MongoDB
+
+  ```shell
+  wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-4.4.1.tgz
+  tar -zxvf mongodb-linux-x86_64-ubuntu1804-4.4.1.tgz 
+  sudo mv mongodb-linux-x86_64-ubuntu1804-4.4.1 /usr/local/mongodb
+  ```
+
+- 启动MongoDB
+
+  - MongoDB的数据存储在data目录的db目录下，但是这个目录在安装过程不会自动创建，所以需要手动创建data目录，并在data目录中创建db目录。
+
+  - 可以在命令行中执行mongo安装目录中的bin目录执行mongod命令来启动mongdb服务。如果数据库目录不是/data/db，可以通过--dbpath来指定。
+
+    ```shell
+    /usr/local/mongodb/bin/mongod --dbpath=/data/db --bind_ip=0.0.0.0
+    ```
+
+- MongoDB后台管理
+
+  - MongoDB Shell是MongoDB自带的交互式Javascript shell，用来对MongoDB进行操作和管理的交互式环境。它默认会链接到test文档（数据库）
+
+    ```shell
+    /usr/local/mongodb/bin/mongo
+    ```
+
+  - 显示所有数据的列表
+
+    ```sql
+    show dbs
+    ```
+
+  - 显示当前数据库对象或集合
+
+    ```sql
+    db
+    ```
+
+  - （创建）连接到一个指定的数据库。
+
+    ```sql
+    use gongluck
+    ```
+
+  - 插入数据
+
+    ```sql
+    db.gongluck.insert({"name":"gongluck"})
+    ```
+
+  - 删除当前数据库
+
+    ```sql
+    db.dropDatabase()
+    ```
+
+  - 创建集合
+
+    ```sql
+    db.createCollection("test")
+    ```
+
+  - 查看已有集合
+
+    ```sql
+    show collections
+    ```
+
+  - 删除集合
+
+    ```sql
+    db.test.drop()
+    ```
+
+  - 插入文档
+
+    ```sql
+    db.test.insert({"name":"gongluck","socre":100})
+    ```
+
+  - 查看已插入文档
+
+    ```sql
+    db.test.find().pretty()
+    ```
+
+  - 更新文档
+
+    ```sql
+    db.test.update({"name":"gongluck"}, {$set:{"name":"updated"}}, {multi:true})
+    db.test.save({"_id":ObjectId("5fafd5407f51c6334abca881"),"name":"gongluck","socre":100})
+    ```
+
+  - 删除文档
+
+    ```sql
+    db.test.remove({"name":"gongluck"})
+    db.test.remove()
+    ```
+
+  - 创建索引
+
+    ```sql
+    # 1:升序,-1:降序
+    db.test.createIndex({"name":1,"score":-1})
+    ```
+
+#### 6.2 MongoDB编程
+
+- 编译mongo-c-driver
+
+  ```shell
+  wget https://github.com/mongodb/mongo-c-driver/releases/download/1.17.2/mongo-c-driver-1.17.2.tar.gz
+  tar -zxvf mongo-c-driver-1.17.2.tar.gz
+  mongo-c-driver-1.17.2/
+  mkdir cmake-build
+  cd cmake-build
+  cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ..
+  cmake --build .
+  sudo cmake --build . --target install
+  ```
+
+- [例子代码](./code/mongodb/mongodb.c)
+
+  <details>
+  <summary>例子代码</summary>
+  
+  ```C
+  //gcc mongodb.c -I/usr/local/include/libmongoc-1.0 -I/usr/local/include/libbson-1.0/ -lmongoc-1.0 -lbson-1.0
+  
+  #include <bson.h>
+  #include <mongoc.h>
+  
+  int main()
+  {
+      mongoc_client_t *client;
+      mongoc_collection_t *collection;
+      bson_t *insert;
+      bson_error_t error;
+  
+      //初始化libmongoc驱动
+      mongoc_init();
+      
+      //创建连接对象
+      client = mongoc_client_new("mongodb://localhost:27017");
+      
+      //获取指定数据库和集合
+      collection = mongoc_client_get_collection(client, "gongluck", "test");
+      
+      //字段为hello，值为world字符串
+      insert = BCON_NEW("hello", BCON_UTF8("world"));
+      
+      //插入文档
+      if (!mongoc_collection_insert(collection, MONGOC_INSERT_NONE, insert, NULL, &error))
+      {
+          fprintf(stderr, "%s\n", error.message);
+      }
+      
+      bson_destroy(insert);
+      
+      mongoc_collection_destroy(collection); //释放表对象
+      mongoc_client_destroy(client);         //释放连接对象
+      mongoc_cleanup();                      //释放libmongoc驱动
+      return 0;
+  }
+  ```
+  </details>
