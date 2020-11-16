@@ -4067,5 +4067,127 @@ http {
   ```
   </details>
 
-  
+### 2.CAS和无锁队列
 
+#### 2.1 CAS
+
+- 比较并交换（compare and swap，CAS），是**原⼦操作**的⼀种，可⽤于在多线程编程中实现不被打断的数据交换操作，从而避免多线程同时改写某⼀数据时由于执行顺序不确定性以及中断的不可预知性产⽣的数据不一致问题有了CAS，我们就可以用它来实现各种无锁（lock free）的数据结构。
+
+- 该操作通过将内存中的值与指定数据进行比较，当数值⼀样时将内存中的数据替换为新的值。
+
+  ```C
+  int compare_and_swap(int *reg, int oldval, int newval)
+  {
+      int old_ref_val = *reg;
+      if(old_reg_val == oldval)//compare
+          *reg = newval;//swap
+      return old_reg_val;
+  }
+  ```
+
+- gcc/g++中的CAS
+
+  ```C
+  bool __sync_bool_compare_and_swap(type *ptr, type oldval type newval, ...);
+  type __sync_val_compare_and_swap(type *ptr, type oldval type newval, ...);
+  ```
+
+- Windows的CAS
+
+  ```C
+  InterlockedCompareExchange(__inout LONG volatile  *Target, __in LONG Exchange, __in LONG Comperand);
+  ```
+
+- C++11标准库的CAS
+
+  ```C
+  template< class T >
+  bool atomic_compare_exchange_weak(std::atomic<T>* obj, T* expected, T desired);
+  template< class T >
+  bool atomic_compare_exchange_weak(volatile std::atomic<T>* obj, T* expected, T desired );
+  ```
+
+#### 2.2 无锁队列
+
+- [无锁队列代码](./code/cas/cas.h)
+
+  <details>
+  <summary>无锁队列代码</summary>
+  
+  ```C
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-16 16:02:56 
+   * @Last Modified by:   gongluck 
+   * @Last Modified time: 2020-11-16 16:02:56 
+   */
+  
+  template <typename ElemType>
+  class Queue
+  {
+  public:
+      Queue();
+      ~Queue();
+  
+  public:
+      void push(ElemType elem);
+      bool pop();
+      void show();
+  
+  private:
+      struct _qNode
+      {
+          _qNode() : _next(nullptr) {}
+          _qNode(ElemType elem) : _elem(elem), _next(nullptr) {}
+          ElemType _elem;
+          struct _qNode *_next;
+      };
+  
+  private:
+      struct _qNode *_head;
+      struct _qNode *_tail;
+  };
+  
+  template <typename ElemType>
+  Queue<ElemType>::Queue()
+  {
+      _head = _tail = new _qNode();
+  }
+  
+  template <typename ElemType>
+  Queue<ElemType>::~Queue()
+  {
+      while (_head != nullptr)
+      {
+          struct _qNode *tempNode = _head;
+          _head = _head->_next;
+          delete tempNode;
+      }
+  }
+  
+  template <typename ElemType>
+  void Queue<ElemType>::push(ElemType elem)
+  {
+      struct _qNode *newNode = new struct _qNode(elem);
+      struct _qNode *oldp = _tail;
+      while (!__sync_bool_compare_and_swap(&_tail->_next, nullptr, newNode))
+          ;
+      __sync_bool_compare_and_swap(&_tail, oldp, newNode);
+  }
+  
+  template <typename ElemType>
+  bool Queue<ElemType>::pop()
+  {
+      struct _qNode *p;
+      do
+      {
+          p = _head;
+          if (p->_next == nullptr)
+              return false;
+      } while (!__sync_bool_compare_and_swap(&_head, p, p->_next));
+      delete p;
+      return true;
+  }
+  ```
+  </details>
+  
