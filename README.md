@@ -4847,3 +4847,200 @@ ngx_pfree(ngx_pool_t *pool, void *p)
 
   
 
+### 2.Json和Xml
+
+#### 2.1 cJSON
+
+- [cJSON例子](./code/json/cjson/test.c)
+
+  <details>
+  <summary>[cJSON例子](./code/json/cjson/test.c)</summary>
+
+  ```C
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-18 21:27:47 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-18 21:41:36
+   */
+
+  // gcc *.c -lm
+
+  #include <stdio.h>
+  #include "cJSON.h"
+
+  int main()
+  {
+      cJSON* root = cJSON_CreateObject();
+      cJSON_AddBoolToObject(root, "bool", cJSON_False);
+      cJSON_AddStringToObject(root, "str", "cJSON");
+  
+      char* str = cJSON_Print(root);
+      printf("%s\n", str);
+      cJSON_Delete(root);
+      root = NULL;
+
+      root = cJSON_Parse(str);
+      cJSON* b = cJSON_GetObjectItem(root, "bool");
+      if(b->type == cJSON_True || b->type == cJSON_False)
+          printf("bool value : %d\n", b->type);
+      cJSON* s = cJSON_GetObjectItem(root, "str");
+      if(s->type == cJSON_String)
+          printf("str value : %s\n", s->valuestring);
+      cJSON_Delete(root);
+      return 0;
+  }
+  ```
+  </details>
+
+#### 2.2 jsoncpp
+
+- 编译安装
+
+  ```shell
+  # 下载
+  git clone https://github.com/open-source-parsers/jsoncpp.git
+  cd jsoncpp
+  mkdir -p build/release
+  cd build/release
+  # 编译
+  cmake -DCMAKE_BUILD_TYPE=release -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_INCLUDEDIR=include/jsoncpp -DARCHIVE_INSTALL_DIR=. -G "Unix Makefiles" ../..
+  make
+  # 安装
+  sudo make install
+  ```
+
+- [jsoncpp例子](./code/json/jsoncpp/test.cpp)
+
+  <details>
+  <summary>[jsoncpp例子](./code/json/cjson/test.c)</summary>
+  
+  ```C++
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-19 09:40:21 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-19 09:46:42
+   */
+  
+  // g++ test.cpp -ljsoncpp
+  
+  #include <iostream>
+  #include <string>
+  #include <jsoncpp/json/json.h>
+  
+  void readJson()
+  {
+      std::string strValue = "{\"name\":\"json\",\"array\":[{\"cpp\":\"jsoncpp\"},{\"java\":\"jsoninjava\"},{\"php\":\"support\"}]}";
+  
+      Json::Reader reader;
+      Json::Value value;
+  
+      if (reader.parse(strValue, value))
+      {
+          std::string out = value["name"].asString();
+          std::cout << out << std::endl;
+          const Json::Value arrayObj = value["array"];
+          for (unsigned int i = 0; i < arrayObj.size(); i++)
+          {
+              if (!arrayObj[i].isMember("cpp"))
+                  continue;
+              out = arrayObj[i]["cpp"].asString();
+              std::cout << out;
+              if (i != (arrayObj.size() - 1))
+                  std::cout << std::endl;
+          }
+      }
+  }
+  
+  void writeJson()
+  {
+      Json::Value root;
+      Json::Value arrayObj;
+      Json::Value item;
+  
+      item["cpp"] = "jsoncpp";
+      item["java"] = "jsoninjava";
+      item["php"] = "support";
+      arrayObj.append(item);
+  
+      root["name"] = "json";
+      root["array"] = arrayObj;
+  
+      root.toStyledString();
+      std::string out = root.toStyledString();
+      std::cout << out << std::endl;
+  }
+  
+  int main(int argc, char **argv)
+  {
+      readJson();
+      writeJson();
+      return 0;
+  }
+  ```
+  </details>
+  
+
+#### 2.3 TinyXML2
+
+- 安装编译
+
+  ```shell
+  #下载 tinyxml2
+  git clone https://github.com/leethomason/tinyxml2.git
+  #进入相应目录并编译
+  cd tinyxml2/
+  cmake . 
+  make -j 8
+  #测试该版本的准确性
+  ./xmltest
+  #安装
+  sudo make install
+  ```
+
+- [tinyxml2例子](./code/xml/tinyxml2/test.cpp)
+
+  <details>
+  <summary>[tinyxml2例子](./code/json/cjson/test.c)</summary>
+  
+  ```C++
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-19 17:11:24 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-19 17:27:23
+   */
+  
+  // g++ test.cpp -ltinyxml2
+  
+  #include <iostream>
+  #include "tinyxml2.h"
+  
+  int main(void)
+  {
+      const char *xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>   \
+                          <note>                      \
+                              <to>beijing</to>             \
+                              <from>shenzhen</from>           \
+                              <heading>Reminder</heading> \
+                              <body>Don't forget the meeting!</body> \
+                          </note>";
+      tinyxml2::XMLDocument doc;
+      doc.Parse(xml);
+      std::cout << doc.ErrorID() << std::endl;
+  
+      // 1. 第一种刷新到本地
+      FILE *fp = fopen("memory_1.xml", "wb");
+      tinyxml2::XMLPrinter printer(fp);
+      doc.Print(&printer); // 打印到文件
+      fclose(fp);
+  
+      // 2. 第二种刷新到本地
+      doc.SaveFile("memory_2.xml");
+  
+      return 0;
+  }
+  ```
+  </details>
+  
