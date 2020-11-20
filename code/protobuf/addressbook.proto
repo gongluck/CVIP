@@ -1,0 +1,37 @@
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-20 18:16:05 
+ * @Last Modified by:   gongluck 
+ * @Last Modified time: 2020-11-20 18:16:05 
+ */
+ 
+// protoc --cpp_out=./ addressbook.proto
+
+syntax = "proto3";
+
+package Test;
+
+message Person
+{
+    string name = 1;
+    int32 id = 2;
+    string email = 3;
+
+    enum PhoneType
+    {
+        MOBLIE = 0;//首成员必须为0
+        HOME = 1;
+        WORK = 2;
+    }
+    message PhoneNumber
+    {
+        string number = 1;
+        PhoneType type = 2;
+    }
+    repeated PhoneNumber phones = 4;
+}
+
+message AddressBook
+{
+    repeated Person people = 1;
+}

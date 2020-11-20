@@ -5044,3 +5044,120 @@ ngx_pfree(ngx_pool_t *pool, void *p)
   ```
   </details>
   
+
+### 3.ProtoBuf
+
+#### 3.1 序列化和反序列化
+
+- 序列化：把对象转换为字节序列的过程称为对象。
+
+  ![常用序列化协议比较](./images/常用序列化协议比较.png)
+
+  - TLV编码及其变体（tag, length和value的缩写）：比如Protobuf。
+  - 文本流编码：比如XML/JSON。
+  - 固定结构编码：基本原理是，协议约定了传输字段类型和字段含义，和TLV的方式类似，但是没有了tag和len，只有value，比如TCP/IP。
+  - 内存dump：把内存中的数据直接输出，不做任何序列化操作。反序列化的时候，直接还原内存。
+
+- 反序列化：把字节序列恢复为对象的过程称为对象的反序列化。
+
+#### 3.2 编译安装ProtoBuf
+
+```shell
+#下载源码
+wget https://github.com/protocolbuffers/protobuf/archive/v3.1.0.tar.gz
+tar -zxvf v3.1.0.tar.gz
+cd protobuf-3.1.0/
+#编译
+./autogen.sh
+./configure
+make -j 8
+make check
+sudo make install
+# refresh shared library cache.
+sudo ldconfig
+```
+
+#### 3.3 [ProtoBuf例子](./code/protobuf)
+
+```protobuf
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-20 18:16:05 
+ * @Last Modified by:   gongluck 
+ * @Last Modified time: 2020-11-20 18:16:05 
+ */
+ 
+// protoc --cpp_out=./ addressbook.proto
+
+syntax = "proto3";
+
+package Test;
+
+message Person
+{
+    string name = 1;
+    int32 id = 2;
+    string email = 3;
+
+    enum PhoneType
+    {
+        MOBLIE = 0;//首成员必须为0
+        HOME = 1;
+        WORK = 2;
+    }
+    message PhoneNumber
+    {
+        string number = 1;
+        PhoneType type = 2;
+    }
+    repeated PhoneNumber phones = 4;
+}
+
+message AddressBook
+{
+    repeated Person people = 1;
+}
+```
+
+```C++
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-20 17:23:22 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-11-20 18:14:44
+ */
+
+// g++ *.cc *.cpp `pkg-config --cflags --libs protobuf`
+
+#include <iostream>
+#include "addressbook.pb.h"
+
+using namespace std;
+
+int main()
+{
+    char buf[1024];
+    int len;
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    Test::Person obj;
+    obj.set_name("gongluck");
+    obj.set_id(1);
+    *obj.mutable_email() = "https://github.com.cnpmjs.org/gongluck/CVIP";
+    len = obj.ByteSize();
+    cout << "len = " << len << endl;
+    obj.SerializeToArray(buf, len);
+
+    Test::Person obj2;
+    obj2.ParseFromArray(buf, len);
+    cout << "name = " << obj2.name() << endl;
+    cout << "id = " << obj2.id() << endl;
+    cout << "email = " << obj2.email() << endl;
+
+    google::protobuf::ShutdownProtobufLibrary();
+
+    return 0;
+}
+```
+
