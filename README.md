@@ -5119,6 +5119,9 @@ message AddressBook
 }
 ```
 
+<details>
+<summary>ProtoBuf例子</summary>
+
 ```C++
 /*
  * @Author: gongluck 
@@ -5160,4 +5163,128 @@ int main()
     return 0;
 }
 ```
+</details>
+
+### 4.消息队列
+
+#### 4.1 消息队列比较
+
+![消息队列比较](./images/消息队列比较.png)
+
+#### 4.2 zmq编译安装
+
+```shell
+#安装编译依赖
+sudo apt-get install libtool pkg-config build-essential autoconf automake
+#安装加密库
+git clone git://github.com/jedisct1/libsodium.git
+cd libsodium
+./autogen.sh -s
+./configure && make -j 8 && make check
+sudo make install
+sudo ldconfig
+cd ..
+#下载
+git clone https://github.com/zeromq/libzmq.git
+cd libzmq
+#查看tag
+#git tag
+#版本 获取指定的版本
+git checkout v4.3.2
+./autogen.sh
+./configure && make -j 8 && make check
+sudo make install
+sudo ldconfig
+cd ..
+```
+
+#### 4.3 [zmq例子](./code/messagequeue/zmq)
+
+- [服务端](./code/messagequeue/zmq/zmqserver.c)
+
+  <details>
+  <summary>服务端代码</summary>
+  
+  ```C
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-24 09:49:11 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-24 09:51:26
+   */
+  
+  // gcc zmqserver.c -lzmq
+  
+  #include <zmq.h>
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <string.h>
+  #include <assert.h>
+  
+  int main(void)
+  {
+      // Socket to talk to clients
+      void *context = zmq_ctx_new();
+      // 与客户端通信的套接字
+      void *responder = zmq_socket(context, ZMQ_REP);
+      int rc = zmq_bind(responder, "tcp://*:5555");
+      assert(rc == 0);
+  
+      while (1)
+      {
+          // 等待客户端请求
+          char buffer[10];
+          zmq_recv(responder, buffer, 10, 0);
+          printf("收到 %.*s\n", 10, buffer);
+          // 返回应答
+          zmq_send(responder, "RECVED", 6, 0);
+      }
+      return 0;
+  }
+  ```
+  </details>
+
+- [客户端](./code/messagequeue/zmq/zmqclient.c)
+
+  <details>
+  <summary>客户端代码</summary>
+  
+  ```C
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-24 09:52:58 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-24 09:56:14
+   */
+  
+  //gcc zmqclient.c -lzmq
+  
+  #include <zmq.h>
+  #include <string.h>
+  #include <stdio.h>
+  #include <unistd.h>
+  
+  int main(void)
+  {
+      printf("Connecting to zmq server...\n");
+      void *context = zmq_ctx_new();
+      // 连接⾄服务端的套接字
+      void *requester = zmq_socket(context, ZMQ_REQ);
+      zmq_connect(requester, "tcp://localhost:5555");
+  
+      char buffer[10];
+      for (int request_nbr = 0; request_nbr != 10; request_nbr++)
+      {  
+          printf("正在发送 %d...\n", request_nbr);
+          zmq_send(requester, "Hello", 5, 0);
+          zmq_recv(requester, buffer, 10, 0);
+          printf("接收到 %.*s\n", 10, buffer);
+      }
+      zmq_close(requester);
+      zmq_ctx_destroy(context);
+      return 0;
+  }
+  ```
+  </details>
+  
 
