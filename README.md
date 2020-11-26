@@ -5477,3 +5477,470 @@ int main()
 }
 ```
 </details>
+
+### 6.网络IO管理
+
+#### 6.1 [信号驱动IO](./code/io/signalio.c)
+
+<details>
+<summary>信号驱动IO</summary>
+
+```C
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-26 08:05:17 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-11-26 08:19:07
+ */
+
+// test : nc -uv 127.0.0.1 9096
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <fcntl.h>
+
+int sockfd = 0;
+
+void do_sigio(int sig)
+{
+    struct sockaddr_in cli_addr;
+    int clilen = sizeof(struct sockaddr_in);
+
+    char buffer[256] = {0};
+    int len = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen);
+    printf("Message : %s\r\n", buffer);
+    int slen = sendto(sockfd, buffer, len, 0, (struct sockaddr *)&cli_addr, clilen);
+}
+
+int main(int argc, char *argv[])
+{
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    struct sigaction sigio_action;
+    sigio_action.sa_flags = 0;
+    sigio_action.sa_handler = do_sigio;
+    sigaction(SIGIO, &sigio_action, NULL);//SIGIO call do_sigio
+
+    struct sockaddr_in serv_addr = {0};
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(9096);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+
+    fcntl(sockfd, F_SETOWN, getpid());
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    flags |= O_ASYNC | O_NONBLOCK;//异步非阻塞
+    fcntl(sockfd, F_SETFL, flags);
+
+    bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    while (1)
+        sleep(1);
+
+    close(sockfd);
+
+    return 0;
+}
+```
+</details>
+
+#### 6.2 [select IO](./code/io/select.c)
+
+<details>
+<summary>select IO</summary>
+
+```C
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-26 08:36:17 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-11-26 08:39:02
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+
+#include <errno.h>
+#include <fcntl.h>
+
+#define BUFFER_LENGTH 1024
+
+int main(int argc, char *argv[])
+{
+    int port = 9096;
+    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd < 0)
+    {
+        perror("socket");
+        return -1;
+    }
+
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(listenfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
+    {
+        perror("bind");
+        return -2;
+    }
+    if (listen(listenfd, 5) < 0)
+    {
+        perror("listen");
+        return -3;
+    }
+
+    fd_set rfds, rset;
+    FD_ZERO(&rfds);
+    FD_SET(listenfd, &rfds);
+
+    int max_fd = listenfd;
+    int i = 0;
+
+    while (1)
+    {
+        rset = rfds;
+        int nready = select(max_fd + 1, &rset, NULL, NULL, NULL);
+        if (nready < 0)
+        {
+            printf("select error : %d\n", errno);
+            continue;
+        }
+
+        if (FD_ISSET(listenfd, &rset)) // listen的fd可读代表有连接到达
+        {
+            struct sockaddr_in client_addr = {0};
+            socklen_t client_len = sizeof(client_addr);
+
+            int clientfd = accept(listenfd, (struct sockaddr *)&client_addr, &client_len);
+            if (clientfd <= 0)
+                continue;
+
+            char str[INET_ADDRSTRLEN] = {0};
+            printf("recvived from %s at port %d, listenfd:%d, clientfd:%d\n", inet_ntop(AF_INET, &client_addr.sin_addr, str, sizeof(str)),
+                   ntohs(client_addr.sin_port), listenfd, clientfd);
+
+            if (max_fd == FD_SETSIZE) // select的fd上限一般是1024
+            {
+                printf("clientfd --> out range\n");
+                break;
+            }
+            FD_SET(clientfd, &rfds); // 将新连接fd加入到读取队列中
+
+            if (clientfd > max_fd)
+                max_fd = clientfd;
+
+            printf("listenfd:%d, max_fd:%d, clientfd:%d\n", listenfd, max_fd, clientfd);
+
+            if (--nready == 0)
+                continue;
+        }
+
+        for (i = listenfd + 1; i <= max_fd; i++)
+        {
+            if (FD_ISSET(i, &rset))
+            {
+                char buffer[BUFFER_LENGTH] = {0};
+                int ret = recv(i, buffer, BUFFER_LENGTH, 0);
+                if (ret < 0)
+                {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) // 实际可能出现被其他线程读取掉数据的情况
+                    {
+                        printf("read all data");
+                    }
+                    FD_CLR(i, &rfds);
+                    close(i);
+                }
+                else if (ret == 0)
+                {
+                    printf("disconnect %d\n", i);
+                    FD_CLR(i, &rfds);
+                    close(i);
+                    break;
+                }
+                else
+                {
+                    printf("Recv: %s, %d Bytes\n", buffer, ret);
+                }
+                if (--nready == 0)
+                    break;
+            }
+        }
+    }
+
+    return 0;
+}
+```
+</details>
+
+#### 6.3 [poll IO](./code/io/poll.c)
+
+<details>
+<summary>poll IO</summary>
+
+```C
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-26 08:36:17 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-11-26 08:44:12
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <sys/poll.h>
+
+#include <errno.h>
+#include <fcntl.h>
+
+#define BUFFER_LENGTH 1024
+#define POLL_SIZE 1024
+
+int main(int argc, char *argv[])
+{
+    int port = 9096;
+    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd < 0)
+    {
+        perror("socket");
+        return -1;
+    }
+
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(listenfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
+    {
+        perror("bind");
+        return -2;
+    }
+    if (listen(listenfd, 5) < 0)
+    {
+        perror("listen");
+        return -3;
+    }
+
+    struct pollfd fds[POLL_SIZE] = {0};
+    fds[0].fd = listenfd;
+    fds[0].events = POLLIN;
+
+    int max_fd = 0, i = 0;
+    for (i = 1; i < POLL_SIZE; i++)
+    {
+        fds[i].fd = -1;
+    }
+
+    while (1)
+    {
+        int nready = poll(fds, max_fd + 1, 5);
+        if (nready <= 0)
+            continue;
+
+        if ((fds[0].revents & POLLIN) == POLLIN) // 判断listenfd是否有数据可读(新连接)
+        {
+            struct sockaddr_in client_addr = {0};
+            socklen_t client_len = sizeof(client_addr);
+
+            int clientfd = accept(listenfd, (struct sockaddr *)&client_addr, &client_len);
+            if (clientfd <= 0)
+                continue;
+
+            char str[INET_ADDRSTRLEN] = {0};
+            printf("recvived from %s at port %d, sockfd:%d, clientfd:%d\n", inet_ntop(AF_INET, &client_addr.sin_addr, str, sizeof(str)),
+                   ntohs(client_addr.sin_port), listenfd, clientfd);
+
+            fds[clientfd].fd = clientfd;
+            fds[clientfd].events = POLLIN;
+
+            if (clientfd > max_fd)
+                max_fd = clientfd;
+
+            if (--nready == 0)
+                continue;
+        }
+
+        for (i = listenfd + 1; i <= max_fd; i++)
+        {
+            if (fds[i].revents & (POLLIN | POLLERR))
+            {
+                char buffer[BUFFER_LENGTH] = {0};
+                int ret = recv(i, buffer, BUFFER_LENGTH, 0);
+                if (ret < 0)
+                {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    {
+                        printf("read all data");
+                    }
+
+                    close(i);
+                    fds[i].fd = -1;
+                }
+                else if (ret == 0)
+                {
+                    printf(" disconnect %d\n", i);
+
+                    close(i);
+                    fds[i].fd = -1;
+                    break;
+                }
+                else
+                {
+                    printf("Recv: %s, %d Bytes\n", buffer, ret);
+                }
+                if (--nready == 0)
+                    break;
+            }
+        }
+    }
+
+    return 0;
+}
+```
+</details>
+
+#### 6.4 [epoll IO](./code/io/epoll.c)
+
+<details>
+<summary>epoll IO</summary>
+
+```C
+/*
+ * @Author: gongluck 
+ * @Date: 2020-11-26 08:36:17 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-11-26 08:52:01
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <sys/epoll.h>
+
+#include <errno.h>
+#include <fcntl.h>
+
+#define BUFFER_LENGTH 1024
+#define EPOLL_SIZE 1024
+
+int main(int argc, char *argv[])
+{
+    int port = 9096;
+    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd < 0)
+    {
+        perror("socket");
+        return -1;
+    }
+
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(listenfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
+    {
+        perror("bind");
+        return -2;
+    }
+    if (listen(listenfd, 5) < 0)
+    {
+        perror("listen");
+        return -3;
+    }
+
+    int epoll_fd = epoll_create(EPOLL_SIZE);
+    struct epoll_event ev, events[EPOLL_SIZE] = {0};
+
+    ev.events = EPOLLIN;
+    ev.data.fd = listenfd;
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listenfd, &ev);
+
+    while (1)
+    {
+        int nready = epoll_wait(epoll_fd, events, EPOLL_SIZE, -1);
+        if (nready == -1)
+        {
+            printf("epoll_wait\n");
+            break;
+        }
+
+        for (int i = 0; i < nready; i++)
+        {
+            if (events[i].data.fd == listenfd)
+            {
+                struct sockaddr_in client_addr = {0};
+                socklen_t client_len = sizeof(client_addr);
+
+                int clientfd = accept(listenfd, (struct sockaddr *)&client_addr, &client_len);
+                if (clientfd <= 0)
+                    continue;
+
+                char str[INET_ADDRSTRLEN] = {0};
+                printf("recvived from %s at port %d, sockfd:%d, clientfd:%d\n", inet_ntop(AF_INET, &client_addr.sin_addr, str, sizeof(str)),
+                       ntohs(client_addr.sin_port), listenfd, clientfd);
+
+                ev.events = EPOLLIN | EPOLLET;
+                ev.data.fd = clientfd;
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, clientfd, &ev);
+            }
+            else
+            {
+                int clientfd = events[i].data.fd;
+
+                char buffer[BUFFER_LENGTH] = {0};
+                int ret = recv(clientfd, buffer, BUFFER_LENGTH, 0);
+                if (ret < 0)
+                {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    {
+                        printf("read all data");
+                    }
+
+                    close(clientfd);
+
+                    ev.events = EPOLLIN | EPOLLET;
+                    ev.data.fd = clientfd;
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, clientfd, &ev);
+                }
+                else if (ret == 0)
+                {
+                    printf(" disconnect %d\n", clientfd);
+
+                    close(clientfd);
+
+                    ev.events = EPOLLIN | EPOLLET;
+                    ev.data.fd = clientfd;
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, clientfd, &ev);
+
+                    break;
+                }
+                else
+                {
+                    printf("Recv: %s, %d Bytes\n", buffer, ret);
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+```
+</details>
