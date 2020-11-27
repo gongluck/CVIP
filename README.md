@@ -5965,7 +5965,7 @@ int main(int argc, char *argv[])
   - 事件分发器：将多路复用器中返回的就绪事件分到对应的处理函数中。
   - 事件处理器：负责处理特定事件的处理函数。
 
-#### 1.2 Reactor实现
+#### 1.2 [Reactor实现](./code/io/reactor.c)
 
 <details>
 <summary>Reactor实现</summary>
@@ -6299,3 +6299,143 @@ int main()
 }
 ```
 </details>
+
+### 2.日志模块
+
+#### 2.1 log4cpp模块
+
+![log4cpp模块图](./images/log4cpp模块图.png)
+
+- log4cpp有且只⼀个根Category，可以有多个⼦Category组成树型结构。
+
+  ![log4cpp的appender种类](./images/log4cpp的appender种类.png)
+
+- Appender负责将⽇志写⼊相应的设备，⽐如控制台、⽂件、调试器、Windows⽇志、syslog等。
+
+- Layout控制输出⽇志的显示样式。Log4cpp内置了4种Layout：
+
+  - PassThroughLayout：直通布局。
+  - SimpleLayout：简单布局。它只会为你添加“优先级”的输出。
+  - BasicLayout：基本布局。它会为你添加“时间”、“优先级”、“种类”、“NDC”。
+  - PatternLayout：格式化布局。它的使⽤⽅式类似C语⾔中的printf，使⽤格式化它符串来描述输出格式。
+
+#### 2.2 log4cpp编译安装
+
+```shell
+wget https://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/log4cpp-1.1.3.tar.gz
+tar zxf log4cpp-1.1.3.tar.gz
+cd log4cpp
+./configure
+make -j 8
+sudo make install
+sudo ldconfig
+```
+
+#### 2.3 [log4cpp例子](./code/log/log4cpp)
+
+- [例子1](./code/log/log4cpp/log1.cpp)
+
+  <details>
+  <summary>例子1</summary>
+  ```C++
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-27 21:12:58 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-27 21:30:54
+   */
+
+  // g++ log1.cpp -llog4cpp -lpthread
+
+  #include "log4cpp/Category.hh"
+  #include "log4cpp/FileAppender.hh"
+  #include "log4cpp/OstreamAppender.hh"
+  #include "log4cpp/BasicLayout.hh"
+
+  int main()
+  {
+      // 实例化一个layout对象
+      log4cpp::Layout *layout = new log4cpp::BasicLayout();
+      // 初始化一个appender对象
+      log4cpp::Appender *appender = new log4cpp::FileAppender("FileAppender","./log1.log");
+      log4cpp::Appender *osappender = new log4cpp::OstreamAppender("OstreamAppender",&std::cout);
+      // 把layout对象附着在appender对象上，一个layout格式样式对应一个appender
+      appender->setLayout(layout);
+      // 实例化一个category对象
+      log4cpp::Category &warn_log = log4cpp::Category::getInstance("gongluck"); // 单例工厂
+      // 设置additivity为false，替换已有的appender，不继承父类appender
+      warn_log.setAdditivity(false);
+      // 把appender对象附到category上
+      warn_log.setAppender(appender);
+      warn_log.addAppender(osappender);
+      // 设置category的优先级，低于此优先级的日志不被记录
+      warn_log.setPriority(log4cpp::Priority::INFO);
+      // 记录一些日志
+      warn_log.info("Program info which cannot be wirten");
+      warn_log.debug("This debug message will fail to write");
+      warn_log.alert("Alert info");
+      // 其他记录日志方式
+      warn_log.log(log4cpp::Priority::WARN, "This will be a logged warning");
+
+      log4cpp::Priority::PriorityLevel priority = log4cpp::Priority::DEBUG;
+      warn_log.log(priority, "Importance depends on context");
+      warn_log.critStream() << "This will show up << as " << 1 << " critical message";
+      // clean up and flush all appenders
+      log4cpp::Category::shutdown();
+      return 0;
+  }
+  ```
+  </details>
+  ```
+
+- [例子2](./code/log/log4cpp/log2.cpp)
+
+  <details>
+  <summary>例子2</summary>
+  
+  ```C++
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-11-27 21:31:03 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-11-27 21:44:29
+   */
+  
+  // g++ log2.cpp -llog4cpp -lpthread
+  
+  #include "log4cpp/Category.hh"
+  #include "log4cpp/PropertyConfigurator.hh"
+  
+  int main()
+  {
+      try
+      {
+          log4cpp::PropertyConfigurator::configure("./log2.conf");
+      }
+      catch (log4cpp::ConfigureFailure &f)
+      {
+          std::cout << "Configure Problem " << f.what() << std::endl;
+          return -1;
+      }
+  
+      // 实例化category对象
+      log4cpp::Category &root = log4cpp::Category::getRoot();
+  
+      log4cpp::Category &category1 = log4cpp::Category::getInstance(std::string("category1"));
+      log4cpp::Category &category3 = log4cpp::Category::getInstance(std::string("category1.category2"));
+     
+      category1.info("This is some info");
+      category1.alert("A warning");
+  
+      category3.debug("This debug message will fail to write");
+      category3.alert("All hands abandon ship");
+      category3.critStream() << "This will show up << as " << 1 << " critical message";
+      category3 << log4cpp::Priority::ERROR<< "And this will be an error";
+      category3.log(log4cpp::Priority::WARN, "This will be a logged warning");
+      
+      log4cpp::Category::shutdown();
+      return 0;
+  }
+  ```
+  </details>
+  
