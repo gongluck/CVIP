@@ -6337,6 +6337,7 @@ sudo ldconfig
 
   <details>
   <summary>例子1</summary>
+  
   ```C++
   /*
    * @Author: gongluck 
@@ -6386,7 +6387,6 @@ sudo ldconfig
   }
   ```
   </details>
-  ```
 
 - [例子2](./code/log/log4cpp/log2.cpp)
 
