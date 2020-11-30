@@ -2,8 +2,23 @@
  * @Author: gongluck 
  * @Date: 2020-11-26 09:41:40 
  * @Last Modified by: gongluck
- * @Last Modified time: 2020-11-26 16:58:43
+ * @Last Modified time: 2020-11-30 13:47:31
  */
+
+/*
+增大允许打开的文件数——修改系统配置文件
+sudo vim /etc/security/limits.conf 
+#在最后加入  
+root soft nofile 65535
+root hard nofile 65535
+* soft nofile 65535
+* hard nofile 65535
+
+最前的 * 表示所有用户，可根据需要设置某一用户，例如
+gongluck soft nofile 8192  
+gongluck hard nofile 8192  
+注意"nofile"项有两个可能的限制措施。就是项下的hard和soft。 要使修改过得最大打开文件数生效，必须对这两种限制进行设定。 如果使用"-"字符设定, 则hard和soft设定会同时被设定。
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,8 +32,9 @@
 #include <errno.h>
 
 #define BUFFER_LENGTH 4096
-#define MAX_EPOLL_EVENTS 1024
+#define MAX_EPOLL_EVENTS (1024 * 50) // 要做百万并发，要调大这个数值(1024*1024),但是要改malloc，要用posix_memalign
 #define SERVER_PORT 8888
+#define LISTEN_PORT_COUNT 100
 
 typedef int NCALLBACK(int, int, void *);
 
@@ -29,7 +45,7 @@ struct ntyevent
     void *arg;
     int (*callback)(int fd, int events, void *arg);
 
-    int status;//是否已经添加到epoll中
+    int status; //是否已经添加到epoll中
     char buffer[BUFFER_LENGTH];
     int length;
     long last_active;
@@ -38,8 +54,11 @@ struct ntyevent
 struct ntyreactor
 {
     int epfd;
-    struct ntyevent events[MAX_EPOLL_EVENTS];
+    struct ntyevent *events;
 };
+
+int recv_cb(int fd, int events, void *arg);
+int send_cb(int fd, int events, void *arg);
 
 void nty_event_set(struct ntyevent *ev, int fd, NCALLBACK callback, void *arg)
 {
@@ -233,18 +252,36 @@ int ntyreactor_init(struct ntyreactor *reactor)
         printf("create epfd in %s err %s\n", __func__, strerror(errno));
         return -2;
     }
+
+    if (MAX_EPOLL_EVENTS > 1024)
+    {
+        posix_memalign((void**)&reactor->events, 4096, (MAX_EPOLL_EVENTS) * sizeof(struct ntyevent));
+    }
+    else
+    {
+        reactor->events = (struct ntyevent *)malloc((MAX_EPOLL_EVENTS) * sizeof(struct ntyevent));
+    }
+    if (reactor->events == NULL)
+    {
+        printf("create epfd in %s err %s\n", __func__, strerror(errno));
+        close(reactor->epfd);
+        return -3;
+    }
 }
 
 int ntyreactor_destory(struct ntyreactor *reactor)
 {
     close(reactor->epfd);
-    
+    free(reactor->events);
+
     return 0;
 }
 
 int ntyreactor_addlistener(struct ntyreactor *reactor, int sockfd, NCALLBACK *acceptor)
 {
     if (reactor == NULL)
+        return -1;
+    if (reactor->events == NULL)
         return -1;
 
     nty_event_set(&reactor->events[sockfd], sockfd, acceptor, reactor);
@@ -259,13 +296,15 @@ int ntyreactor_run(struct ntyreactor *reactor)
         return -1;
     if (reactor->epfd < 0)
         return -1;
+    if (reactor->events == NULL)
+        return -1;
 
     struct epoll_event events[MAX_EPOLL_EVENTS + 1];
     int checkpos = 0, i;
     while (1)
     {
         long now = time(NULL);
-        for (i = 0; i < MAX_EPOLL_EVENTS/10; i++, checkpos++)
+        for (i = 0; i < MAX_EPOLL_EVENTS / 10; i++, checkpos++)
         {
             if (checkpos == MAX_EPOLL_EVENTS)
             {
@@ -311,16 +350,24 @@ int ntyreactor_run(struct ntyreactor *reactor)
 int main()
 {
     unsigned short port = SERVER_PORT;
-    int sockfd = init_sock(port);
 
-    struct ntyreactor reactor;
-    ntyreactor_init(&reactor);
+    struct ntyreactor *reactor = (struct ntyreactor *)malloc(sizeof(struct ntyreactor));
+    ntyreactor_init(reactor);
 
-    ntyreactor_addlistener(&reactor, sockfd, accept_cb);
-    ntyreactor_run(&reactor);
+    int listenfd[LISTEN_PORT_COUNT];
+    int i = 0;
+    for (i = 0; i < LISTEN_PORT_COUNT; i++)
+    {
+        listenfd[i] = init_sock(port + i);
+        ntyreactor_addlistener(reactor, listenfd[i], accept_cb);
+    }
 
-    ntyreactor_destory(&reactor);
-    close(sockfd);
+    ntyreactor_run(reactor);
+    ntyreactor_destory(reactor);
+    for (i = 0; i < LISTEN_PORT_COUNT; i++)
+    {
+        close(listenfd[i]);
+    }
 
     return 0;
 }
