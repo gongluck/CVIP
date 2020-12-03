@@ -6475,3 +6475,127 @@ sudo ldconfig
 - Linux内核协议栈做了太多太繁重的工作。从网卡中断带来的硬中断处理程序开始，到软中断中的各层网络协议处理，最后再到应用程序，这个路径实在是太长了，就会导致网络包的处理优化，到了一定程度后，就无法更进一步了。
 - 要解决这个问题，最重要就是跳过内核协议栈的冗长路径，把网络包直接送到要处理的应用程序那里去。这里有两种常见的机制，DPDK和XDP。
 
+## 六、性能测试专题
+
+### 1.性能分析工具
+
+#### 1.1 Valgrind
+
+- Valgrind是一套Linux下，开放源代码（GPL V2）的仿真调试工具的集合。Valgrind由内核（core）以及基于内核的其他调试工具组成。内核类似于一个框架（framework）， 它模拟了一个CPU环境，并提供服务给其他工具；而其他工具则类似于插件(plug-in)，利用内核提供的服务完成各种特定的内存调试任务。
+
+  ![valgrind体系结构](./images/valgrind体系结构.png)
+
+- 编译安装
+
+  ```shell
+  wget https://sourceware.org/pub/valgrind/valgrind-3.16.1.tar.bz2
+  tar -jxvf valgrind-3.16.1.tar.bz2
+  cd valgrind-3.16.1
+  ./configure
+  make -j 8
+  sudo make install
+  ```
+
+- 使用valgrind
+
+  - 为了使valgrind发现的错误更精确，如能够定位到源代码行，建议在编译时加上**-g**参数，编译优化选项请选择**-O0**，虽然这会降低程序的执行效率。
+
+    ```shell
+    gcc -g -O0 test.c
+    ```
+
+  - 使用命令
+
+    ```shell
+    valgrind [valgrind-options] your-prog [your-progoptions]
+    valgrind --log-file=./valgrind_report.log --leak-check=full --show-leak-kinds=all --showreachable=no --track-origins=yes your-prog [your-progoptions]
+    ```
+
+#### 1.2 GDB
+
+- 一般要调试某个程序，为了能清晰地看到调试的每一行代码、调用的堆栈信息、变量名和函数名等信息，需要调试程序含有调试符号信息。使用**gcc**编译程序时，如果加上**-g**选项即可在编译后的程序中保留调试符号信息。
+
+- 除了不加**-g**选项，也可以使用Linux的**strip**命令移除掉某个程序中的调试信息。
+
+  ```shell
+  strip a.out
+  ```
+
+- gdb直接调试目标程序
+
+  ```shell
+  gdb a.out
+  ```
+
+- gdb附加进程
+
+  ```shell
+  sudo gdb attach pid
+  ```
+
+- gdb调试core文件
+
+  ```shell
+  gdb filename corename
+  ```
+
+  - **Linux**系统默认是不开启程序崩溃产生**core**文件这一机制的，我们可以使用**ulimit -a**命令来查看系统是否开启了这一机制。开启使用命令：
+
+    ```shell
+    # 将ulimit -c unlimited放入/etc/profile中，然后执行source /etc/profile即可立即生效。
+    ulimit -c unlimited
+    ```
+
+  - 系统默认**corefile**是生成在程序的执行目录下或者程序启动调用了**chdir**之后的目录，我们可以通过设置生成**corefile**的格式来控制它，让其生成在固定的目录下，并让每次启动后自动生效。
+
+    ```shell
+    # 打开/etc/sysctl.conf
+    sudo vi /etc/sysctl.conf
+    # 末尾添加
+    kernel.core_pattern=/home/gongluck/core_dump/core-%e-%p-%t
+    # 创建目录
+    mkdir /home/gongluck/core_dump
+    # 执行生效
+    sudo sysctl -p /etc/sysctl.conf
+    ```
+
+- gdb命令
+
+  | 命令        | 说明                                                         |
+  | ----------- | ------------------------------------------------------------ |
+  | run         | 运行一个程序                                                 |
+  | continue    | 让暂停的程序继续运行                                         |
+  | next        | 运行到下一行                                                 |
+  | step        | 如果有调用函数，进入调用的函数内部，相当于step into          |
+  | until       | 运行到指定行停下来                                           |
+  | finish      | 结束当前调用函数，到上一层函数调用处                         |
+  | return      | 结束当前调用函数并返回指定值，到上一层函数调用处             |
+  | jump        | 将当前程序执行流跳转到指定行或地址                           |
+  | print       | 打印变量或寄存器值<br>当使用**print**命令打印一个字符串或者字符数组时，如果该字符串太长，**print**命令默认显示不全的，可以通过在**GDB**中输入**set print element 0**命令设置一下，这样再次使用 **print**命令就能完整地显示该变量的所有字符串了。<br>可以使用**p strerror(errno)**将错误码对应的文字信息打印出来<br>**print**命令同时也可以修改变量的值，**p ennro = 0** |
+  | backtrace   | 查看当前线程的调用堆栈                                       |
+  | frame       | 切换到当前调用线程的指定堆栈，具体堆栈通过堆栈序号指定       |
+  | thread      | 切换到指定线程<br>**GDB**提供了一个在调试时将程序执行流锁定在当前调试线程的命令**set scheduler-locking on**。当然也可以关闭这一选项，使用**set scheduler-locking off** |
+  | break       | 添加断点<br>条件断点的命令是**break [lineNo] if [condition]** |
+  | tbreak      | 添加临时断点                                                 |
+  | delete      | 删除断点                                                     |
+  | enable      | 启用某个断点                                                 |
+  | disable     | 禁用某个断点                                                 |
+  | watch       | 监视某一个变量或内存地址的值是否发生变化                     |
+  | list        | 显示源码                                                     |
+  | info        | 查看断点/线程等信息。<br>**info functions**这个命令会显示程序中所有函数的名词，参数格式，返回值类型以及函数处于哪个代码文件中<br>**info threads**查看线程信息<br>**info args**查看当前函数的参数值 |
+  | ptype       | 查看变量类型                                                 |
+  | disassemble | 查看汇编代码                                                 |
+  | set args    | 设置程序启动命令行参数                                       |
+  | show args   | 查看设置的命令行参数                                         |
+
+  - **GDB**调试器提供了一个选项叫**follow-fork**，可以使用**show follow-fork mode**查看当前值，也可以通过**set follow-fork mode**来设置是当一个进程**fork**出新的子进程时，**GDB**是继续调试父进程还是子进程（取值是**child**），默认是父进程（ 取值是**parent**）。
+
+- 开启**GDB TUI**模式
+
+  - 使用**gdbtui**命令或者**gdb-tui**命令开启一个调试。
+
+    ```shell
+    gdbtui -q 需要调试的程序名
+    ```
+
+  - 直接使用**GDB**调试代码，在需要的时候使用切换键**Ctrl + x**，然后按**a**，进入常规**GDB**和**GDB TUI**的来回切换。
