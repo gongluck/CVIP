@@ -6918,5 +6918,39 @@ sudo ldconfig
   cat /proc/loadavg
   ```
 
-  
 
+## 七、代码工程化专题
+
+### 1.代码版本工具
+
+#### 1.1 git
+
+![git原理](./images/git原理.png)
+
+![git文件状态](./images/git文件状态.png)
+
+- 常用命令
+
+  ```shell
+  # 查看分支
+  git branch
+  # 创建develop分支
+  git branch develop
+  # 创建FT-123456的一个feature分支
+  git checkout –b feature/FT-123456
+  # 切换分支
+  git checkout develop
+  # 合并分支
+  git merge feature/FT-123456
+  # 删除FT-123456的feature分支
+  git branch –d feature/FT-123456
+  # 推送分支
+  git push –u origin hotfix/ISSUE-345678
+  # 整理commit
+  git rebase -i
+  # 子模块
+  git submodule add giturl loaclpath
+  git submodule update --init --recurise
+  ```
+
+  
