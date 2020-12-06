@@ -7059,3 +7059,934 @@ set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
 include(CPack)
 ```
 </details>
+
+## 八、分布式存储专题
+
+### 1.FastDFS
+
+![FastDFS架构](./images/FastDFS架构.png)
+
+#### 1.1 编译安装
+
+```shell
+# 下载
+wget https://github.com/happyfish100/libfastcommon/archive/V1.0.43.tar.gz
+# 解压
+sudo tar -xzvf V1.0.43.tar.gz libfastcommon-1.0.43
+# 进入解压后的目录
+cd libfastcommon-1.0.43
+# 编译代码
+sudo ./make.sh
+# 安装
+sudo ./make.sh install
+#export LD_LIBRARY_PATH=/usr/lib64/:$LD_LIBRARY_PATH
+sudo ln -s /usr/lib64/libfastcommon.so /usr/lib/libfastcommon.so
+
+# 下载
+wget https://github.com/happyfish100/fastdfs/archive/V6.06.tar.gz
+# 解压
+sudo tar -zxvf V6.06.tar.gz fastdfs-6.06
+# 进入解压后的目录
+cd fastdfs-6.06
+# 编译代码
+sudo ./make.sh
+# 安装
+sudo ./make.sh install
+```
+
+#### 1.2 [tracker.conf](./code/fastfds/tracker.conf)
+
+<details>
+<summary>tracker.conf</summary>
+
+```shell
+# is this config file disabled
+# false for enabled
+# true for disabled
+disabled = false
+
+# bind an address of this host
+# empty for bind all addresses of this host
+bind_addr = 172.28.123.249  #tracker 所在服务器的 ip
+
+# the tracker server port
+port = 22122    #服务器端口
+
+# connect timeout in seconds
+# default value is 30
+# Note: in the intranet network (LAN), 2 seconds is enough.
+connect_timeout = 5
+
+# network timeout in seconds for send and recv
+# default value is 30
+network_timeout = 60
+
+# the base path to store data and log files
+base_path = /mnt/e/ubuntu/tracker    #表示tracker日志存放的路径，此路径必须已经存在
+
+# max concurrent connections this server support
+# you should set this parameter larger, eg. 10240
+# default value is 256
+max_connections = 1024
+
+# accept thread count
+# default value is 1 which is recommended
+# since V4.07
+accept_threads = 1
+
+# work thread count
+# work threads to deal network io
+# default value is 4
+# since V2.00
+work_threads = 4
+
+# the min network buff size
+# default value 8KB
+min_buff_size = 8KB
+
+# the max network buff size
+# default value 128KB
+max_buff_size = 128KB
+
+# the method for selecting group to upload files
+# 0: round robin
+# 1: specify group
+# 2: load balance, select the max free space group to upload file
+store_lookup = 2
+
+# which group to upload file
+# when store_lookup set to 1, must set store_group to the group name
+store_group = group2
+
+# which storage server to upload file
+# 0: round robin (default)
+# 1: the first server order by ip address
+# 2: the first server order by priority (the minimal)
+# Note: if use_trunk_file set to true, must set store_server to 1 or 2
+store_server = 0
+
+# which path (means disk or mount point) of the storage server to upload file
+# 0: round robin
+# 2: load balance, select the max free space path to upload file
+store_path = 0
+
+# which storage server to download file
+# 0: round robin (default)
+# 1: the source storage server which the current file uploaded to
+download_server = 0
+
+# reserved storage space for system or other applications.
+# if the free(available) space of any stoarge server in 
+# a group <= reserved_storage_space, no file can be uploaded to this group.
+# bytes unit can be one of follows:
+### G or g for gigabyte(GB)
+### M or m for megabyte(MB)
+### K or k for kilobyte(KB)
+### no unit for byte(B)
+### XX.XX% as ratio such as: reserved_storage_space = 10%
+reserved_storage_space = 20%
+
+#standard log level as syslog, case insensitive, value list:
+### emerg for emergency
+### alert
+### crit for critical
+### error
+### warn for warning
+### notice
+### info
+### debug
+log_level = info
+
+#unix group name to run this program, 
+#not set (empty) means run by the group of current user
+run_by_group=
+
+#unix username to run this program,
+#not set (empty) means run by current user
+run_by_user =
+
+# allow_hosts can ocur more than once, host can be hostname or ip address,
+# "*" (only one asterisk) means match all ip addresses
+# we can use CIDR ips like 192.168.5.64/26
+# and also use range like these: 10.0.1.[0-254] and host[01-08,20-25].domain.com
+# for example:
+# allow_hosts=10.0.1.[1-15,20]
+# allow_hosts=host[01-08,20-25].domain.com
+# allow_hosts=192.168.5.64/26
+allow_hosts = *
+
+# sync log buff to disk every interval seconds
+# default value is 10 seconds
+sync_log_buff_interval = 1
+
+# check storage server alive interval seconds
+check_active_interval = 120
+
+# thread stack size, should >= 64KB
+# default value is 256KB
+thread_stack_size = 256KB
+
+# auto adjust when the ip address of the storage server changed
+# default value is true
+storage_ip_changed_auto_adjust = true
+
+# storage sync file max delay seconds
+# default value is 86400 seconds (one day)
+# since V2.00
+storage_sync_file_max_delay = 86400
+
+# the max time of storage sync a file
+# default value is 300 seconds
+# since V2.00
+storage_sync_file_max_time = 300
+
+# if use a trunk file to store several small files
+# default value is false
+# since V3.00
+use_trunk_file = false 
+
+# the min slot size, should <= 4KB
+# default value is 256 bytes
+# since V3.00
+slot_min_size = 256
+
+# the max slot size, should > slot_min_size
+# store the upload file to trunk file when it's size <=  this value
+# default value is 16MB
+# since V3.00
+slot_max_size = 1MB
+
+# the alignment size to allocate the trunk space
+# default value is 0 (never align)
+# since V6.05
+# NOTE: the larger the alignment size, the less likely of disk
+#       fragmentation, but the more space is wasted.
+trunk_alloc_alignment_size = 256
+
+# if merge contiguous free spaces of trunk file
+# default value is false
+# since V6.05
+trunk_free_space_merge = true
+
+# if delete / reclaim the unused trunk files
+# default value is false
+# since V6.05
+delete_unused_trunk_files = false
+
+# the trunk file size, should >= 4MB
+# default value is 64MB
+# since V3.00
+trunk_file_size = 64MB
+
+# if create trunk file advancely
+# default value is false
+# since V3.06
+trunk_create_file_advance = false
+
+# the time base to create trunk file
+# the time format: HH:MM
+# default value is 02:00
+# since V3.06
+trunk_create_file_time_base = 02:00
+
+# the interval of create trunk file, unit: second
+# default value is 38400 (one day)
+# since V3.06
+trunk_create_file_interval = 86400
+
+# the threshold to create trunk file
+# when the free trunk file size less than the threshold,
+# will create he trunk files
+# default value is 0
+# since V3.06
+trunk_create_file_space_threshold = 20G
+
+# if check trunk space occupying when loading trunk free spaces
+# the occupied spaces will be ignored
+# default value is false
+# since V3.09
+# NOTICE: set this parameter to true will slow the loading of trunk spaces 
+# when startup. you should set this parameter to true when neccessary.
+trunk_init_check_occupying = false
+
+# if ignore storage_trunk.dat, reload from trunk binlog
+# default value is false
+# since V3.10
+# set to true once for version upgrade when your version less than V3.10
+trunk_init_reload_from_binlog = false
+
+# the min interval for compressing the trunk binlog file
+# unit: second, 0 means never compress
+# FastDFS compress the trunk binlog when trunk init and trunk destroy
+# recommand to set this parameter to 86400 (one day)
+# default value is 0
+# since V5.01
+trunk_compress_binlog_min_interval = 86400
+
+# the interval for compressing the trunk binlog file
+# unit: second, 0 means never compress
+# recommand to set this parameter to 86400 (one day)
+# default value is 0
+# since V6.05
+trunk_compress_binlog_interval = 86400
+
+# compress the trunk binlog time base, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+# default value is 03:00
+# since V6.05
+trunk_compress_binlog_time_base = 03:00
+
+# max backups for the trunk binlog file
+# default value is 0 (never backup)
+# since V6.05
+trunk_binlog_max_backups = 7
+
+# if use storage server ID instead of IP address
+# if you want to use dual IPs for storage server, you MUST set
+# this parameter to true, and configure the dual IPs in the file
+# configured by following item "storage_ids_filename", such as storage_ids.conf
+# default value is false
+# since V4.00
+use_storage_id = false
+
+# specify storage ids filename, can use relative or absolute path
+# this parameter is valid only when use_storage_id set to true
+# since V4.00
+storage_ids_filename = storage_ids.conf
+
+# id type of the storage server in the filename, values are:
+## ip: the ip address of the storage server
+## id: the server id of the storage server
+# this paramter is valid only when use_storage_id set to true
+# default value is ip
+# since V4.03
+id_type_in_filename = id
+
+# if store slave file use symbol link
+# default value is false
+# since V4.01
+store_slave_file_use_link = false
+
+# if rotate the error log every day
+# default value is false
+# since V4.02
+rotate_error_log = false
+
+# rotate error log time base, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+# default value is 00:00
+# since V4.02
+error_log_rotate_time = 00:00
+
+# if compress the old error log by gzip
+# default value is false
+# since V6.04
+compress_old_error_log = false
+
+# compress the error log days before
+# default value is 1
+# since V6.04
+compress_error_log_days_before = 7
+
+# rotate error log when the log file exceeds this size
+# 0 means never rotates log file by log file size
+# default value is 0
+# since V4.02
+rotate_error_log_size = 0
+
+# keep days of the log files
+# 0 means do not delete old log files
+# default value is 0
+log_file_keep_days = 0
+
+# if use connection pool
+# default value is false
+# since V4.05
+use_connection_pool = true
+
+# connections whose the idle time exceeds this time will be closed
+# unit: second
+# default value is 3600
+# since V4.05
+connection_pool_max_idle_time = 3600
+
+# HTTP port on this tracker server
+http.server_port = 8080
+
+# check storage HTTP server alive interval seconds
+# <= 0 for never check
+# default value is 30
+http.check_alive_interval = 30
+
+# check storage HTTP server alive type, values are:
+#   tcp : connect to the storge server with HTTP port only, 
+#        do not request and get response
+#   http: storage check alive url must return http status 200
+# default value is tcp
+http.check_alive_type = tcp
+
+# check storage HTTP server alive uri/url
+# NOTE: storage embed HTTP server support uri: /status.html
+http.check_alive_uri = /status.html
+```
+</details>
+
+#### 1.3 [storage.conf](./code/fastfds/storage.conf)
+
+<details>
+<summary>storage.conf</summary>
+
+```shell
+# is this config file disabled
+# false for enabled
+# true for disabled
+disabled = false
+
+# the name of the group this storage server belongs to
+#
+# comment or remove this item for fetching from tracker server,
+# in this case, use_storage_id must set to true in tracker.conf,
+# and storage_ids.conf must be configured correctly.
+group_name = group1 #组，默认设置即可
+
+# bind an address of this host
+# empty for bind all addresses of this host
+bind_addr = 172.28.123.249  #storage 所在服务器 ip
+
+# if bind an address of this host when connect to other servers 
+# (this storage server as a client)
+# true for binding the address configured by the above parameter: "bind_addr"
+# false for binding any address of this host
+client_bind = true
+
+# the storage server port
+port = 23000    #服务器端口，默认设置即可
+
+# connect timeout in seconds
+# default value is 30
+# Note: in the intranet network (LAN), 2 seconds is enough.
+connect_timeout = 5
+
+# network timeout in seconds for send and recv
+# default value is 30
+network_timeout = 60
+
+# the heart beat interval in seconds
+# the storage server send heartbeat to tracker server periodically
+# default value is 30
+heart_beat_interval = 30
+
+# disk usage report interval in seconds
+# the storage server send disk usage report to tracker server periodically
+# default value is 300
+stat_report_interval = 60
+
+# the base path to store data and log files
+# NOTE: the binlog files maybe are large, make sure
+#       the base path has enough disk space,
+#       eg. the disk free space should > 50GB
+base_path = /mnt/e/ubuntu/storage    #用于storage存放日志，此目录必须存在
+
+# max concurrent connections the server supported,
+# you should set this parameter larger, eg. 10240
+# default value is 256
+max_connections = 1024
+
+# the buff size to recv / send data from/to network
+# this parameter must more than 8KB
+# 256KB or 512KB is recommended
+# default value is 64KB
+# since V2.00
+buff_size = 256KB
+
+# accept thread count
+# default value is 1 which is recommended
+# since V4.07
+accept_threads = 1
+
+# work thread count
+# work threads to deal network io
+# default value is 4
+# since V2.00
+work_threads = 4
+
+# if disk read / write separated
+##  false for mixed read and write
+##  true for separated read and write
+# default value is true
+# since V2.00
+disk_rw_separated = true
+
+# disk reader thread count per store path
+# for mixed read / write, this parameter can be 0
+# default value is 1
+# since V2.00
+disk_reader_threads = 1
+
+# disk writer thread count per store path
+# for mixed read / write, this parameter can be 0
+# default value is 1
+# since V2.00
+disk_writer_threads = 1
+
+# when no entry to sync, try read binlog again after X milliseconds
+# must > 0, default value is 200ms
+sync_wait_msec = 50
+
+# after sync a file, usleep milliseconds
+# 0 for sync successively (never call usleep)
+sync_interval = 0
+
+# storage sync start time of a day, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+sync_start_time = 00:00
+
+# storage sync end time of a day, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+sync_end_time = 23:59
+
+# write to the mark file after sync N files
+# default value is 500
+write_mark_file_freq = 500
+
+# disk recovery thread count
+# default value is 1
+# since V6.04
+disk_recovery_threads = 3
+
+# store path (disk or mount point) count, default value is 1
+store_path_count = 1
+
+# store_path#, based on 0, to configure the store paths to store files
+# if store_path0 not exists, it's value is base_path (NOT recommended)
+# the paths must be exist.
+#
+# IMPORTANT NOTE:
+#       the store paths' order is very important, don't mess up!!!
+#       the base_path should be independent (different) of the store paths
+
+store_path0 = /mnt/e/ubuntu/storage/fastdfs0  #真正存储数据的路径，此路径必须存在
+#store_path1 = /home/yuqing/fastdfs2
+
+# subdir_count  * subdir_count directories will be auto created under each 
+# store_path (disk), value can be 1 to 256, default value is 256
+subdir_count_per_path = 256
+
+# tracker_server can ocur more than once for multi tracker servers.
+# the value format of tracker_server is "HOST:PORT",
+#   the HOST can be hostname or ip address,
+#   and the HOST can be dual IPs or hostnames seperated by comma,
+#   the dual IPS must be an inner (intranet) IP and an outer (extranet) IP,
+#   or two different types of inner (intranet) IPs.
+#   for example: 192.168.2.100,122.244.141.46:22122
+#   another eg.: 192.168.1.10,172.17.4.21:22122
+
+tracker_server = 172.28.123.249:22122  #指定 tracker 服务器地址和端口。不能是 127.0.0.1
+#tracker_server = 192.168.209.122:22122
+
+#standard log level as syslog, case insensitive, value list:
+### emerg for emergency
+### alert
+### crit for critical
+### error
+### warn for warning
+### notice
+### info
+### debug
+log_level = info
+
+#unix group name to run this program, 
+#not set (empty) means run by the group of current user
+run_by_group =
+
+#unix username to run this program,
+#not set (empty) means run by current user
+run_by_user =
+
+# allow_hosts can ocur more than once, host can be hostname or ip address,
+# "*" (only one asterisk) means match all ip addresses
+# we can use CIDR ips like 192.168.5.64/26
+# and also use range like these: 10.0.1.[0-254] and host[01-08,20-25].domain.com
+# for example:
+# allow_hosts=10.0.1.[1-15,20]
+# allow_hosts=host[01-08,20-25].domain.com
+# allow_hosts=192.168.5.64/26
+allow_hosts = *
+
+# the mode of the files distributed to the data path
+# 0: round robin(default)
+# 1: random, distributted by hash code
+file_distribute_path_mode = 0
+
+# valid when file_distribute_to_path is set to 0 (round robin).
+# when the written file count reaches this number, then rotate to next path.
+# rotate to the first path (00/00) after the last path (such as FF/FF).
+# default value is 100
+file_distribute_rotate_count = 100
+
+# call fsync to disk when write big file
+# 0: never call fsync
+# other: call fsync when written bytes >= this bytes
+# default value is 0 (never call fsync)
+fsync_after_written_bytes = 0
+
+# sync log buff to disk every interval seconds
+# must > 0, default value is 10 seconds
+sync_log_buff_interval = 1
+
+# sync binlog buff / cache to disk every interval seconds
+# default value is 60 seconds
+sync_binlog_buff_interval = 1
+
+# sync storage stat info to disk every interval seconds
+# default value is 300 seconds
+sync_stat_file_interval = 300
+
+# thread stack size, should >= 512KB
+# default value is 512KB
+thread_stack_size = 512KB
+
+# the priority as a source server for uploading file.
+# the lower this value, the higher its uploading priority.
+# default value is 10
+upload_priority = 10
+
+# the NIC alias prefix, such as eth in Linux, you can see it by ifconfig -a
+# multi aliases split by comma. empty value means auto set by OS type
+# default values is empty
+if_alias_prefix =
+
+# if check file duplicate, when set to true, use FastDHT to store file indexes
+# 1 or yes: need check
+# 0 or no: do not check
+# default value is 0
+check_file_duplicate = 0
+
+# file signature method for check file duplicate
+## hash: four 32 bits hash code
+## md5: MD5 signature
+# default value is hash
+# since V4.01
+file_signature_method = hash
+
+# namespace for storing file indexes (key-value pairs)
+# this item must be set when check_file_duplicate is true / on
+key_namespace = FastDFS
+
+# set keep_alive to 1 to enable persistent connection with FastDHT servers
+# default value is 0 (short connection)
+keep_alive = 0
+
+# you can use "#include filename" (not include double quotes) directive to 
+# load FastDHT server list, when the filename is a relative path such as 
+# pure filename, the base path is the base path of current/this config file.
+# must set FastDHT server list when check_file_duplicate is true / on
+# please see INSTALL of FastDHT for detail
+##include /home/yuqing/fastdht/conf/fdht_servers.conf
+
+# if log to access log
+# default value is false
+# since V4.00
+use_access_log = false
+
+# if rotate the access log every day
+# default value is false
+# since V4.00
+rotate_access_log = false
+
+# rotate access log time base, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+# default value is 00:00
+# since V4.00
+access_log_rotate_time = 00:00
+
+# if compress the old access log by gzip
+# default value is false
+# since V6.04
+compress_old_access_log = false
+
+# compress the access log days before
+# default value is 1
+# since V6.04
+compress_access_log_days_before = 7
+
+# if rotate the error log every day
+# default value is false
+# since V4.02
+rotate_error_log = false
+
+# rotate error log time base, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+# default value is 00:00
+# since V4.02
+error_log_rotate_time = 00:00
+
+# if compress the old error log by gzip
+# default value is false
+# since V6.04
+compress_old_error_log = false
+
+# compress the error log days before
+# default value is 1
+# since V6.04
+compress_error_log_days_before = 7
+
+# rotate access log when the log file exceeds this size
+# 0 means never rotates log file by log file size
+# default value is 0
+# since V4.02
+rotate_access_log_size = 0
+
+# rotate error log when the log file exceeds this size
+# 0 means never rotates log file by log file size
+# default value is 0
+# since V4.02
+rotate_error_log_size = 0
+
+# keep days of the log files
+# 0 means do not delete old log files
+# default value is 0
+log_file_keep_days = 0
+
+# if skip the invalid record when sync file
+# default value is false
+# since V4.02
+file_sync_skip_invalid_record = false
+
+# if use connection pool
+# default value is false
+# since V4.05
+use_connection_pool = true
+
+# connections whose the idle time exceeds this time will be closed
+# unit: second
+# default value is 3600
+# since V4.05
+connection_pool_max_idle_time = 3600
+
+# if compress the binlog files by gzip
+# default value is false
+# since V6.01
+compress_binlog = true
+
+# try to compress binlog time, time format: Hour:Minute
+# Hour from 0 to 23, Minute from 0 to 59
+# default value is 01:30
+# since V6.01
+compress_binlog_time = 01:30
+
+# if check the mark of store path to prevent confusion
+# recommend to set this parameter to true
+# if two storage servers (instances) MUST use a same store path for
+# some specific purposes, you should set this parameter to false
+# default value is true
+# since V6.03
+check_store_path_mark = true
+
+# use the ip address of this storage server if domain_name is empty,
+# else this domain name will ocur in the url redirected by the tracker server
+http.domain_name =
+
+# the port of the web server on this storage server
+http.server_port = 8888
+```
+</details>
+
+#### 1.4 [client.conf](./code/fastfds/client.conf)
+
+<details>
+<summary>client.conf</summary>
+
+```shell
+# connect timeout in seconds
+# default value is 30s
+# Note: in the intranet network (LAN), 2 seconds is enough.
+connect_timeout = 5
+
+# network timeout in seconds
+# default value is 30s
+network_timeout = 60
+
+# the base path to store log files
+base_path = /mnt/e/ubuntu/client
+
+# tracker_server can ocur more than once for multi tracker servers.
+# the value format of tracker_server is "HOST:PORT",
+#   the HOST can be hostname or ip address,
+#   and the HOST can be dual IPs or hostnames seperated by comma,
+#   the dual IPS must be an inner (intranet) IP and an outer (extranet) IP,
+#   or two different types of inner (intranet) IPs.
+#   for example: 192.168.2.100,122.244.141.46:22122
+#   another eg.: 192.168.1.10,172.17.4.21:22122
+
+tracker_server = 172.28.123.249:22122
+#tracker_server = 192.168.0.197:22122
+
+#standard log level as syslog, case insensitive, value list:
+### emerg for emergency
+### alert
+### crit for critical
+### error
+### warn for warning
+### notice
+### info
+### debug
+log_level = info
+
+# if use connection pool
+# default value is false
+# since V4.05
+use_connection_pool = false
+
+# connections whose the idle time exceeds this time will be closed
+# unit: second
+# default value is 3600
+# since V4.05
+connection_pool_max_idle_time = 3600
+
+# if load FastDFS parameters from tracker server
+# since V4.05
+# default value is false
+load_fdfs_parameters_from_tracker = false
+
+# if use storage ID instead of IP address
+# same as tracker.conf
+# valid only when load_fdfs_parameters_from_tracker is false
+# default value is false
+# since V4.05
+use_storage_id = false
+
+# specify storage ids filename, can use relative or absolute path
+# same as tracker.conf
+# valid only when load_fdfs_parameters_from_tracker is false
+# since V4.05
+storage_ids_filename = storage_ids.conf
+
+
+#HTTP settings
+http.tracker_server_port = 80
+
+#use "#include" directive to include HTTP other settiongs
+##include http.conf
+```
+
+- 启动
+
+  ```shell
+  sudo fdfs_trackerd /mnt/e/Code/CVIP/code/fastfds/tracker.conf
+  sudo fdfs_storaged /mnt/e/Code/CVIP/code/fastfds/storage.conf
+  ```
+
+- 测试
+
+  ```shell
+  # 查看服务
+  fdfs_monitor /mnt/e/Code/CVIP/code/fastfds/client.conf
+  # 上传
+  fdfs_upload_file /mnt/e/Code/CVIP/code/fastfds/client.conf ./README.md
+  # 下载
+  fdfs_download_file /mnt/e/Code/CVIP/code/fastfds/client.conf group1/M00/00/00/rBx7-V_MGuWAF1sJAANQ-lXzICY3210.md
+  # 删除
+  fdfs_delete_file /mnt/e/Code/CVIP/code/fastfds/client.conf group1/M00/00/00/rBx7-V_MGuWAF1sJAANQ-lXzICY3210.md
+  ```
+  </details>
+  
+
+### 2.FastCGI
+
+#### 2.1 CGI工作方式
+
+- 传统**CGI**（Common Gateway Interface）方式是客户端有多少个请求，就开辟多少个子进程，每个子进程都需要启动自己的解释器、加载配置，连接其他服务器等初始化工作，这是**CGI**进程性能低下的主要原因。当用户请求非常多的时候，会占用大量的内存、cpu等资源，造成性能低下。
+
+  ![cgi工作方式](./images/cgi工作方式.png)
+
+- 与为每个请求创建一个新的进程不同，**FastCGI**使用持续的进程来处理一连串的请求。这些进程由 **FastCGI**进程管理器管理，而不是**web**服务器。
+
+  ![fastcgi工作方式](./images/fastcgi工作方式.png)
+
+- 由于**FastCGI**程序并不需要不断的产生新进程，可以大大降低服务器的压力并且产生较高的应用效率。它的速度效率最少要比**CGI**技术提高5倍以上。它还支持分布式的部署，即**FastCGI**程序可以在**web**服务器以外的主机上执行。
+
+#### 2.2 spawn-fcgi
+
+- **spawn-fcgi**是一个通用的**FastCGI**进程管理器，简单小巧。
+
+- **spawn-fcgi**使用**pre-fork**模型，功能主要是打开监听端口，绑定地址，然后**fork-and-exec**创建我们编写的**FastCGI**应用程序进程，退出完成工作。**FastCGI**应用程序初始化，然后进入死循环侦听**socket**的连接请求。
+
+- 编译安装**spawn-fcgi**
+
+  ```shell
+  wget http://download.lighttpd.net/spawn-fcgi/releases-1.6.x/spawn-fcgi-1.6.4.tar.gz
+  tar -zxvf spawn-fcgi-1.6.4.tar.gz
+  cd spawn-fcgi-1.6.4/
+  ./configure
+  make -j 8
+  sudo make install
+  #sudo ln -s /usr/local/lib/libfcgi.so.0 /usr/lib/libfcgi.so.0
+  ```
+
+#### 2.3 fcgi
+
+- 使用**C/C++**编写**FastCGI**应用程序，可以使用**FastCGI**软件开发套件或者其它开发框架，如**fcgi**。
+
+- 编译安装**fcgi**
+
+  ```shell
+  wget https://fossies.org/linux/www/old/fcgi-2.4.0.tar.gz
+  tar -zxvf fcgi-2.4.0.tar.gz
+  cd fcgi-2.4.0/
+  ./configure
+  make -j 8
+  sudo make install
+  ```
+
+- [fcgil例子](./code/fcgi/test.c)
+
+  <details>
+  <summary>fcgi例子</summary>
+  
+  ```C
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-12-06 09:31:16 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-12-06 10:36:28
+   */
+  
+  // gcc test.c -lfcgi
+  // spawn-fcgi -a 127.0.0.1 -p 8001 -f ./a.out
+  /* nginx conf add
+  location /test {
+  			fastcgi_pass 127.0.0.1:8001;
+  			fastcgi_index test;
+  			include /usr/local/nginx/conf/fastcgi.conf;
+  		}	
+  */
+  
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <unistd.h>
+  #include "fcgi_stdio.h"
+  
+  int main(int argc, char *argv[])
+  {
+      int count = 0;
+      //阻塞等待并监听某个端口，等待Nginx将数据发过来
+      while (FCGI_Accept() >= 0)
+      {
+          //如果想得到数据，需要从stdin去读，实际上从Nginx上去读
+          //如果想上传数据，需要往stdout写，实际上是给Nginx写数据
+          printf("Content-type: text/html\r\n");
+          printf("\r\n");
+          printf("<title>Fast CGI Hello!</title>");
+          printf("<h1>Fast CGI Hello!</h1>");
+          //SERVER_NAME：得到server的host名称
+          printf("Request number %d running on host <i>%s</i>\n",
+                 ++count, getenv("SERVER_NAME"));
+      }
+      return 0;
+  }
+  ```
+  </details>
+  
+
