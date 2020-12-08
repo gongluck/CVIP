@@ -7990,3 +7990,487 @@ http.tracker_server_port = 80
   </details>
   
 
+## 九、源码分析专题
+
+### 1.Nginx架构和Handler模块
+
+#### 1.1 Nginx架构
+
+- **nginx**在启动后，在**unix**系统中会以**daemon**的方式在后台运行，后台进程包含一个**master**进程和多个**worker**进程。
+- **master**进程主要用来管理**worker**进程，包含：
+  - 接收来自外界的信号，
+  - 向各**worker**进程发送信号，
+  - 监控**worker**进程的运行状态，
+  - 当**worker**进程退出后(异常情况下)，会自动重新启动新的**worker**进程。
+
+- 而基本的网络事件，则是放在**worker**进程中来处理了。多个**worker**进程之间是对等的，他们同等竞争来自客户端的请求，各进程互相之间是独立的。
+
+  ![nginx进程模型](./images/nginx进程模型.png)
+
+- 每个**worker**进程都是从**master**进程**fork**过来，在**master**进程里面，先建立好需要**listen**的**socket**（**listenfd**）之后，然后再**fork**出多个**worker**进程。所有**worker**进程的**listenfd**会在新连接到来时变得可读，为保证只有一个进程处理该连接，所有**worker **进程在注册**listenfd**读事件前抢**accept_mutex**，抢到互斥锁的那个进程注册**listenfd**读事件，在读事件里调用**accept**接受该连接。当一个**worker**进程在**accept**这个连接之后，就开始读取请求，解析请求，处理请求，产生数据后，再返回给客户端，最后才断开连接，这样一个完整的请求就是这样的了。
+- 对于每个**worker**进程来说，独立的进程，不需要加锁，所以省掉了锁带来的开销，同时在编程以及问题查找时，也会方便很多。其次，采用独立的进程，可以让互相之间不会影响，一个进程退出后，其它进程还在工作，服务不会中断，**master**进程则很快启动新的**worker**进程。
+- **nginx**采用了异步非阻塞的方式来处理请求。非阻塞就是，事件没有准备好，马上返回**EAGAIN**。
+- **nginx**里面的定时器事件是放在一颗维 护定时器的红黑树里面，每次在进入**epoll_wait**前，先从该红黑树里面拿到所有定时器事件的最小时间，在计算出**epoll_wait**的超时时间后进入**epoll_wait**。所以，当没有事件产生，也没有中断信号时，**epoll_wait**会超时，也就是说，定时器事件到了。这时，**nginx**会检查所有的超时事件，将他们的状态设置为超时，然后再去处理网络事件。
+
+#### 1.2 Nginx基础概念
+
+- **connection**
+
+  <details>
+  <summary>ngx_connection_s</summary>
+  
+  ```C
+  struct ngx_connection_s {
+      void               *data;
+      ngx_event_t        *read;
+      ngx_event_t        *write;
+  
+      ngx_socket_t        fd;
+  
+      ngx_recv_pt         recv;
+      ngx_send_pt         send;
+      ngx_recv_chain_pt   recv_chain;
+      ngx_send_chain_pt   send_chain;
+  
+      ngx_listening_t    *listening;
+  
+      off_t               sent;
+  
+      ngx_log_t          *log;
+  
+      ngx_pool_t         *pool;
+  
+      int                 type;
+  
+      struct sockaddr    *sockaddr;
+      socklen_t           socklen;
+      ngx_str_t           addr_text;
+  
+      ngx_proxy_protocol_t  *proxy_protocol;
+  
+  #if (NGX_SSL || NGX_COMPAT)
+      ngx_ssl_connection_t  *ssl;
+  #endif
+  
+      ngx_udp_connection_t  *udp;
+  
+      struct sockaddr    *local_sockaddr;
+      socklen_t           local_socklen;
+  
+      ngx_buf_t          *buffer;
+  
+      ngx_queue_t         queue;
+  
+      ngx_atomic_uint_t   number;
+  
+      ngx_uint_t          requests;
+  
+      unsigned            buffered:8;
+  
+      unsigned            log_error:3;     /* ngx_connection_log_error_e */
+  
+      unsigned            timedout:1;
+      unsigned            error:1;
+      unsigned            destroyed:1;
+  
+      unsigned            idle:1;
+      unsigned            reusable:1;
+      unsigned            close:1;
+      unsigned            shared:1;
+  
+      unsigned            sendfile:1;
+      unsigned            sndlowat:1;
+      unsigned            tcp_nodelay:2;   /* ngx_connection_tcp_nodelay_e */
+      unsigned            tcp_nopush:2;    /* ngx_connection_tcp_nopush_e */
+  
+      unsigned            need_last_buf:1;
+  
+  #if (NGX_HAVE_AIO_SENDFILE || NGX_COMPAT)
+      unsigned            busy_count:2;
+  #endif
+  
+  #if (NGX_THREADS || NGX_COMPAT)
+      ngx_thread_task_t  *sendfile_task;
+  #endif
+  };
+  ```
+  </details>
+
+  - **nginx**在实现时，是通过一个连接池来管理的，每个**worker**进程都有一个独立的连接池，连接池的大小是**worker_connections**。这里的连接池里面保存的其实不是真实的连接，它只是一个**worker_connections**大小的一个**ngx_connection_t**结构的数组。并且，**nginx**会通过一个链表**free_connections**来保存所有的空闲**ngx_connection_t**，每次获取一个连接时，就从空闲连接链表中获取一个，用完后，再放回空闲连接链表里面。
+  - 一个**nginx**能建立的最大连接数，应该是**worker_connections * worker_processes**。当然，这里说的是最大连接数，对于**HTTP**请求本地资源来说，能够支持的最大并发数量是 **worker_connections * worker_processes**，而如果是 HTTP 作为反向代理来说，最大并发数量应该是**worker_connections * worker_processes / 2**。因为作为反向代理服务器，每个并发会建立与客户端的连接和与后端服务的连接，会占用两个连接。
+  - **nginx**使用一个叫**ngx_accept_disabled**的变量来控制是否去竞争**accept_mutex**锁。计算 **ngx_accept_disabled**的值，这个值是**nginx**单进程的所有连接总数的八分之一，减去剩下的空闲连接数量，得到的这个**ngx_accept_disabled**有一个规律，当剩余连接数小于总连接数的八分之一时，其值才大于 0，而且剩余的连接数越小，这个值越大。当**ngx_accept_disabled**大于0时，不会去尝试获取**accept_mutex**锁，并且将**ngx_accept_disabled**减1，于是，每次执行到此处时，都会去减1，直到小于0。
+
+- **request**
+
+  <details>
+  <summary>ngx_http_request_s</summary>
+  
+  ```C
+  struct ngx_http_request_s {
+      uint32_t                          signature;         /* "HTTP" */
+  
+      ngx_connection_t                 *connection;
+  
+      void                            **ctx;
+      void                            **main_conf;
+      void                            **srv_conf;
+      void                            **loc_conf;
+  
+      ngx_http_event_handler_pt         read_event_handler;
+      ngx_http_event_handler_pt         write_event_handler;
+  
+  #if (NGX_HTTP_CACHE)
+      ngx_http_cache_t                 *cache;
+  #endif
+  
+      ngx_http_upstream_t              *upstream;
+      ngx_array_t                      *upstream_states;
+                                           /* of ngx_http_upstream_state_t */
+  
+      ngx_pool_t                       *pool;
+      ngx_buf_t                        *header_in;
+  
+      ngx_http_headers_in_t             headers_in;
+      ngx_http_headers_out_t            headers_out;
+  
+      ngx_http_request_body_t          *request_body;
+  
+      time_t                            lingering_time;
+      time_t                            start_sec;
+      ngx_msec_t                        start_msec;
+  
+      ngx_uint_t                        method;
+      ngx_uint_t                        http_version;
+  
+      ngx_str_t                         request_line;
+      ngx_str_t                         uri;
+      ngx_str_t                         args;
+      ngx_str_t                         exten;
+      ngx_str_t                         unparsed_uri;
+  
+      ngx_str_t                         method_name;
+      ngx_str_t                         http_protocol;
+      ngx_str_t                         schema;
+  
+      ngx_chain_t                      *out;
+      ngx_http_request_t               *main;
+      ngx_http_request_t               *parent;
+      ngx_http_postponed_request_t     *postponed;
+      ngx_http_post_subrequest_t       *post_subrequest;
+      ngx_http_posted_request_t        *posted_requests;
+  
+      ngx_int_t                         phase_handler;
+      ngx_http_handler_pt               content_handler;
+      ngx_uint_t                        access_code;
+  
+      ngx_http_variable_value_t        *variables;
+  
+  #if (NGX_PCRE)
+      ngx_uint_t                        ncaptures;
+      int                              *captures;
+      u_char                           *captures_data;
+  #endif
+  
+      size_t                            limit_rate;
+      size_t                            limit_rate_after;
+  
+      /* used to learn the Apache compatible response length without a header */
+      size_t                            header_size;
+  
+      off_t                             request_length;
+  
+      ngx_uint_t                        err_status;
+  
+      ngx_http_connection_t            *http_connection;
+      ngx_http_v2_stream_t             *stream;
+  
+      ngx_http_log_handler_pt           log_handler;
+  
+      ngx_http_cleanup_t               *cleanup;
+  
+      unsigned                          count:16;
+      unsigned                          subrequests:8;
+      unsigned                          blocked:8;
+  
+      unsigned                          aio:1;
+  
+      unsigned                          http_state:4;
+  
+      /* URI with "/." and on Win32 with "//" */
+      unsigned                          complex_uri:1;
+  
+      /* URI with "%" */
+      unsigned                          quoted_uri:1;
+  
+      /* URI with "+" */
+      unsigned                          plus_in_uri:1;
+  
+      /* URI with " " */
+      unsigned                          space_in_uri:1;
+  
+      unsigned                          invalid_header:1;
+  
+      unsigned                          add_uri_to_alias:1;
+      unsigned                          valid_location:1;
+      unsigned                          valid_unparsed_uri:1;
+      unsigned                          uri_changed:1;
+      unsigned                          uri_changes:4;
+  
+      unsigned                          request_body_in_single_buf:1;
+      unsigned                          request_body_in_file_only:1;
+      unsigned                          request_body_in_persistent_file:1;
+      unsigned                          request_body_in_clean_file:1;
+      unsigned                          request_body_file_group_access:1;
+      unsigned                          request_body_file_log_level:3;
+      unsigned                          request_body_no_buffering:1;
+  
+      unsigned                          subrequest_in_memory:1;
+      unsigned                          waited:1;
+  
+  #if (NGX_HTTP_CACHE)
+      unsigned                          cached:1;
+  #endif
+  
+  #if (NGX_HTTP_GZIP)
+      unsigned                          gzip_tested:1;
+      unsigned                          gzip_ok:1;
+      unsigned                          gzip_vary:1;
+  #endif
+  
+  #if (NGX_PCRE)
+      unsigned                          realloc_captures:1;
+  #endif
+  
+      unsigned                          proxy:1;
+      unsigned                          bypass_cache:1;
+      unsigned                          no_cache:1;
+  
+      /*
+       * instead of using the request context data in
+       * ngx_http_limit_conn_module and ngx_http_limit_req_module
+       * we use the bit fields in the request structure
+       */
+      unsigned                          limit_conn_status:2;
+      unsigned                          limit_req_status:3;
+  
+      unsigned                          limit_rate_set:1;
+      unsigned                          limit_rate_after_set:1;
+  
+  #if 0
+      unsigned                          cacheable:1;
+  #endif
+  
+      unsigned                          pipeline:1;
+      unsigned                          chunked:1;
+      unsigned                          header_only:1;
+      unsigned                          expect_trailers:1;
+      unsigned                          keepalive:1;
+      unsigned                          lingering_close:1;
+      unsigned                          discard_body:1;
+      unsigned                          reading_body:1;
+      unsigned                          internal:1;
+      unsigned                          error_page:1;
+      unsigned                          filter_finalize:1;
+      unsigned                          post_action:1;
+      unsigned                          request_complete:1;
+      unsigned                          request_output:1;
+      unsigned                          header_sent:1;
+      unsigned                          expect_tested:1;
+      unsigned                          root_tested:1;
+      unsigned                          done:1;
+      unsigned                          logged:1;
+  
+      unsigned                          buffered:4;
+  
+      unsigned                          main_filter_need_in_memory:1;
+      unsigned                          filter_need_in_memory:1;
+      unsigned                          filter_need_temporary:1;
+      unsigned                          preserve_body:1;
+      unsigned                          allow_ranges:1;
+      unsigned                          subrequest_ranges:1;
+      unsigned                          single_range:1;
+      unsigned                          disable_not_modified:1;
+      unsigned                          stat_reading:1;
+      unsigned                          stat_writing:1;
+      unsigned                          stat_processing:1;
+  
+      unsigned                          background:1;
+      unsigned                          health_check:1;
+  
+      /* used to parse HTTP headers */
+  
+      ngx_uint_t                        state;
+  
+      ngx_uint_t                        header_hash;
+      ngx_uint_t                        lowcase_index;
+      u_char                            lowcase_header[NGX_HTTP_LC_HEADER_LEN];
+  
+      u_char                           *header_name_start;
+      u_char                           *header_name_end;
+      u_char                           *header_start;
+      u_char                           *header_end;
+  
+      /*
+       * a memory that can be reused after parsing a request line
+       * via ngx_http_ephemeral_t
+       */
+  
+      u_char                           *uri_start;
+      u_char                           *uri_end;
+      u_char                           *uri_ext;
+      u_char                           *args_start;
+      u_char                           *request_start;
+      u_char                           *request_end;
+      u_char                           *method_end;
+      u_char                           *schema_start;
+      u_char                           *schema_end;
+      u_char                           *host_start;
+      u_char                           *host_end;
+      u_char                           *port_start;
+      u_char                           *port_end;
+  
+      unsigned                          http_minor:16;
+      unsigned                          http_major:16;
+  };
+  ```
+  </details>
+  
+  - 对于**nginx**来说，一个请求是从**ngx_http_init_request**开始的，在这个函数中，会设置读事件为**ngx_http_process_request_line**，也就是说，接下来的网络事件，会由**ngx_http_process_request_line**来执行，处理请求行。通过**ngx_http_read_request_header**来读取请求数据。然后调用**ngx_http_parse_request_line**函数来解析请求行。
+  
+  - **nginx**为提高效率，采用状态机来解析请求行，而且在进行**method**的比较时，没有直接使用字符串比较，而是将四个字符转换成一个整型，然后一次比较以减少**cpu**的指令数。
+  
+  - 整个请求行解析到的参数，会保存到**ngx_http_request_t**结构当中。
+  
+  - 在解析完请求行后，**nginx**会设置读事件的**handler**为**ngx_http_process_request_headers**，然后后续的请求就在**ngx_http_process_request_headers**中进行读取与解析。 
+  
+  - **ngx_http_process_request_headers**函数用来读取请求头，跟请求行一样，还是调用**ngx_http_read_request_header**来读取请求头，调用**ngx_http_parse_header_line**来解析一行请求头，解析到的请求头会保存到**ngx_http_request_t**的域**headers_in**中，**headers_in**是一个链表结构，保存所有的请求头。
+  
+  - 而**HTTP**中有些请求是需要特别处理的，这些请求头与请求处理函数存放在一个映射表里面，即**ngx_http_headers_in**，在初始化时，会生成一个**hash**表，当每解析到一个请求头后，就会先在这个**hash**表中查找，如果有找到，则调用相应的处理函数来处理这个请求头。
+  
+  - 当**nginx**解析到两个回车换行符时，就表示请求头的结束，此时就会调用**ngx_http_process_request**来处理请求了。**ngx_http_process_request**会设置当前的连接的读写事件处理函数为**ngx_http_request_handler**，然后再调用**ngx_http_handler**来真正开始处理一个完整的**http**请求。读写事件处理函数都是**ngx_http_request_handler**，其实在这个函数中，会根据当前事件是读事件还是写事件，分别调用**ngx_http_request_t**中的**read_event_handler**或者是**write_event_handler**。由于此时，我们的请求头已经读取完成了，**nginx**先不读取请求**body**，设置**read_event_handler**为**ngx_http_block_reading**，即不读取数据了。
+  
+  - 真正开始处理数据，是在**ngx_http_handler**这个函数里面，这个函数会设置 **write_event_handler**为**ngx_http_core_run_phases**，并执行**ngx_http_core_run_phases**函数。**ngx_http_core_run_phases**这个函数将执行多阶段请求处理，**nginx**将一个**http**请求的处理分为多个阶段，那么这个函数就是执行这些阶段来产生数据。最终是调用**ngx_http_core_run_phases**来处理请求，产生的响应头会放在**ngx_http_request_t**的**headers_out**中。
+  
+  - **nginx**的各种阶段会对请求进行处理，最后会调用**filter**来过滤数据，对数据进行加工。这里的**filter**包括**header filter**与**body filter**，即对响应头或响应体进行处理。**filter**是一个链表结构，分别有**header filter**与**body filter**，先执行**header filter**中的所有**filter**，然后再执行**body filter**中的所有**filter**。在**header filter**中的最后一个**filter**，即**ngx_http_header_filter**， 这个**filter**将会遍历所有的响应头，最后需要输出的响应头在一个连续的内存，然后调用**ngx_http_write_filter**进行输出。**ngx_http_write_filter**是**body filter**中的最后一个，所以**nginx**首先的**body**信息，在经过一系列的**body filter**之后，最后也会调用**ngx_http_write_filter**来进行输出。**nginx**会将整个请求头都放在一个**buffer**里面，这个**buffer**的大小通过配置项**client_header_buffer_size**来设置，如果用户的请求头太大，这个 **buffer**装不下，那**nginx**就会重新分配一个新的更大的**buffer**来装请求头，这个大**buffer**可以通过**large_client_header_buffers**来设置，这个**large_buffer**这一组**buffer**。
+  
+  - 为了保存请求行或请求头的完整性，一个完整的请求行或请求头，需要放在一个连续的内存里面，所以，一个完整的请求行或请求头，只会保存在一个**buffer**里面。这样，如果请求行大于一个**buffer**的大小，就会返回**414**错误，如果一个请求头大小大于一个**buffer**大小，就会返回**400**错误。
+  
+    ![nginx处理http流程](./images/nginx处理http流程.png)
+
+####  1.3 Handler模块
+
+- **Handler**模块就是接受来自客户端的请求并产生输出的模块。
+
+- [自定义模块](./code/nginx/module)
+
+  <details>
+  <summary>自定义模块</summary>
+  
+  ```C
+  /*
+   * @Author: gongluck 
+   * @Date: 2020-12-08 19:10:29 
+   * @Last Modified by: gongluck
+   * @Last Modified time: 2020-12-08 19:11:06
+   */
+  
+  // ./configure --add-module=/mnt/e/Code/CVIP/code/nginx/module
+  // sudo ./objs/nginx -c /mnt/e/Code/CVIP/code/nginx/module/hello.conf
+  
+  #include <ngx_http.h>
+  #include <ngx_config.h>
+  #include <ngx_core.h>
+  
+  static char *ngx_http_hello_module_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+  static ngx_int_t ngx_http_hello_module_handler(ngx_http_request_t *r);
+  
+  // 模块配置结构
+  typedef struct
+  {
+      ngx_str_t hello_string;
+  } ngx_http_hello_loc_conf_t;
+  
+  // 模块配置指令
+  static ngx_command_t hello_commands[] = {
+      {
+          ngx_string("hello"),                 //配置指令的名称
+          NGX_HTTP_LOC_CONF | NGX_CONF_NOARGS, //该配置指令属性的集合
+          ngx_http_hello_module_set,           //当nginx在解析配置的时候，如果遇到这个配置指令，将会把读取到的值传递给这个函数进行分解处理
+          NGX_HTTP_LOC_CONF_OFFSET,            //指定当前配置项存储的内存位置,实际上是使用哪个内存池的问题。
+          0,                                   //指定该配置项值的精确存放位置，一般指定为某一个结构体变量的字段偏移。
+          NULL                                 //可以指向任何一个在读取配置过程中需要的数据，以便于进行配置读取的处理。
+      },
+      ngx_null_command};
+  
+  // 模块上下文结构
+  static ngx_http_module_t hello_ctx = {
+      NULL, //在创建和读取该模块的配置信息之前被调用
+      NULL, //在创建和读取该模块的配置信息之后被调用
+  
+      NULL, //调用该函数创建本模块位于http block的配置信息存储结构。该函数成功的时候，返回创建的配置对象。失败的话，返回NULL。
+      NULL, //调用该函数初始化本模块位于http block 的配置信息存储结构。该函数成功的时候，返回NGX_CONF_OK。失败的话，返回NGX_CONF_ERROR或错误字符串。
+  
+      NULL, //调用该函数创建本模块位于http server block的配置信息存储结构，每个server block会创建一个。该函数成功的时候，返回创建的配置对象。失败的话，返回NULL。
+      NULL, //因为有些配置指令既可以出现在http block，也可以出现在http server block中。那么遇到这种情况，每个server都会有自己存储结构来存储该server的配置，但是在这种情况下http block中的配置与server block中的配置信息发生冲突的时候，就需要调用此函数进行合并，该函数并非必须提供，当预计到绝对不会发生需要合并的情况的时候，就无需提供。当然为了安全起见还是建议提供。该函数执行成功的时候，返回NGX_CONF_OK。失败的话，返回NGX_CONF_ERROR或错误字符串。
+  
+      NULL, //调用该函数创建本模块位于location block的配置信息存储结构。每个在配置中指明的location创建一个。该函数执行成功，返回创建的配置对象。失败的话，返回NULL。
+      NULL, //与merge_srv_conf类似，这个也是进行配置值合并的地方。该函数成功的时候，返回NGX_CONF_OK。失败的话，返回NGX_CONF_ERROR或错误字符串。
+  };
+  
+  // ngx_http_hello_module
+  ngx_module_t ngx_http_hello_module = {
+      NGX_MODULE_V1,
+      &hello_ctx,      /* module context */
+      hello_commands,  /* module directives */
+      NGX_HTTP_MODULE, /* module type */
+      NULL,            /* init master */
+      NULL,            /* init module */
+      NULL,            /* init process */
+      NULL,            /* init thread */
+      NULL,            /* exit thread */
+      NULL,            /* exit process */
+      NULL,            /* exit master */
+      NGX_MODULE_V1_PADDING};
+  
+  static char *ngx_http_hello_module_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+  {
+      ngx_http_core_loc_conf_t *corecf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+      corecf->handler = ngx_http_hello_module_handler;
+  
+      return NGX_CONF_OK;
+  }
+  
+  static ngx_int_t ngx_http_hello_module_handler(ngx_http_request_t *r)
+  {
+      ngx_str_t str = ngx_string("Hello, Nginx!");
+      ngx_buf_t *b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+      if (b == NULL)
+      {
+          return NGX_HTTP_INTERNAL_SERVER_ERROR;
+      }
+  
+      ngx_chain_t out;
+      out.buf = b;
+      out.next = NULL;
+      b->pos = str.data;
+      b->last = b->pos + str.len;
+      b->memory = 1;   /* this buffer is in memory */
+      b->last_buf = 1; /* this is the last buffer in the buffer chain */
+  
+      /* set the status line */
+      r->headers_out.status = NGX_HTTP_OK;
+      r->headers_out.content_length_n = str.len;
+  
+      /* send the headers of your response */
+      ngx_int_t rc = ngx_http_send_header(r);
+      if (rc == NGX_ERROR || rc > NGX_OK || r->header_only)
+      {
+          return rc;
+      }
+  
+      /* send the buffer chain of your response */
+      return ngx_http_output_filter(r, &out);
+  }
+  ```
+  </details>
+  
