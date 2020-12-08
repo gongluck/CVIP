@@ -7992,7 +7992,7 @@ http.tracker_server_port = 80
 
 ## 九、源码分析专题
 
-### 1.Nginx架构和Handler模块
+### 1.Nginx架构和模块
 
 #### 1.1 Nginx架构
 
@@ -8474,3 +8474,142 @@ http.tracker_server_port = 80
   ```
   </details>
   
+
+#### 1.4 Filter模块
+
+- **过滤（filter）**模块是过滤响应头和内容的模块，可以对回复的头和内容进行处理。它的处理时间在获取回复内容之后，向用户发送响应之前。它的处理过程分为两个阶段，过滤**HTTP**回复的头部和主体，在这两个阶段可以分别对头部和主体进行修改。
+
+- 所有模块的响应内容要返回给客户端，都必须调用这两个接口
+
+  ```C
+  //分别对头部和主体进行过滤的函数
+  ngx_http_top_header_filter(r); 
+  ngx_http_top_body_filter(r, in); 
+  ```
+
+- 过滤模块的调用是有顺序的，它的顺序在编译的时候就决定了。控制编译的脚本位于**auto/modules**中，当编译完**Nginx**以后，可以在**objs**目录下面看到一个**ngx_modules.c**的文件。
+
+  ```C
+  ngx_module_t *ngx_modules[] = {
+      &ngx_core_module,
+      &ngx_errlog_module,
+      &ngx_conf_module,
+      &ngx_regex_module,
+      &ngx_events_module,
+      &ngx_event_core_module,
+      &ngx_epoll_module,
+      &ngx_http_module,
+      &ngx_http_core_module,
+      &ngx_http_log_module,
+      &ngx_http_upstream_module,
+      &ngx_http_static_module,
+      &ngx_http_autoindex_module,
+      &ngx_http_index_module,
+      &ngx_http_mirror_module,
+      &ngx_http_try_files_module,
+      &ngx_http_auth_basic_module,
+      &ngx_http_access_module,
+      &ngx_http_limit_conn_module,
+      &ngx_http_limit_req_module,
+      &ngx_http_geo_module,
+      &ngx_http_map_module,
+      &ngx_http_split_clients_module,
+      &ngx_http_referer_module,
+      &ngx_http_rewrite_module,
+      &ngx_http_proxy_module,
+      &ngx_http_fastcgi_module,
+      &ngx_http_uwsgi_module,
+      &ngx_http_scgi_module,
+      &ngx_http_memcached_module,
+      &ngx_http_empty_gif_module,
+      &ngx_http_browser_module,
+      &ngx_http_upstream_hash_module,
+      &ngx_http_upstream_ip_hash_module,
+      &ngx_http_upstream_least_conn_module,
+      &ngx_http_upstream_random_module,
+      &ngx_http_upstream_keepalive_module,
+      &ngx_http_upstream_zone_module,
+      &ngx_http_hello_module,
+      &ngx_http_write_filter_module,
+      &ngx_http_header_filter_module,
+      &ngx_http_chunked_filter_module,
+      &ngx_http_range_header_filter_module,
+      &ngx_http_gzip_filter_module,
+      &ngx_http_postpone_filter_module,
+      &ngx_http_ssi_filter_module,
+      &ngx_http_charset_filter_module,
+      &ngx_http_userid_filter_module,
+      &ngx_http_headers_filter_module,//
+      &ngx_http_copy_filter_module,//
+      &ngx_http_range_body_filter_module,
+      &ngx_http_not_modified_filter_module,
+      NULL
+  };
+  ```
+
+- 从**write_filter**到**not_modified_filter**，模块的执行顺序是反向的。所有第三方的模块只能加入到**copy_filter**和**headers_filter**模块之间执行。
+
+- 在过滤模块中，所有输出的内容都是通过一条单向链表所组成。这种单向链表的设计，正好应和了**Nginx**流式的输出模式。每次**Nginx**都是读到一部分的内容，就放到链表，然后输出出去。这种设计的好处是简单，非阻塞，但是相应的问题就是跨链表的内容操作非常麻烦， 如果需要跨链表，很多时候都只能缓存链表的内容。单链表负载的就是**ngx_buf_t**，这个结构体使用非常广泛。
+
+- 响应头过滤函数主要的用处就是处理**HTTP**响应的头，可以根据实际情况对于响应头进行修改或者添加删除。响应头过滤函数先于响应体过滤函数，而且只调用一次，所以一般可作过滤模块的初始化工作。
+
+  ```C
+  ngx_int_t
+  ngx_http_send_header(ngx_http_request_t *r)
+  {
+      if (r->post_action) {
+          return NGX_OK;
+      }
+  
+      if (r->header_sent) {
+          ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
+                        "header already sent");
+          return NGX_ERROR;
+      }
+  
+      if (r->err_status) {
+          r->headers_out.status = r->err_status;
+          r->headers_out.status_line.len = 0;
+      }
+  
+      return ngx_http_top_header_filter(r);//
+  }
+  ```
+
+- 可以把**HTTP**响应头的存储方式想象成一个**hash**表，在**Nginx**内部可以很方便地查找和修改各个响应头 部，**ngx_http_header_filter_module**过滤模块把所有的**HTTP**头组合成一个完整的**buffer**，最终**ngx_http_write_filter_module**过滤模块把**buffer**输出。
+
+- 响应体过滤函数是过滤响应主体的函数。**ngx_http_top_body_filter**这个函数每个请求可能会被执行多次，它的入口函数是**ngx_http_output_filter**。
+
+  ```C
+  ngx_int_t
+  ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
+  {
+      ngx_int_t          rc;
+      ngx_connection_t  *c;
+  
+      c = r->connection;
+  
+      ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                     "http output filter \"%V?%V\"", &r->uri, &r->args);
+  
+      rc = ngx_http_top_body_filter(r, in);
+  
+      if (rc == NGX_ERROR) {
+          /* NGX_ERROR may be returned by any filter */
+          c->error = 1;
+      }
+  
+      return rc;
+  }
+  ```
+
+#### 1.5 Upstream模块
+
+- 从本质上说，**upstream**属于**handler**，只是他不产生自己的内容，而是通过请求后端服务器得到内容，所以才称为**upstream**（上游）。
+- 请求并取得响应内容的整个过程已经被封装到**nginx**内部，所以**upstream**模块只需要开发若干回调函数，完成构造请求和解析响应等具体的工作。
+- **upstream**模块使用的就是**handler**模块的接入方式。同时，**upstream**模块的指令系统的设计也是遵循**handler**模块的基本规则：配置该模块才会执行该模块。
+
+#### 1.6 负载均衡模块
+
+- 负载均衡模块用于从**upstream**指令定义的后端主机列表中选取一台主机。**nginx**先使用负载均衡模块找到一台主机，再使用**upstream**模块实现与这台主机的交互。
+- 核心指令**ip_hash**只能在**upstream {}**中使用。这条指令用于通知**nginx**使用**ip hash**负载均衡算法。如果没加这条指令，**nginx**会使用默认的**round robin**负载均衡模块。
