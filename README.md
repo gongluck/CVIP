@@ -8613,3 +8613,64 @@ http.tracker_server_port = 80
 
 - 负载均衡模块用于从**upstream**指令定义的后端主机列表中选取一台主机。**nginx**先使用负载均衡模块找到一台主机，再使用**upstream**模块实现与这台主机的交互。
 - 核心指令**ip_hash**只能在**upstream {}**中使用。这条指令用于通知**nginx**使用**ip hash**负载均衡算法。如果没加这条指令，**nginx**会使用默认的**round robin**负载均衡模块。
+
+### 2.Skynet
+
+#### 2.1 环境安装
+
+```shell
+git clone https://github.com/cloudwu/skynet.git
+cd skynet
+make linux -j 8
+```
+
+#### 2.2 Skynet工作模型
+
+![Skynet工作模型](./images/Skynet工作模型.png)
+
+- **skynet**中的**actor**模型 
+
+  - 结构组成 
+
+    - 隔离的环境（内存块或**lua**虚拟机）
+    - 消息队列
+    - 回调函数
+
+  - 实现
+    - **logger**服务**service-src/service_logger.c**
+    - **lua**服务启动器**service-src/service_snlua.c**
+
+#### 2.3 [Skynet Lua例子](./code/skynet)
+
+<details>
+<summary>Skynet lua</summary>
+  
+```lua
+-- ./skynet /mnt/e/Code/CVIP/code/skynet/test.conf
+
+local skynet = require "skynet"
+local socket = require "skynet.socket"
+
+local function event_loop(clientfd)
+    while true do
+        local data = socket.readline(clientfd)--从网络获取 以\n为分隔符的数据包
+        if not data then
+            return
+        end
+        print(clientfd, "recv:", data)
+        socket.write(clientfd, data.."\n")
+    end
+end
+
+local function accept(clientfd, addr)-- 回调函数的作用 就是可以将 fd绑定到其他actor
+    print("accept a connect:", clientfd, addr)
+    socket.start(clientfd) -- 将clientfd注册到epoll
+    skynet.fork(event_loop, clientfd) -- 实现一个简单的echo服务，可以通过 telnet 127.0.0.1 8001来连接skynet
+end
+
+skynet.start(function ()
+    local listenfd = socket.listen("0.0.0.0", 8001) -- socket bind listen 
+    socket.start(listenfd, accept) -- 将listenfd注册到epoll，收到连接会回调accept函数
+end)
+```
+</details>
