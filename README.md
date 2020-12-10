@@ -2,7 +2,7 @@
 
 ### 1.查找与排序/KMP算法，栈/队列
 
-![排序比较](./images/排序比较.png)
+![排序比较](./images/排序比较.png?raw=true)
 
 #### 1.1 希尔排序
 
@@ -348,7 +348,7 @@
 
 #### 2.2 红黑树
 
-![红黑树](./images/红黑树.jpg)
+![红黑树](./images/红黑树.jpg?raw=true)
 
 -  R-B Tree，全称是Red-Black Tree，又称为“红黑树”，它一种特殊的二叉查找树。红黑树的每个节点上都有存储位表示节点的颜色，可以是红(Red)或黑(Black)。
 - 红黑树的特性
@@ -740,7 +740,7 @@
 
 ### 3.B-树
 
-![B树](./images/B树.png)
+![B树](./images/B树.png?raw=true)
 
 - B树也称B-树，它是一颗多路平衡查找树。我们描述一颗B树时需要指定它的阶数，阶数表示了一个结点最多有多少个孩子结点，一般用字母m表示阶数。当m取2时，就是我们常见的二叉搜索树。
 - 一颗m阶的B树定义
@@ -1145,7 +1145,7 @@
 
 ### 4.布隆过滤器
 
-![布隆过滤器](./images/布隆过滤器.png)
+![布隆过滤器](./images/布隆过滤器.png?raw=true)
 
 - bloom算法类似一个hash set，用来判断某个元素（key）是否在某个集合中。和一般的hash set不同的是，这个算法无需存储key的值，对于每个key，只需要k个比特位，每个存储一个标志，用来判断key是否在集合中。
 - 算法：
@@ -1628,7 +1628,7 @@
 
 #### 5.1 观察者模式
 
-![观察者模式](./images/观察者模式.png)
+![观察者模式](./images/观察者模式.png?raw=true)
 
 - 定义对象间一种一对多的依赖关系，使得每当一个对象改变状态，则所有依赖于它的对象都会得到通知并被自动更新。
 
@@ -1874,7 +1874,7 @@
 
 #### 5.2 工厂模式
 
-![工厂模式](./images/工厂模式.png)
+![工厂模式](./images/工厂模式.png?raw=true)
 
 - 定义一个用于创建对象的接口，让子类决定实例化哪一个类。工厂方法是一个类的实例化延迟到其子类。
 
@@ -2303,7 +2303,7 @@
 
 #### 1.1 MySQL基础逻辑框架
 
-![MySQL基础逻辑框架](./images/MySQL基础逻辑框架.png)
+![MySQL基础逻辑框架](./images/MySQL基础逻辑框架.png?raw=true)
 
 #### 1.2 基本操作
 
@@ -3240,7 +3240,7 @@
 
 #### 2.3 MySQL存储引擎
 
-![MySQL存储引擎](./images/MySQL存储引擎.png)
+![MySQL存储引擎](./images/MySQL存储引擎.png?raw=true)
 
 - 创建表指定存储引擎（默认InnoDB）
 
@@ -3472,7 +3472,7 @@ http {
 
 - redis基本数据结构
 
-  ![redis基本数据结构](./images/redis基本数据结构.png)
+  ![redis基本数据结构](./images/redis基本数据结构.png?raw=true)
 
 #### 5.2 hiredis编程
 
@@ -3896,7 +3896,7 @@ http {
 
 #### 1.1 线程池工作流程
 
-![线程池工作流程](./images/线程池工作流程.png)
+![线程池工作流程](./images/线程池工作流程.png?raw=true)
 
 #### 1.2 线程池实现
 
@@ -4198,7 +4198,7 @@ http {
 
 - Nginx内存池结构
 
-  ![Nginx内存池结构](./images/Nginx内存池结构.jpg)
+  ![Nginx内存池结构](./images/Nginx内存池结构.jpg?raw=true)
 
 - nginx对内存的管理分为大内存与小内存，当某一个申请的内存大于某一个值时，就需要从大内存中分配空间，否则从小内存中分配空间。
 
@@ -4519,17 +4519,17 @@ ngx_pfree(ngx_pool_t *pool, void *p)
 
   - UFT-8：一种变长的编码方案，使用1~6个字节来存储；
 
-    ![Unicode码表对应utf8编码](./images/Unicode码表对应utf8编码.png)
+    ![Unicode码表对应utf8编码](./images/Unicode码表对应utf8编码.png?raw=true)
 
   - UFT-32：一种固定长度的编码方案，不管字符编号大小，直接存储Unicode编号，始终使用4个字节来存储；
 
   - UTF-16：介于UTF-8和UTF-32之间，使用2个或者4个字节来存储，长度既固定又可变。
 
-    ![Unicode码表对应utf16编码](./images/Unicode码表对应utf16编码.png)
+    ![Unicode码表对应utf16编码](./images/Unicode码表对应utf16编码.png?raw=true)
 
   - UTF格式在文件中的**固定文件头**
 
-    ![utf固定文件头](./images/utf固定文件头.png)
+    ![utf固定文件头](./images/utf固定文件头.png?raw=true)
 
 #### 1.2 libiconv字符编码转换库
 
@@ -5051,7 +5051,7 @@ ngx_pfree(ngx_pool_t *pool, void *p)
 
 - 序列化：把对象转换为字节序列的过程称为对象。
 
-  ![常用序列化协议比较](./images/常用序列化协议比较.png)
+  ![常用序列化协议比较](./images/常用序列化协议比较.png?raw=true)
 
   - TLV编码及其变体（tag, length和value的缩写）：比如Protobuf。
   - 文本流编码：比如XML/JSON。
@@ -5169,7 +5169,7 @@ int main()
 
 #### 4.1 消息队列比较
 
-![消息队列比较](./images/消息队列比较.png)
+![消息队列比较](./images/消息队列比较.png?raw=true)
 
 #### 4.2 zmq编译安装
 
@@ -5951,7 +5951,7 @@ int main(int argc, char *argv[])
 
 #### 1.1 Reactor模型
 
-![Reactor模型](./images/Reactor模型.png)
+![Reactor模型](./images/Reactor模型.png?raw=true)
 
 - Reactor释义“反应堆”，是一种事件驱动机制。和普通函数调用的不同之处在于：应用程序不是主动的调用某个API完成处理，而是恰恰 相反，Reactor逆置了事件处理流程，应用程序需要提供相应的接口并注册到Reactor上，如果相应的时间发生，Reactor将主动调用应用程序注册的接口，这些接口又称为“回调函数”。
 
@@ -5959,7 +5959,7 @@ int main(int argc, char *argv[])
 
 - Reactor模型有三个重要的组件：
 
-  ​	![Reactor组件](./images/Reactor组件.png)
+  ​	![Reactor组件](./images/Reactor组件.png?raw=true)
 
   - 多路复用器：由操作系统提供，在linux上一般是select、poll、epoll等系统调用。
   - 事件分发器：将多路复用器中返回的就绪事件分到对应的处理函数中。
@@ -6304,11 +6304,11 @@ int main()
 
 #### 2.1 log4cpp模块
 
-![log4cpp模块图](./images/log4cpp模块图.png)
+![log4cpp模块图](./images/log4cpp模块图.png?raw=true)
 
 - log4cpp有且只⼀个根Category，可以有多个⼦Category组成树型结构。
 
-  ![log4cpp的appender种类](./images/log4cpp的appender种类.png)
+  ![log4cpp的appender种类](./images/log4cpp的appender种类.png?raw=true)
 
 - Appender负责将⽇志写⼊相应的设备，⽐如控制台、⽂件、调试器、Windows⽇志、syslog等。
 
@@ -6483,7 +6483,7 @@ sudo ldconfig
 
 - Valgrind是一套Linux下，开放源代码（GPL V2）的仿真调试工具的集合。Valgrind由内核（core）以及基于内核的其他调试工具组成。内核类似于一个框架（framework）， 它模拟了一个CPU环境，并提供服务给其他工具；而其他工具则类似于插件(plug-in)，利用内核提供的服务完成各种特定的内存调试任务。
 
-  ![valgrind体系结构](./images/valgrind体系结构.png)
+  ![valgrind体系结构](./images/valgrind体系结构.png?raw=true)
 
 - 编译安装
 
@@ -6925,9 +6925,9 @@ sudo ldconfig
 
 #### 1.1 git
 
-![git原理](./images/git原理.png)
+![git原理](./images/git原理.png?raw=true)
 
-![git文件状态](./images/git文件状态.png)
+![git文件状态](./images/git文件状态.png?raw=true)
 
 - 常用命令
 
@@ -7064,7 +7064,7 @@ include(CPack)
 
 ### 1.FastDFS
 
-![FastDFS架构](./images/FastDFS架构.png)
+![FastDFS架构](./images/FastDFS架构.png?raw=true)
 
 #### 1.1 编译安装
 
@@ -7898,11 +7898,11 @@ http.tracker_server_port = 80
 
 - 传统**CGI**（Common Gateway Interface）方式是客户端有多少个请求，就开辟多少个子进程，每个子进程都需要启动自己的解释器、加载配置，连接其他服务器等初始化工作，这是**CGI**进程性能低下的主要原因。当用户请求非常多的时候，会占用大量的内存、cpu等资源，造成性能低下。
 
-  ![cgi工作方式](./images/cgi工作方式.png)
+  ![cgi工作方式](./images/cgi工作方式.png?raw=true)
 
 - 与为每个请求创建一个新的进程不同，**FastCGI**使用持续的进程来处理一连串的请求。这些进程由 **FastCGI**进程管理器管理，而不是**web**服务器。
 
-  ![fastcgi工作方式](./images/fastcgi工作方式.png)
+  ![fastcgi工作方式](./images/fastcgi工作方式.png?raw=true)
 
 - 由于**FastCGI**程序并不需要不断的产生新进程，可以大大降低服务器的压力并且产生较高的应用效率。它的速度效率最少要比**CGI**技术提高5倍以上。它还支持分布式的部署，即**FastCGI**程序可以在**web**服务器以外的主机上执行。
 
@@ -8005,7 +8005,7 @@ http.tracker_server_port = 80
 
 - 而基本的网络事件，则是放在**worker**进程中来处理了。多个**worker**进程之间是对等的，他们同等竞争来自客户端的请求，各进程互相之间是独立的。
 
-  ![nginx进程模型](./images/nginx进程模型.png)
+  ![nginx进程模型](./images/nginx进程模型.png?raw=true)
 
 - 每个**worker**进程都是从**master**进程**fork**过来，在**master**进程里面，先建立好需要**listen**的**socket**（**listenfd**）之后，然后再**fork**出多个**worker**进程。所有**worker**进程的**listenfd**会在新连接到来时变得可读，为保证只有一个进程处理该连接，所有**worker **进程在注册**listenfd**读事件前抢**accept_mutex**，抢到互斥锁的那个进程注册**listenfd**读事件，在读事件里调用**accept**接受该连接。当一个**worker**进程在**accept**这个连接之后，就开始读取请求，解析请求，处理请求，产生数据后，再返回给客户端，最后才断开连接，这样一个完整的请求就是这样的了。
 - 对于每个**worker**进程来说，独立的进程，不需要加锁，所以省掉了锁带来的开销，同时在编程以及问题查找时，也会方便很多。其次，采用独立的进程，可以让互相之间不会影响，一个进程退出后，其它进程还在工作，服务不会中断，**master**进程则很快启动新的**worker**进程。
@@ -8355,7 +8355,7 @@ http.tracker_server_port = 80
   
   - 为了保存请求行或请求头的完整性，一个完整的请求行或请求头，需要放在一个连续的内存里面，所以，一个完整的请求行或请求头，只会保存在一个**buffer**里面。这样，如果请求行大于一个**buffer**的大小，就会返回**414**错误，如果一个请求头大小大于一个**buffer**大小，就会返回**400**错误。
   
-    ![nginx处理http流程](./images/nginx处理http流程.png)
+    ![nginx处理http流程](./images/nginx处理http流程.png?raw=true)
 
 ####  1.3 Handler模块
 
@@ -8626,7 +8626,7 @@ make linux -j 8
 
 #### 2.2 Skynet工作模型
 
-![Skynet工作模型](./images/Skynet工作模型.png)
+![Skynet工作模型](./images/Skynet工作模型.png?raw=true)
 
 - **skynet**中的**actor**模型 
 
@@ -8644,7 +8644,7 @@ make linux -j 8
 
 <details>
 <summary>Skynet lua</summary>
-  
+
 ```lua
 -- ./skynet /mnt/e/Code/CVIP/code/skynet/test.conf
 
@@ -8674,3 +8674,96 @@ skynet.start(function ()
 end)
 ```
 </details>
+
+### 3.ZeroMQ
+
+#### 3.1 环境安装
+
+```shell
+git clone https://github.com/zeromq/libzmq.git
+cd libzmq/
+./autogen.sh
+./configure --enable-debug
+make -j 8
+sudo make install
+sudo ldconfig
+```
+
+#### 3.2 [例子代码](./code/zeromq)
+
+<details>
+<summary>server.c</summary>
+
+```C
+/*
+ * @Author: gongluck 
+ * @Date: 2020-12-10 02:27:44 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-12-10 02:37:16
+ */
+
+// gcc -o server server.c -lzmq -g -O0
+
+#include <zmq.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <assert.h>
+
+int main()
+{
+    void *context = zmq_ctx_new();
+    void *responder = zmq_socket(context, ZMQ_REP);
+    int rc = zmq_bind(responder, "tcp://*:5555");
+
+    while (1)
+    {
+        char buffer[10];
+        int ret = zmq_recv(responder, buffer, 10, 0);
+        printf("收到%.*s\n", ret, buffer);
+        zmq_send(responder, "server recved.", strlen("server recved."), 0);
+    }
+    
+    return 0;
+}
+```
+</details>
+
+<details>
+<summary>client.c</summary>
+
+```C
+/*
+ * @Author: gongluck 
+ * @Date: 2020-12-10 02:33:38 
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2020-12-10 02:37:00
+ */
+
+// gcc -o client client.c -lzmq -g -O0
+
+#include <zmq.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main()
+{
+    void *context = zmq_ctx_new();
+    void *requester = zmq_socket(context, ZMQ_REQ);
+    zmq_connect(requester, "tcp://localhost:5555");
+
+    for (int request_nbr = 0; request_nbr != 10; request_nbr++)
+    {
+        char buffer[20] = {0};
+        zmq_send(requester, "Hello", 5, 0);
+        zmq_recv(requester, buffer, 20, 0);
+        printf("接收到 %.20s\n", buffer);
+    }
+    zmq_close(requester);
+    zmq_ctx_destroy(context);
+    return 0;
+}
+```
+</details>
+

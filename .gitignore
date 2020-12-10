@@ -30,6 +30,11 @@
 *.exe
 *.out
 *.app
+*\server
+*\client
 
 # log
 *.log
+
+# vscode
+.vscode
