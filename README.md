@@ -1,4 +1,4 @@
-## 一、算法与设计模式专栏
+## **一、算法与设计模式专栏
 
 ### 1.查找与排序/KMP算法，栈/队列
 
@@ -8767,3 +8767,123 @@ int main()
 ```
 </details>
 
+### 4.Redis
+
+#### 4.1 Redis的元素结构
+
+- **hash**值取余的**table**数组+**hash**表
+
+- **hash**表
+
+  ```C
+  /* This is our hash table structure. Every dictionary has two of this as we
+   * implement incremental rehashing, for the old to the new table. */
+  typedef struct dictht {
+      dictEntry **table;//table属性是⼀个数组，数组中的每个元素都是⼀个指向dict.h/dictEntry 结构的指针，每个dictEntry结构保存着⼀个键值对
+      unsigned long size;//size属性记录了哈希表的⼤⼩，也即是table数组的⼤⼩
+      unsigned long sizemask;//sizemask属性的值总是等于size - 1， 这个属性和哈希值⼀起决定⼀个键应该被放到table数组的哪个索引上⾯
+      unsigned long used;//used属性则记录了哈希表⽬前已有节点（键值对）的数量
+  } dictht;
+  ```
+
+- **hash**表节点
+
+  ```C
+  typedef struct dictEntry {
+      void *key;
+      union {
+          void *val;
+          uint64_t u64;
+          int64_t s64;
+          double d;
+      } v;
+      struct dictEntry *next;//next属性是指向另⼀个哈希表节点的指针，这个指针可以将多个哈希值相同的键值对连接在⼀次，以此来解决键冲突（collision）的问题。
+  } dictEntry;
+  ```
+
+![redis哈希表结构](./images/redis哈希表结构.png?raw=true)
+
+- 字典
+
+  ```C
+  typedef struct dict {
+      dictType *type;//type属性是⼀个指向dictType结构的指针，每个dictType结构保存了⼀簇⽤于操作特定类型键值对的函数，Redis会为⽤途不同的字典设置不同的类型特定函数。
+      void *privdata;//privdata属性保存了需要传给dictType类型特定函数的可选参数。
+      dictht ht[2];//ht属性是⼀个包含两个项的数组，数组中的每个项都是⼀个dictht哈希表，⼀般情况下， 字典只使⽤ht[0]哈希表，ht[1]哈希表只会在对ht[0]哈希表进⾏rehash时使⽤。
+      long rehashidx;//记录了rehash⽬前的进度，如果⽬前没有在进⾏rehash，那么它的值为-1。
+      unsigned long iterators; /* number of iterators currently running */
+  } dict;
+  typedef struct dictType {
+      uint64_t (*hashFunction)(const void *key);
+      void *(*keyDup)(void *privdata, const void *key);
+      void *(*valDup)(void *privdata, const void *obj);
+      int (*keyCompare)(void *privdata, const void *key1, const void *key2);
+      void (*keyDestructor)(void *privdata, void *key);
+      void (*valDestructor)(void *privdata, void *obj);
+  } dictType;
+  ```
+
+  ![redis字典结构](./images/redis字典结构.png?raw=true)
+
+#### 4.2 Rehash
+
+- 随着操作的不断执⾏，哈希表保存的键值对会逐渐地增多或者减少，为了让哈希表的负载因⼦（ratio）维持在⼀个合理的范围之内，当哈希表保存的键值对数量太多或者太少时，程序需要对哈希表的⼤⼩进⾏相应的扩展或者收缩。
+
+  ```C
+  ratio = ht[0].used / ht[0].size
+  ```
+
+- 扩展和收缩哈希表的⼯作可以通过执⾏**rehash**（重新散列）操作来完成，**Redis**对字典的哈希表执⾏**rehash**的策略如下：
+
+  - 如果**ratio**⼩于0.1，则会对**hash**表进⾏收缩操作
+  - 服务器⽬前没有在执⾏**BGSAVE**命令或者**BGREWRITEAOF**命令，并且哈希表的负载因⼦⼤于/等于1，则扩容**hash**表，扩容⼤⼩为当前**ht[0].used*2**
+  - 服务器⽬前正在执⾏**BGSAVE**命令或者**BGREWRITEAOF**命令，并且哈希表的负载因⼦⼤于/等于5，则扩容**hash**表，并且扩容⼤⼩为当前**ht[0].used*2**
+
+- 扩容的步骤如下
+
+  - 为字典**ht[1]**哈希表分配合适的空间
+  - 将**ht[0]**中所有的键值对**rehash**到**ht[1]**（**rehash**指的是重新计算键的哈希值和索引值，然后将键值对放置到**ht[1]**哈希表的指定位置上）
+  - 当**ht[0**包含的所有键值对都迁移到了**ht[1]**之后（**ht[0]**变为空表），释放**ht[0]**，将**ht[1]**设置为**ht[0]**，并在**ht[1]**新创建⼀个空⽩哈希表，为下⼀次**rehash**做准备
+
+- 为了避免**rehash**对服务器性能造成影响，服务器不是⼀次性将**ht[0]**⾥⾯的所有键值对全部**rehash**到**ht[1]**，⽽是分多次、渐进式地将**ht[0]**⾥⾯的键值对慢慢地**rehash**到**ht[1]**
+
+  - 为**ht[1]**分配空间，让字典同时持有**ht[0]**和**ht[1]**两个哈希表
+  - 在字典中维持⼀个索引计数器变量**rehashidx**，并将它的值设置为0，表示**rehash**⼯作正式开始
+  - 在**rehash**进⾏期间，每次对字典执⾏添加、删除、查找或者更新操作（甚至后台启动定时器）时，程序除了执⾏指定的操作以外，还会顺带将**ht[0]**哈希表在**rehashidx**索引上的所有键值对**rehash**到**ht[1]**，当**rehash**⼯作完成之后，程序将**rehashidx**属性的值增⼀
+  - 随着字典操作的不断执⾏，最终在某个时间点上，**ht[0]**的所有键值对都会被**rehash**⾄**ht[1]**，这时程序将 **rehashidx**属性的值设为**-1**，表示rehash操作已完成
+
+#### 4.3 主从复制
+
+- **redis**为了实现⾼可⽤（⽐如解决单点故障的问题），会把数据复制多个副本部署到其他节点上，通过复制，实现**Redis**的⾼可⽤性，实现对数据的冗余备份，保证数据和服务的可靠性。
+
+- 如何配置：
+
+  - 配置⽂件：在从服务器的配置⽂件中加⼊：**slaveof**
+  - 启动命令：**redis-server**启动命令后加⼊**--slaveof**
+  - 客户端命令：**Redis**服务器启动后，直接通过客户端执⾏命令：**slaveof**，则该**Redis**实例成为从节点。
+    - PS：通过**info replication**命令可以看到复制的⼀些信息
+    - ⽆论是通过哪⼀种⽅式来建⽴主从复制，都是从节点来执⾏**slaveof**命令
+
+- 主从复制的作⽤
+
+  - 数据冗余：主从复制实现了数据的热备份，是持久化之外的⼀种数据冗余⽅式。
+  - 故障恢复：当主节点出现问题时，可以由从节点提供服务，实现快速的故障恢复；实际上是⼀种服务的 冗余。
+  - 负载均衡：在主从复制的基础上，配合读写分离，可以由主节点提供写服务，由从节点提供读服务（即 写**Redis**数据时应⽤连接主节点，读**Redis**数据时应⽤连接从节点），分担服务器负载；尤其是在写少读多的场景下，通过多个从节点分担读负载，可以⼤⼤提⾼**Redis**服务器的并发量。
+  - 读写分离：可以⽤于实现读写分离，主库写、从库读，读写分离不仅可以提⾼服务器的负载能⼒，同时 可根据需求的变化，改变从库的数量。
+  - ⾼可⽤基⽯：除了上述作⽤以外，主从复制还是哨兵和集群能够实施的基础，因此说主从复制是**Redis** ⾼可⽤的基础。
+
+- **Redis**的主从复制功能除了⽀持⼀个**Master**节点对应多个**Slave**节点的同时进⾏复制外，还⽀持**Slave**节点向其它多个**Slave**节点进⾏复制。这样就使得架构师能够灵活组织业务缓存数据的传播，例如使⽤多个**Slave**作为数据读取服务的同时，专⻔使⽤⼀个**Slave**节点为流式分析⼯具服务。**Redis**的主从复制功能分为两种数据同步模式进⾏：全量数据同步和增量数据同步。
+
+  - 先执⾏⼀次全同步
+
+    - 请求**master** **BgSave**出⾃⼰的⼀个**RDB Snapshot**⽂件发给**slave**，**slave**接收完毕后，清除掉⾃⼰的旧数据，然后将**RDB**载⼊内存。
+
+    - 当**Slave**节点给定的**replication id**和**Master的replication id**不⼀致时，或者**Slave**给定的上⼀次增量同步的**offset**的位置在**Master**的环形内存中（**replication backlog**）⽆法定位时，**Master**就会对**Slave**发起全量同步操作。这时⽆论是否在**Master**打开了**RDB**快照功能，它和**Slave**节点的每⼀次全量同步操作过程都会更新/创建**Master**上的**RDB**⽂件。在**Slave**连接到**Master**，并完成第⼀次全量数据同步后，接下来**Master**到**Slave**的数据同步过程⼀般就是增量同步形式了（也称为部分同步）。增量同步过程不再主要依赖**RDB**⽂件，**Master**会将新产⽣的数据变化操作存放在**replication backlog**这个内存缓存区，这个内存区域是⼀个环形缓冲区，也就是说是⼀个**FIFO**的队列。
+
+      ![redis完全同步](./images/redis完全同步.png?raw=true)
+
+    - **master**作为⼀个普通的**client**连⼊**slave**，将所有写操作转发给**slave**，没有特殊的同步协议。
+
+      ![redis增量同步](./images/redis增量同步.png?raw=true)
+
+      - 
