@@ -8882,6 +8882,8 @@ int main()
 
       ![redis完全同步](./images/redis完全同步.png?raw=true)
 
+  - 之后执行增量同步
+
     - **master**作为⼀个普通的**client**连⼊**slave**，将所有写操作转发给**slave**，没有特殊的同步协议。
 
       ![redis增量同步](./images/redis增量同步.png?raw=true)
