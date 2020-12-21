@@ -9040,3 +9040,28 @@ make -j 8
 sudo make install
 ```
 
+### 2.Linux内核编程
+
+#### 2.1 Linux内核编译升级
+
+```Shell
+wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.10.tar.xz
+tar -xvf linux-5.10.tar.xz
+cd linux-5.10
+cp /boot/config-xxx ./.config
+make menuconfig
+make -j 8
+sudo su
+make modules_install
+make bzImage
+
+cp arch/x86/boot/bzImage /boot/vmlinuz-4.4.16
+cp .config /boot/config-4.4.16
+cd /lib/modules/4.4.16/
+update-initramfs –c –k 4.4.16
+update-grub
+```
+
+#### 2.2 linux整体架构与子系统划分
+
+![linux整体架构与子系统划分](./images/linux整体架构与子系统划分.png?raw=true)
