@@ -38,3 +38,7 @@
 
 # vscode
 .vscode
+
+# redis
+*.rdb
+nodes.conf
