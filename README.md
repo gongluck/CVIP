@@ -9098,3 +9098,51 @@ update-grub
 - **redis cluster**是 **Redis**的分布式解决方案，在3.0版本推出后有效地解决了**redis**分布式方面的需求。自动将数据进行分片，每个**master**上放一部分数据。提供内置的高可用支持，部分**master**不可用时，还是可以继续工作的支撑N个**redis master node**，每个**master node**都可以挂载多个**slave node**高可用，因为每个**master**都有**salve**节点，那么如果**mater**挂掉，**redis cluster**这套机制，就会自动将某个**slave**切换成**master**。
 
   ![redis集群模式](./images/redis集群模式.png?raw=true)
+
+### 2.去中心化技术
+
+#### 2.1 去中心化网络
+
+![去中心化网络](./images/去中心化网络.png?raw=true)
+
+#### 2.2 网络地址映射
+
+- 服务器发送数据与路由器公网**IP**时，能够将数据映射到私网中的机器；私网内的机器发送数据给服务器，路由器也能够映射为公网**IP**地址的过程，成为网络地址映射。
+
+  ![NAT工作拓扑](./images/NAT工作拓扑.png?raw=true)
+  
+  
+
+### 3.Docker
+
+#### 3.1 镜像、容器、仓库
+
+- **Docker**镜像（**Image**），就相当于是一个**root**文件系统。比如官方镜像**ubuntu:16.04**就包含了完整的一套**Ubuntu16.04**最小系统的**root**文件系统。 
+- 容器是镜像运行时的实体。容器可以被创建、启动、停止、删除、暂停等。
+- 仓库可看着一个代码控制中心，用来保存镜像。**Docker**使用客户端-服务器(**C/S**)架构模式，使用远程**API**来管理和创建**Docker**容器。 **Docker**容器通过**Docker**镜像来创建。
+
+#### 3.2 Docker安装
+
+```Shell
+sudo apt-get remove docker docker-engine docker.io containerd runc
+sudo apt-get update
+sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+curl -fsSL https://mirrors.ustc.edu.cn/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+sudo apt-key fingerprint 0EBFCD88
+sudo add-apt-repository "deb [arch=amd64] https://mirrors.ustc.edu.cn/docker-ce/linux/ubuntu/ $(lsb_release -cs)  stable"
+
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+```
+
+#### 3.3 Docker命令
+
+```Shell
+# 启动docker
+sudo service docker start
+# 停止docker
+sudo service docker stop
+# 重启docker
+sudo service docker restart
+```
+
