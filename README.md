@@ -9177,3 +9177,46 @@ sudo service docker restart
 #### 5.2 K8s集群
 
 ![K8s集群](./images/K8s集群.png?raw=true)
+
+### 6.MongoDB集群
+
+#### 6.1 Master-Slave
+
+![mongodb主从集群](./images/mongodb主从集群.png?raw=true)
+
+- 主机工作，备机处于监控准备状况；
+- 当主机宕机时，备机接管主机的一切工作，待主机恢复正常后，按使用者的设定以自动或手动方式将服务切换到主机上运行，数据的一致性通过共享存储系统解决。
+- 主(**Master**)可读可写，当数据有修改的时候，会将**oplog**同步到所有连接的**salve**上去。
+- 从(**Slave**)只读不可写，自动从**Master**同步数据。
+
+#### 6.2 Replica Set
+
+![mongodb副本集集群](./images/mongodb副本集集群.png?raw=true)
+
+- 为了防止单点故障就需要用副本（**Replication**），当发生硬件故障或者其它原因造成的宕机时，可以使用副本进行恢复，最好能够自动的故障转移（**failover**）。有时引入副本是为了读写分离，将读的请求分流到副本上，减轻主（**Primary**）的读压力。而**Mongodb**的**Replica Set**都能满足这些要求。
+- **Replica Set**的一堆**mongod**的实例集合，它们有着同样的数据内容。包含三类角色：
+  - 主节点（**Primary**）
+    - 接收所有的写请求，然后把修改同步到所有**Secondary**。一个**Replica Set**只能有一个**Primary**节点，当**Primary**挂掉后，其他**Secondary**或者**Arbiter**节点会重新选举出来一个主节点。
+    - 默认读请求也是发到**Primary**节点处理的，需要转发到**Secondary**需要客户端修改一下连接配置。
+  - 副本节点（**Secondary**）
+    - 与主节点保持同样的数据集。当主节点挂掉的时候，参与选主。
+  - 仲裁者（**Arbiter**）
+    - 不保有数据，不参与选主，只进行选主投票。使用**Arbiter**可以减轻数据存储的硬件需求，Arbiter跑起来几乎没什么大的硬件资源需求，但重要的一点是，在生产环境下它和其他数据节点不要部署在同一台机器上。
+- 一个自动**failover**的**Replica Set**节点数必须为奇数，目的是选主投票的时候要有一个大多数才能进行选主决策。
+
+#### 6.3 Sharding
+
+![mongodb分片集群](./images/mongodb分片集群.png?raw=true)
+
+- 当数据量比较大的时候，我们需要把数据分片运行在不同的机器中，以降低CPU、内存和IO的压力，**Sharding**就是这样的技术。
+- 数据库主要由两种方式做**Sharding**：纵向，横向，纵向的方式就是添加更多的**CPU**，内存，磁盘空间等。横向就是上面说的方式。
+- 数据分片（**Shards**）
+  - 保存数据，保证数据的高可用性和一致性。可以是一个单独的**mongod**实例，也可以是一个副本集。
+  - 在生产环境下**Shard**是一个**Replica Set**，以防止该数据片的单点故障。所有**Shard**中有一个**PrimaryShard**，里面包含未进行划分的数据集合。
+
+- 查询路由（**Query Routers**）
+  - **mongos**的实例，客户端直接连接**mongos**，由**mongos**把读写请求路由到指定的**Shard**上去。
+  - 一个**Sharding**集群，可以有一个**mongos**，也可以有多**mongos**以减轻客户端请求的压力。
+
+- 配置服务器（**Config servers**）
+  - 保存集群的元数据（**metadata**），包含各个**Shard**的路由规则。
