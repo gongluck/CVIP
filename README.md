@@ -9146,3 +9146,21 @@ sudo service docker stop
 sudo service docker restart
 ```
 
+### 4.MySQL集群
+
+#### 4.1 Replication
+
+- 主从复制是通过重放**binlog**实现主库数据的异步复制。即当主库执行了一条**sql**命令，那么在从库同样的执行一遍，从而达到主从复制的效果。
+
+- 在这个过程中，**master**对数据的写操作记入二进制日志文件中(**binlog**)，生成一个**log dump**线程，用来给从库的**i/o**线程传**binlog。而从库的i/o线程去请求主库的binlog，并将得到的binlog**日志写到中继日志（**relaylog**）中，从库的**sql**线程，会读取**relaylog**文件中的日志，并解析成具体操作，通过主从的操作一致，而达到最终数据一致。
+
+  ![mysql主从复制](./images/mysql主从复制.png?raw=true)
+
+#### 4.2 Fabirc
+
+- 在**MySQL Replication**的基础上，增加了故障检测与转移，自动数据分片功能。
+- 依旧是一主多从的结构，**MySQL Fabirc**只有一个主节点，区别是当该主节点挂了以后，会从从节点中选择一个来当主节点。
+
+#### 4.3 Cluster
+
+- **MySQL Cluster**是多主多从结构的，高可用性优秀，99.999%的可用性，可以自动切分数据，能跨节点冗余数据（其数据集并不是存储某个特定的**MySQL**实例上，而是被分布在多个**Data Nodes**中，即一个**table**的数据可能被分散在多个物理节点上，任何数据都会在多个**Data Nodes**上冗余备份。任何一个数据变更操作，都将在一组**Data Nodes**上同步，以保证数据的一致性）。
