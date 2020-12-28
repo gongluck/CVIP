@@ -3353,7 +3353,7 @@ http {
 
 #### 4.1 Http
 
-![http和https](./images/http和https.png)
+![http和https](./images/http和https.png?raw=true)
 
 - HTTP协议，即超文本传输协议（Hypertext transfer protocol）。是一种详细规定了浏览器和万维网（WWW = World Wide Web）服务器之间互相通信的规则，通过因特网传送万维网文档的数据传送协议，可以传输文本，图片，视频等。
 
@@ -9005,7 +9005,7 @@ int main()
 
   - **setjmp**函数记录调用时的当前状态，如**IP**、**ESP**等，并且返回0。状态被写在一个**jmp_buf**对象中，这个对象其实是一个**int**数组。比较有趣的是**longjmp**函数，这个函数传入一个**jmp_buf**以及一个整形。它会立即跳转到当时的**setjmp**处，并且返回值是**longjmp**中的第二个参数。也就是说，这个函数可能会被调用两次，从某种程度上来说，有点像**fork()**。
 
-    ![setjmp_longjmp](./images/setjmp_longjmp.png)
+    ![setjmp_longjmp](./images/setjmp_longjmp.png?raw=true)
 
 - 在**try-catch**中，**try**函数充当着**setjmp**的功能。当**setjmp**返回0时（也就是第一次执行），执行**try**块的代码，当返回非0时，说明有**longjmp**被调用，此时发生异常，跳入**catch**块。同时，**throw**就相当于**longjmp**，可以跳转到包含它的**catch**块中。
 - **longjmp**的第一个参数**jmp_buf**，其实是在**try**块中创建的。我们怎么来获取到上一个**try**块中创建的**jmp_buf**呢？我们可以如同操作系统创建一个运行时栈那样，我们也创建一个**try-catch**堆栈。在**try**时，我们把创建的**jmp_buf**压入，在**throw**时，我们把**jmp_buf**弹出。为了线程安全，我们得为每一个线程分配这样一个栈。
@@ -9227,7 +9227,7 @@ sudo service docker restart
 
 #### 1.1 TCP和UDP比较
 
-![TCP和UDP](./images/TCP和UDP.png)
+![TCP和UDP](./images/TCP和UDP.png?raw=true)
 
 #### 1.2 KCP
 
@@ -9260,3 +9260,5 @@ sudo service docker restart
 - 非退让流控：
 
   - **KCP**正常模式同**TCP**一样使用公平退让法则，即发送窗口大小由：发送缓存大小、接收端剩余接收缓存大小、丢包退让及慢启动这四要素决定。但传送及时性要求很高的小数据时，可选择通过配置跳过后两步，仅用前两项来控制发送频率。以牺牲部分公平性及带宽利用率之代价，换取了开着**BT**都能流畅传输的效果。
+
+### 2.DPDK
