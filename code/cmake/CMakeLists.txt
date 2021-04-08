@@ -4,12 +4,22 @@ cmake_minimum_required(VERSION 3.0)
 # 添加版本号
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 0)
+set(VERSION_PATCH 1)
 
 # 获取当前文件夹名
 STRING(REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR})
 
 # 项目名称
-project(${CURRENT_FOLDER})
+project(${CURRENT_FOLDER} VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+
+# 处理版本文件
+if(MSVC)
+# PROJECT_SOURCE_DIR为包含PROJECT()的最近一个CMakeLists.txt文件所在的文件夹
+    set(VERSIONINFO_RC "${PROJECT_SOURCE_DIR}/RC.rc")
+    # 处理RC.rc.in中的${PROJECT_VERSION_MAJOR}、${PROJECT_VERSION_MINOR}、${PROJECT_VERSION_PATCH}成${VERSION_MAJOR}、${VERSION_MINOR}、${VERSION_PATCH}
+    configure_file("${PROJECT_SOURCE_DIR}/RC.rc.in"
+                   "${VERSIONINFO_RC}")
+endif()
 
 # 使用C++11
 set(CMAKE_CXX_STANDARD 11)
@@ -95,9 +105,6 @@ endif (USESUBMODULE)
 # 指定第三方库路径
 link_directories("thirdparty")
 
-# 链接库
-target_link_libraries(${PROJECT_NAME} optimized "thirdparty" debug "thirdparty_d")
-
 # 查找当前目录下所有源文件并保存到变量
 aux_source_directory(. SRCS)
 
@@ -121,6 +128,7 @@ add_library(${PROJECT_NAME}
 
 # 添加链接库
 target_link_libraries(${PROJECT_NAME} ${EXTRA_LIBS})
+target_link_libraries(${PROJECT_NAME} optimized "thirdparty" debug "thirdparty_d")
 
 # 设置调试版本文件后缀名
 set_property(TARGET ${PROJECT_NAME} PROPERTY DEBUG_POSTFIX _d)
@@ -129,19 +137,20 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY DEBUG_POSTFIX _d)
 if(WIN32)
 add_custom_command(TARGET ${PROJECT_NAME}
 	POST_BUILD
-    COMMAND xcopy /S /Y /I test.h ..\\
+  COMMAND xcopy /S /Y /I test.h ..\\
 	COMMAND xcopy /S /Y /I ${PROJECT_NAME}* ..\\
 )
 elseif(ANDROID)
 add_custom_command(TARGET ${PROJECT_NAME}
 	POST_BUILD
-    COMMAND xcopy /S /Y /I test.h ..\\ && xcopy /S /Y /I ${PROJECT_NAME}* ..\\
+  COMMAND xcopy /S /Y /I test.h ..\\ && xcopy /S /Y /I ${PROJECT_NAME}* ..\\
 )
 endif(WIN32)
 
 # 指定安装路径
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION include)
+install(DIRECTORY "${PROJECT_BINARY_DIR}/lib/" DESTINATION lib)
 
 # 定义一个宏，用来简化测试工作
 macro(do_test mycommand myret)
@@ -161,4 +170,5 @@ include(InstallRequiredSystemLibraries)
 # 设置安装包版本号
 set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
 include(CPack)
