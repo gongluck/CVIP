@@ -66,10 +66,18 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--strip-debug")
 set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} -Wl,--strip-debug")
-set(CMAKE_SYSROOT "${TOOLSCHAIN_PATH}/sysroot")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--strip-debug")
+#静态库使用
+#set(CMAKE_SYSROOT "${TOOLSCHAIN_PATH}/sysroot")
+#二进制执行模块使用
+set(CMAKE_SYSROOT "$ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/windows-x86_64/sysroot")
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fstack-protector -fpic -frtti")
 set(CMAKE_CXX_FLAGS_DEBUG "-g2 -gdwarf-2 -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-gline-tables-only -O3 -ffunction-sections -fdata-sections")
+#arm二进制执行模块使用
+link_directories("$ENV{ANDROID_NDK_HOME}/platforms/android-22/arch-arm64/usr/lib")
+link_directories("$ENV{ANDROID_NDK_HOME}/sources/cxx-stl/llvm-libc++/libs/arm-v8a")
+link_directories("$ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/22")
 endif(ANDROID)
 
 # 字符串变量判断

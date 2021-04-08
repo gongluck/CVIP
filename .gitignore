@@ -32,6 +32,8 @@
 *.app
 *\server
 *\client
+bin
+build
 
 # log
 *.log
