@@ -17,10 +17,10 @@ SOCKET      g_srv_socket;
 SOCKADDR_IN g_srv_addr;
 SOCKADDR_IN g_cli_addr;
 const int	BUFSIZE = 1024;
-char        g_buf[BUFSIZE] = { 0 };
 std::mutex	g_mutex;
 std::map<uint32_t, ikcpcb*> g_kcpmap;
 
+#define INTERVEL 10
 #define LOCK std::lock_guard<std::mutex> __lock(g_mutex)
 
 int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
@@ -29,7 +29,9 @@ int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
 	int ret = sendto(g_srv_socket, buf, len, 0, (SOCKADDR*)user, sizeof(g_cli_addr));
 	if (ret <= 0)
 	{
-		LOG << "send failed, ret : " << ret << std::endl;
+#ifdef WIN32
+		LOG << "send failed : " << GetLastError() << std::endl;
+#endif
 	}
 	return 0;
 }
@@ -91,13 +93,14 @@ int main()
 
 	LOG << "server started..." << std::endl;
 
-	std::thread th([&]
+	bool exit = false;
+	std::thread th1([&]
 		{
 			int ret;
 			char buf[BUFSIZE] = { 0 };
-			while (true)
+			while (!exit)
 			{
-				std::this_thread::sleep_for(std::chrono::microseconds(1));
+				std::this_thread::sleep_for(std::chrono::microseconds(INTERVEL));
 				{
 					LOCK;
 
@@ -107,7 +110,7 @@ int main()
 						ret = ikcp_recv(each.second, buf, BUFSIZE);
 						if (ret < 0)
 						{
-							continue;;
+							continue;
 						}
 						LOG << "recv[" << each.first << "] " << std::string(buf, ret) << std::endl;
 
@@ -116,6 +119,7 @@ int main()
 						if (ret < 0)
 						{
 							LOG << "ikcp_send failed, ret : " << ret << std::endl;
+							continue;
 						}
 						// flush
 						ikcp_flush(each.second);
@@ -124,50 +128,103 @@ int main()
 					}
 				}
 			}
-			
+
 		}
 	);
 
-	while (true)
-	{
-		std::this_thread::sleep_for(std::chrono::microseconds(1));
-
-		// 从客户端接收数据
-		while (true)
+	std::thread th2([&]
 		{
-			int len = sizeof(g_cli_addr);
-			ret = recvfrom(g_srv_socket, g_buf, BUFSIZE, 0, (SOCKADDR*)&g_cli_addr, &len);
-			if (ret < 0)
+			int ret;
+			char buf[BUFSIZE] = { 0 };
+			while (!exit)
 			{
-				break;
-			}
+				std::this_thread::sleep_for(std::chrono::microseconds(INTERVEL));
 
-			//LOG << "recv client " << inet_ntoa(g_cli_addr.sin_addr) << "[" << g_cli_addr.sin_port << "]" << std::endl;
-
-			// 解析conn
-			uint32_t conv = ikcp_getconv(g_buf);
-			{
-				LOCK;
-
-				auto it = g_kcpmap.find(conv);
-				if (it == g_kcpmap.end())
+				// 从客户端接收数据
+				int len = sizeof(g_cli_addr);
+				ret = recvfrom(g_srv_socket, buf, BUFSIZE, 0, (SOCKADDR*)&g_cli_addr, &len);
+				if (ret < 0)
 				{
-					// 创建KCP实例
-					g_kcpmap[conv] = ikcp_create(conv, (void*)&g_cli_addr);
-					g_kcpmap[conv]->output = udp_output;
+#ifdef WIN32
+					if (GetLastError() != WSAEWOULDBLOCK)
+					{
+						LOG << "recvfrom failed : " << GetLastError() << std::endl;
+					}
+#endif
+					continue;
 				}
-			}
-			
-			// 输入到KCP"处理程序"
-			ikcp_input(g_kcpmap[conv], g_buf, ret);
-			// flush
-			ikcp_flush(g_kcpmap[conv]);
 
-			ikcp_update(g_kcpmap[conv], clock());
+				//LOG << "recv client " << inet_ntoa(g_cli_addr.sin_addr) << "[" << g_cli_addr.sin_port << "]" << std::endl;
+
+				// 解析conn
+				uint32_t conv = ikcp_getconv(buf);
+				{
+					LOCK;
+
+					auto it = g_kcpmap.find(conv);
+					if (it == g_kcpmap.end())
+					{
+						// 创建KCP实例
+						g_kcpmap[conv] = ikcp_create(conv, (void*)&g_cli_addr);
+						g_kcpmap[conv]->output = udp_output;
+						g_kcpmap[conv]->stream = 0;
+						// 启动快速模式
+						// 第二个参数 nodelay-启用以后若干常规加速将启动
+						// 第三个参数 interval为内部处理时钟，默认设置为 10ms
+						// 第四个参数 resend为快速重传指标，设置为2
+						// 第五个参数 为是否禁用常规流控，这里禁止
+						ikcp_nodelay(g_kcpmap[conv], 1, 10, 2, 1); // 设置成1次ACK跨越直接重传, 这样反应速度会更快. 内部时钟10毫秒.
+						//普通模式
+						//ikcp_nodelay(g_kcpmap[conv], 0, 40, 0, 0);
+						ikcp_wndsize(g_kcpmap[conv], 2, 2);
+						ikcp_setmtu(g_kcpmap[conv], 1200);
+					}
+				}
+
+				// 输入到KCP"处理程序"
+				ret = ikcp_input(g_kcpmap[conv], buf, ret);
+				if (ret < 0)
+				{
+					LOG << "ikcp_input failed : " << ret << std::endl;
+					continue;
+				}
+				// flush
+				ikcp_flush(g_kcpmap[conv]);
+
+				ikcp_update(g_kcpmap[conv], clock());
+			}
+		}
+	);
+
+	char line[1024] = { 0 };
+	while (std::cin.getline(line, sizeof(line)))
+	{
+		if (line[0] == 'q')
+		{
+			exit = true;
+			break;
 		}
 	}
 
+	if (th1.joinable())
+	{
+		th1.join();
+	}
+	if (th2.joinable())
+	{
+		th2.join();
+	}
 	closesocket(g_srv_socket);
+	{
+		LOCK;
+
+		for (auto& each : g_kcpmap)
+		{
+			ikcp_release(each.second);
+			each.second = nullptr;
+		}
+		g_kcpmap.clear();
+	}
 
 #ifdef WIN32
 	WSACleanup();

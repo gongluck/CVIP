@@ -2,6 +2,7 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <mutex>
 
 #include "ikcp.h"
 
@@ -16,14 +17,17 @@ SOCKET      g_cli_socket;
 SOCKADDR_IN g_srv_addr;
 SOCKADDR_IN g_cli_addr;
 const int	BUFSIZE = 1024;
-char        g_buf[BUFSIZE] = { 0 };
+#define INTERVEL 10
 
-int udp_output(const char* buf, int len, ikcpcb* kcp, void* user) 
+std::mutex	g_mutex;
+#define LOCK std::lock_guard<std::mutex> __lock(g_mutex)
+
+int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
 {
 	int ret = sendto(g_cli_socket, buf, len, 0, (sockaddr*)user, sizeof(g_srv_addr));
 	if (ret <= 0)
 	{
-		LOG << "send failed, ret : " << ret << std::endl;
+		LOG << "send failed : " << GetLastError() << std::endl;
 	}
 	return 0;
 }
@@ -78,48 +82,122 @@ int main(void)
 	unsigned long long tid = std::stoull(stid);
 	ikcpcb* kcp = ikcp_create(tid, (void*)&g_srv_addr);
 	kcp->output = udp_output;
+	kcp->stream = 0;
+	// 启动快速模式
+	// 第二个参数 nodelay-启用以后若干常规加速将启动
+	// 第三个参数 interval为内部处理时钟，默认设置为 10ms
+	// 第四个参数 resend为快速重传指标，设置为2
+	// 第五个参数 为是否禁用常规流控，这里禁止
+	//ikcp_nodelay(kcp, 1, 10, 2, 1); // 设置成1次ACK跨越直接重传, 这样反应速度会更快. 内部时钟10毫秒.
+	//普通模式
+	ikcp_nodelay(kcp, 0, 40, 0, 0);
+	ikcp_wndsize(kcp, 2, 2);
+	ikcp_setmtu(kcp, 1200);
 
 	LOG << "use conn : " << stid << std::endl;
 
-	while (true) 
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		ikcp_update(kcp, clock());
-
-		// 发送到KCP"处理程序" 处理结果在kcp->output回调
-		static uint64_t index = 0;
-		sprintf(g_buf, "hello, kcp! %lld", ++index);
-		ikcp_send(kcp, g_buf, strlen(g_buf));
-		// flush
-		ikcp_flush(kcp);
-
-		while (true) 
+	bool exit = false;
+	bool sendtoofast = false;
+	std::thread th1([&]
 		{
-			int len = sizeof(g_srv_addr);
-			ret = recvfrom(g_cli_socket, g_buf, BUFSIZE, 0, (sockaddr*)&g_srv_addr, &len);
-			if (ret < 0)
+			int ret;
+			char buf[BUFSIZE] = { 0 };
+			while (!exit)
 			{
-				break;
-			}
+				std::this_thread::sleep_for(std::chrono::milliseconds(INTERVEL));
+				if (sendtoofast)
+				{
+					continue;
+				}
 
-			// 输入到KCP"处理程序"
-			ikcp_input(kcp, g_buf, ret);
-			// flush
-			ikcp_flush(kcp);
+				// 发送到KCP"处理程序" 处理结果在kcp->output回调
+				static uint64_t index = 0;
+				sprintf(buf, "hello, kcp! %lld", ++index);
+
+				LOCK;
+				ret = ikcp_send(kcp, buf, strlen(buf));
+				if (ret < 0)
+				{
+					LOG << "ikcp_send failed, ret : " << ret << std::endl;
+					continue;
+				}
+				// flush
+				ikcp_flush(kcp);
+
+				ikcp_update(kcp, clock());
+			}
 		}
-		while (true) 
+	);
+
+	std::thread th2([&]
 		{
-			// 从KCP"处理程序"获取用户层数据
-			ret = ikcp_recv(kcp, g_buf, BUFSIZE);
-			if (ret < 0)
+			int ret;
+			char buf[BUFSIZE] = { 0 };
+			while (!exit)
 			{
-				break;
+				std::this_thread::sleep_for(std::chrono::milliseconds(INTERVEL));
+				int len = sizeof(g_srv_addr);
+				ret = recvfrom(g_cli_socket, buf, BUFSIZE, 0, (sockaddr*)&g_srv_addr, &len);
+				if (ret < 0)
+				{
+#ifdef WIN32
+					if (GetLastError() != WSAEWOULDBLOCK)
+					{
+						LOG << "recvfrom failed : " << GetLastError() << std::endl;
+					}
+					if (GetLastError() == WSAEMSGSIZE)
+					{
+						sendtoofast = true;
+					}
+#endif
+					continue;
+				}
+
+				LOCK;
+				// 输入到KCP"处理程序"
+				ret = ikcp_input(kcp, buf, ret);
+				if (ret < 0)
+				{
+					LOG << "ikcp_input failed, ret : " << ret << std::endl;
+					continue;
+				}
+				// flush
+				ikcp_flush(kcp);
+
+				ikcp_update(kcp, clock());
+
+				// 从KCP"处理程序"获取用户层数据
+				ret = ikcp_recv(kcp, buf, BUFSIZE);
+				if (ret > 0)
+				{
+					LOG << "recv : " << std::string(buf, ret) << std::endl;
+					sendtoofast = false;
+				}
 			}
-			LOG << "recv : " << std::string(g_buf, ret) << std::endl;
+		}
+	);
+
+	char line[1024] = { 0 };
+	while (std::cin.getline(line, sizeof(line)))
+	{
+		if (line[0] == 'q')
+		{
+			exit = true;
+			break;
 		}
 	}
 
+	if (th1.joinable())
+	{
+		th1.join();
+	}
+	if (th2.joinable())
+	{
+		th2.join();
+	}
 	closesocket(g_cli_socket);
+	ikcp_release(kcp);
+	kcp = nullptr;
 
 #ifdef WIN32
 	WSACleanup();
