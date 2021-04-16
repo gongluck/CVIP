@@ -6,19 +6,39 @@
 
 #include "ikcp.h"
 
-#define LOG std::cout << __FILE__ << "("<< __LINE__ << ")"
+std::string getime()
+{
+	time_t timep;
+	time(&timep);
+	char tmp[64];
+	strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S", localtime(&timep));
+	return tmp;
+}
+
+#define LOG std::cout << __FILE__ << "("<< __LINE__ << ") " << getime() << " "
 
 #ifdef WIN32
 #include <WinSock2.h>
+#include <Windows.h>
 #pragma comment(lib,"WS2_32.lib")
+void setcolour(int x) {
+	HANDLE h = GetStdHandle(-11);
+	SetConsoleTextAttribute(h, x);
+}
+#define LOGC(c) setcolour(c); LOG
 #endif
 
 SOCKET      g_srv_socket;
 SOCKADDR_IN g_srv_addr;
-SOCKADDR_IN g_cli_addr;
 const int	BUFSIZE = 1024;
+
+typedef struct KCPSTRU
+{
+	ikcpcb* ikcp = nullptr;
+	SOCKADDR_IN cli_addr = { 0 };
+}kcpStru;
 std::mutex	g_mutex;
-std::map<uint32_t, ikcpcb*> g_kcpmap;
+std::map<uint32_t, kcpStru> g_kcpmap;
 
 #define INTERVEL 10
 #define LOCK std::lock_guard<std::mutex> __lock(g_mutex)
@@ -26,11 +46,11 @@ std::map<uint32_t, ikcpcb*> g_kcpmap;
 int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
 {
 	//LOG << "send client " << inet_ntoa(g_cli_addr.sin_addr) << "[" << g_cli_addr.sin_port << "]" << std::endl;
-	int ret = sendto(g_srv_socket, buf, len, 0, (SOCKADDR*)user, sizeof(g_cli_addr));
+	int ret = sendto(g_srv_socket, buf, len, 0, (SOCKADDR*)user, sizeof(SOCKADDR_IN));
 	if (ret <= 0)
 	{
 #ifdef WIN32
-		LOG << "send failed : " << GetLastError() << std::endl;
+		LOGC(4) << "send failed : " << GetLastError() << std::endl;
 #endif
 	}
 	return 0;
@@ -45,7 +65,7 @@ int main()
 	// 初始化套接字动态库
 	if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
 	{
-		LOG << "WSAStartup failed!" << std::endl;
+		LOGC(4) << "WSAStartup failed!" << std::endl;
 		return -1;
 	}
 #endif
@@ -55,7 +75,7 @@ int main()
 	if (g_srv_socket == INVALID_SOCKET)
 	{
 #ifdef WIN32
-		LOG << "socket() failed, error : " << WSAGetLastError() << std::endl;
+		LOGC(4) << "socket() failed, error : " << WSAGetLastError() << std::endl;
 		WSACleanup();
 #endif
 		return -1;
@@ -66,7 +86,7 @@ int main()
 	ret = ioctlsocket(g_srv_socket, FIONBIO, &imode);
 	if (ret == -1)
 	{
-		LOG << "ioctlsocket failed!" << std::endl;
+		LOGC(4) << "ioctlsocket failed!" << std::endl;
 #ifdef WIN32
 		closesocket(g_srv_socket);
 		WSACleanup();
@@ -83,7 +103,7 @@ int main()
 	ret = bind(g_srv_socket, (SOCKADDR*)&g_srv_addr, sizeof(g_srv_addr));
 	if (ret == -1)
 	{
-		LOG << "bind failed!" << std::endl;
+		LOGC(4) << "bind failed!" << std::endl;
 #ifdef WIN32
 		closesocket(g_srv_socket);
 		WSACleanup();
@@ -91,7 +111,7 @@ int main()
 		return -1;
 	}
 
-	LOG << "server started..." << std::endl;
+	LOGC(1) << "server started..." << std::endl;
 
 	bool exit = false;
 	std::thread th1([&]
@@ -107,24 +127,24 @@ int main()
 					for (const auto& each : g_kcpmap)
 					{
 						// 从KCP"处理程序"获取用户层数据
-						ret = ikcp_recv(each.second, buf, BUFSIZE);
+						ret = ikcp_recv(each.second.ikcp, buf, BUFSIZE);
 						if (ret < 0)
 						{
 							continue;
 						}
-						LOG << "recv[" << each.first << "] " << std::string(buf, ret) << std::endl;
+						LOGC(2) << std::string(buf, ret) << std::endl;
 
 						// 发送到KCP"处理程序" 处理结果在kcp->output回调
-						ret = ikcp_send(each.second, buf, ret);
+						ret = ikcp_send(each.second.ikcp, buf, ret);
 						if (ret < 0)
 						{
-							LOG << "ikcp_send failed, ret : " << ret << std::endl;
+							LOGC(4) << "ikcp_send failed, ret : " << ret << std::endl;
 							continue;
 						}
 						// flush
-						ikcp_flush(each.second);
+						ikcp_flush(each.second.ikcp);
 
-						ikcp_update(each.second, clock());
+						ikcp_update(each.second.ikcp, clock());
 					}
 				}
 			}
@@ -141,20 +161,42 @@ int main()
 				std::this_thread::sleep_for(std::chrono::microseconds(INTERVEL));
 
 				// 从客户端接收数据
-				int len = sizeof(g_cli_addr);
-				ret = recvfrom(g_srv_socket, buf, BUFSIZE, 0, (SOCKADDR*)&g_cli_addr, &len);
+				SOCKADDR_IN cli_addr;
+				int len = sizeof(cli_addr);
+				ret = recvfrom(g_srv_socket, buf, BUFSIZE, 0, (SOCKADDR*)&cli_addr, &len);
 				if (ret < 0)
 				{
 #ifdef WIN32
-					if (GetLastError() != WSAEWOULDBLOCK)
+					switch (GetLastError())
 					{
+					case WSAEWOULDBLOCK:
+						break;
+					case WSAECONNRESET:
+					{
+						LOCK;
+
+						for (auto it = g_kcpmap.begin(); it != g_kcpmap.end();)
+						{
+							if (memcmp(&it->second.cli_addr, &cli_addr, sizeof(SOCKADDR_IN)) == 0)
+							{
+								LOGC(2) << "client " << inet_ntoa(cli_addr.sin_addr) << "[" << cli_addr.sin_port << "] close." << std::endl;
+								it = g_kcpmap.erase(it);
+							}
+							else
+							{
+								++it;
+							}
+						}
+					}
+						
+						break;
+					default:
 						LOG << "recvfrom failed : " << GetLastError() << std::endl;
+						break;
 					}
 #endif
 					continue;
 				}
-
-				//LOG << "recv client " << inet_ntoa(g_cli_addr.sin_addr) << "[" << g_cli_addr.sin_port << "]" << std::endl;
 
 				// 解析conn
 				uint32_t conv = ikcp_getconv(buf);
@@ -165,33 +207,34 @@ int main()
 					if (it == g_kcpmap.end())
 					{
 						// 创建KCP实例
-						g_kcpmap[conv] = ikcp_create(conv, (void*)&g_cli_addr);
-						g_kcpmap[conv]->output = udp_output;
-						g_kcpmap[conv]->stream = 0;
+						g_kcpmap[conv].cli_addr = cli_addr;
+						g_kcpmap[conv].ikcp = ikcp_create(conv, (void*)&g_kcpmap[conv].cli_addr);
+						g_kcpmap[conv].ikcp->output = udp_output;
+						g_kcpmap[conv].ikcp->stream = 0;
 						// 启动快速模式
 						// 第二个参数 nodelay-启用以后若干常规加速将启动
 						// 第三个参数 interval为内部处理时钟，默认设置为 10ms
 						// 第四个参数 resend为快速重传指标，设置为2
 						// 第五个参数 为是否禁用常规流控，这里禁止
-						ikcp_nodelay(g_kcpmap[conv], 1, 10, 2, 1); // 设置成1次ACK跨越直接重传, 这样反应速度会更快. 内部时钟10毫秒.
+						ikcp_nodelay(g_kcpmap[conv].ikcp, 1, 10, 2, 1); // 设置成1次ACK跨越直接重传, 这样反应速度会更快. 内部时钟10毫秒.
 						//普通模式
 						//ikcp_nodelay(g_kcpmap[conv], 0, 40, 0, 0);
-						ikcp_wndsize(g_kcpmap[conv], 2, 2);
-						ikcp_setmtu(g_kcpmap[conv], 1200);
+						ikcp_wndsize(g_kcpmap[conv].ikcp, 2, 2);
+						ikcp_setmtu(g_kcpmap[conv].ikcp, 1200);
 					}
 				}
 
 				// 输入到KCP"处理程序"
-				ret = ikcp_input(g_kcpmap[conv], buf, ret);
+				ret = ikcp_input(g_kcpmap[conv].ikcp, buf, ret);
 				if (ret < 0)
 				{
-					LOG << "ikcp_input failed : " << ret << std::endl;
+					LOGC(4) << "ikcp_input failed : " << ret << std::endl;
 					continue;
 				}
 				// flush
-				ikcp_flush(g_kcpmap[conv]);
+				ikcp_flush(g_kcpmap[conv].ikcp);
 
-				ikcp_update(g_kcpmap[conv], clock());
+				ikcp_update(g_kcpmap[conv].ikcp, clock());
 			}
 		}
 	);
@@ -220,8 +263,8 @@ int main()
 
 		for (auto& each : g_kcpmap)
 		{
-			ikcp_release(each.second);
-			each.second = nullptr;
+			ikcp_release(each.second.ikcp);
+			each.second.ikcp = nullptr;
 		}
 		g_kcpmap.clear();
 	}

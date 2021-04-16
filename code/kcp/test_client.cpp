@@ -6,18 +6,34 @@
 
 #include "ikcp.h"
 
-#define LOG std::cout << __FILE__ << "("<< __LINE__ << ")"
+std::string getime()
+{
+	time_t timep;
+	time(&timep);
+	char tmp[64];
+	strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S", localtime(&timep));
+	return tmp;
+}
+
+#define LOG std::cout << __FILE__ << "("<< __LINE__ << ") " << getime() << " "
 
 #ifdef WIN32
 #include <WinSock2.h>
+#include <Windows.h>
 #pragma comment(lib,"WS2_32.lib")
+void setcolour(int x) {
+	HANDLE h = GetStdHandle(-11);
+	SetConsoleTextAttribute(h, x);
+}
+#define LOGC(c) setcolour(c); LOG
 #endif
 
 SOCKET      g_cli_socket;
 SOCKADDR_IN g_srv_addr;
 SOCKADDR_IN g_cli_addr;
 const int	BUFSIZE = 1024;
-#define INTERVEL 10
+#define SENDINTERVEL 1
+#define INTERVEL 1
 
 std::mutex	g_mutex;
 #define LOCK std::lock_guard<std::mutex> __lock(g_mutex)
@@ -27,7 +43,11 @@ int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
 	int ret = sendto(g_cli_socket, buf, len, 0, (sockaddr*)user, sizeof(g_srv_addr));
 	if (ret <= 0)
 	{
-		LOG << "send failed : " << GetLastError() << std::endl;
+		LOGC(4) << "send failed : " << GetLastError() << std::endl;
+	}
+	else
+	{
+		LOGC(3) << "raw sent : " << std::string(buf, len) << std::endl;
 	}
 	return 0;
 }
@@ -41,7 +61,7 @@ int main(void)
 	// 初始化套接字动态库
 	if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
 	{
-		LOG << "WSAStartup failed!" << std::endl;
+		LOGC(4) << "WSAStartup failed!" << std::endl;
 		return -1;
 	}
 #endif
@@ -51,7 +71,7 @@ int main(void)
 	if (g_cli_socket == -1)
 	{
 #ifdef WIN32
-		LOG << "create socket failed, error : " << WSAGetLastError() << std::endl;
+		LOGC(4) << "create socket failed, error : " << WSAGetLastError() << std::endl;
 		WSACleanup();
 #endif
 		return -1;
@@ -62,7 +82,7 @@ int main(void)
 	ret = ioctlsocket(g_cli_socket, FIONBIO, &imode);
 	if (ret == -1)
 	{
-		LOG << "ioctlsocket failed!" << std::endl;
+		LOGC(4) << "ioctlsocket failed!" << std::endl;
 #ifdef WIN32
 		closesocket(g_cli_socket);
 		WSACleanup();
@@ -94,10 +114,9 @@ int main(void)
 	ikcp_wndsize(kcp, 2, 2);
 	ikcp_setmtu(kcp, 1200);
 
-	LOG << "use conn : " << stid << std::endl;
+	LOGC(1) << "use conn : " << stid << std::endl;
 
 	bool exit = false;
-	bool sendtoofast = false;
 	std::thread th1([&]
 		{
 			int ret;
@@ -105,20 +124,16 @@ int main(void)
 			while (!exit)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(INTERVEL));
-				if (sendtoofast)
-				{
-					continue;
-				}
 
 				// 发送到KCP"处理程序" 处理结果在kcp->output回调
 				static uint64_t index = 0;
-				sprintf(buf, "hello, kcp! %lld", ++index);
+				sprintf(buf, "[%s]:hello, kcp! %lld", stid.c_str(), ++index);
 
 				LOCK;
 				ret = ikcp_send(kcp, buf, strlen(buf));
 				if (ret < 0)
 				{
-					LOG << "ikcp_send failed, ret : " << ret << std::endl;
+					LOGC(4) << "ikcp_send failed, ret : " << ret << std::endl;
 					continue;
 				}
 				// flush
@@ -141,24 +156,27 @@ int main(void)
 				if (ret < 0)
 				{
 #ifdef WIN32
-					if (GetLastError() != WSAEWOULDBLOCK)
+					switch (GetLastError())
 					{
-						LOG << "recvfrom failed : " << GetLastError() << std::endl;
-					}
-					if (GetLastError() == WSAEMSGSIZE)
-					{
-						sendtoofast = true;
+					//case WSAEWOULDBLOCK:
+					//case WSAEMSGSIZE:
+					//break;
+					default:
+						LOGC(4) << "recvfrom failed : " << GetLastError() << std::endl;
+						std::this_thread::sleep_for(std::chrono::seconds(5));
+						break;
 					}
 #endif
 					continue;
 				}
+				LOGC(2) << "raw recv : " << std::string(buf, ret) << std::endl;
 
 				LOCK;
 				// 输入到KCP"处理程序"
 				ret = ikcp_input(kcp, buf, ret);
 				if (ret < 0)
 				{
-					LOG << "ikcp_input failed, ret : " << ret << std::endl;
+					LOGC(4) << "ikcp_input failed, ret : " << ret << std::endl;
 					continue;
 				}
 				// flush
@@ -170,8 +188,7 @@ int main(void)
 				ret = ikcp_recv(kcp, buf, BUFSIZE);
 				if (ret > 0)
 				{
-					LOG << "recv : " << std::string(buf, ret) << std::endl;
-					sendtoofast = false;
+					LOGC(1) << "recv : " << std::string(buf, ret) << std::endl;
 				}
 			}
 		}
