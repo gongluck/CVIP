@@ -31,6 +31,7 @@ void setcolour(int x) {
 SOCKET      g_srv_socket;
 SOCKADDR_IN g_srv_addr;
 const int	BUFSIZE = 1024;
+const int	MTU = BUFSIZE;
 
 typedef struct KCPSTRU
 {
@@ -40,17 +41,22 @@ typedef struct KCPSTRU
 std::mutex	g_mutex;
 std::map<uint32_t, kcpStru> g_kcpmap;
 
-#define INTERVEL 10
+#define INTERVEL 1
 #define LOCK std::lock_guard<std::mutex> __lock(g_mutex)
 
 int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
 {
-	//LOG << "send client " << inet_ntoa(g_cli_addr.sin_addr) << "[" << g_cli_addr.sin_port << "]" << std::endl;
 	int ret = sendto(g_srv_socket, buf, len, 0, (SOCKADDR*)user, sizeof(SOCKADDR_IN));
 	if (ret <= 0)
 	{
 #ifdef WIN32
 		LOGC(4) << "send failed : " << GetLastError() << std::endl;
+#endif
+	}
+	else
+	{
+#ifdef SHOWRAW
+		LOGC(2) << "raw sent " << std::string(buf, len) << std::endl;
 #endif
 	}
 	return 0;
@@ -132,7 +138,7 @@ int main()
 						{
 							continue;
 						}
-						LOGC(2) << std::string(buf, ret) << std::endl;
+						LOGC(1) << std::string(buf, ret) << std::endl;
 
 						// 发送到KCP"处理程序" 处理结果在kcp->output回调
 						ret = ikcp_send(each.second.ikcp, buf, ret);
@@ -160,6 +166,7 @@ int main()
 			{
 				std::this_thread::sleep_for(std::chrono::microseconds(INTERVEL));
 
+				LOCK;
 				// 从客户端接收数据
 				SOCKADDR_IN cli_addr;
 				int len = sizeof(cli_addr);
@@ -173,7 +180,7 @@ int main()
 						break;
 					case WSAECONNRESET:
 					{
-						LOCK;
+						//LOCK;
 
 						for (auto it = g_kcpmap.begin(); it != g_kcpmap.end();)
 						{
@@ -181,6 +188,7 @@ int main()
 							{
 								LOGC(2) << "client " << inet_ntoa(cli_addr.sin_addr) << "[" << cli_addr.sin_port << "] close." << std::endl;
 								it = g_kcpmap.erase(it);
+								LOGC(2) << "left " << g_kcpmap.size() << " clients." << std::endl;
 							}
 							else
 							{
@@ -188,8 +196,7 @@ int main()
 							}
 						}
 					}
-						
-						break;
+					break;
 					default:
 						LOG << "recvfrom failed : " << GetLastError() << std::endl;
 						break;
@@ -197,11 +204,14 @@ int main()
 #endif
 					continue;
 				}
+#ifdef SHOWRAW
+				LOGC(2) << "raw recv " << std::string(buf, ret) << std::endl;
+#endif
 
 				// 解析conn
 				uint32_t conv = ikcp_getconv(buf);
 				{
-					LOCK;
+					//LOCK;
 
 					auto it = g_kcpmap.find(conv);
 					if (it == g_kcpmap.end())
@@ -211,16 +221,17 @@ int main()
 						g_kcpmap[conv].ikcp = ikcp_create(conv, (void*)&g_kcpmap[conv].cli_addr);
 						g_kcpmap[conv].ikcp->output = udp_output;
 						g_kcpmap[conv].ikcp->stream = 0;
+						LOGC(2) << "now " << g_kcpmap.size() << " clients." << std::endl;
 						// 启动快速模式
 						// 第二个参数 nodelay-启用以后若干常规加速将启动
 						// 第三个参数 interval为内部处理时钟，默认设置为 10ms
 						// 第四个参数 resend为快速重传指标，设置为2
 						// 第五个参数 为是否禁用常规流控，这里禁止
-						ikcp_nodelay(g_kcpmap[conv].ikcp, 1, 10, 2, 1); // 设置成1次ACK跨越直接重传, 这样反应速度会更快. 内部时钟10毫秒.
+						//ikcp_nodelay(g_kcpmap[conv].ikcp, 1, 10, 2, 1); // 设置成1次ACK跨越直接重传, 这样反应速度会更快. 内部时钟10毫秒.
 						//普通模式
-						//ikcp_nodelay(g_kcpmap[conv], 0, 40, 0, 0);
+						ikcp_nodelay(g_kcpmap[conv].ikcp, 0, 40, 0, 0);
 						ikcp_wndsize(g_kcpmap[conv].ikcp, 2, 2);
-						ikcp_setmtu(g_kcpmap[conv].ikcp, 1200);
+						ikcp_setmtu(g_kcpmap[conv].ikcp, MTU);
 					}
 				}
 

@@ -32,8 +32,9 @@ SOCKET      g_cli_socket;
 SOCKADDR_IN g_srv_addr;
 SOCKADDR_IN g_cli_addr;
 const int	BUFSIZE = 1024;
+const int	MTU = BUFSIZE;
 #define SENDINTERVEL 1
-#define INTERVEL 1
+#define RECVINTERVEL 1
 
 std::mutex	g_mutex;
 #define LOCK std::lock_guard<std::mutex> __lock(g_mutex)
@@ -47,7 +48,9 @@ int udp_output(const char* buf, int len, ikcpcb* kcp, void* user)
 	}
 	else
 	{
+#ifdef SHOWRAW
 		LOGC(3) << "raw sent : " << std::string(buf, len) << std::endl;
+#endif
 	}
 	return 0;
 }
@@ -112,7 +115,7 @@ int main(void)
 	//普通模式
 	ikcp_nodelay(kcp, 0, 40, 0, 0);
 	ikcp_wndsize(kcp, 2, 2);
-	ikcp_setmtu(kcp, 1200);
+	ikcp_setmtu(kcp, MTU);
 
 	LOGC(1) << "use conn : " << stid << std::endl;
 
@@ -123,7 +126,7 @@ int main(void)
 			char buf[BUFSIZE] = { 0 };
 			while (!exit)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(INTERVEL));
+				std::this_thread::sleep_for(std::chrono::milliseconds(SENDINTERVEL));
 
 				// 发送到KCP"处理程序" 处理结果在kcp->output回调
 				static uint64_t index = 0;
@@ -133,6 +136,7 @@ int main(void)
 				ret = ikcp_send(kcp, buf, strlen(buf));
 				if (ret < 0)
 				{
+					--index;
 					LOGC(4) << "ikcp_send failed, ret : " << ret << std::endl;
 					continue;
 				}
@@ -150,7 +154,7 @@ int main(void)
 			char buf[BUFSIZE] = { 0 };
 			while (!exit)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(INTERVEL));
+				std::this_thread::sleep_for(std::chrono::milliseconds(RECVINTERVEL));
 				int len = sizeof(g_srv_addr);
 				ret = recvfrom(g_cli_socket, buf, BUFSIZE, 0, (sockaddr*)&g_srv_addr, &len);
 				if (ret < 0)
@@ -158,18 +162,20 @@ int main(void)
 #ifdef WIN32
 					switch (GetLastError())
 					{
-					//case WSAEWOULDBLOCK:
-					//case WSAEMSGSIZE:
-					//break;
+					case WSAEWOULDBLOCK:
+					case WSAEMSGSIZE:
+					break;
 					default:
 						LOGC(4) << "recvfrom failed : " << GetLastError() << std::endl;
-						std::this_thread::sleep_for(std::chrono::seconds(5));
+						//std::this_thread::sleep_for(std::chrono::seconds(5));
 						break;
 					}
 #endif
 					continue;
 				}
+#ifdef SHOWRAW
 				LOGC(2) << "raw recv : " << std::string(buf, ret) << std::endl;
+#endif
 
 				LOCK;
 				// 输入到KCP"处理程序"
@@ -212,9 +218,10 @@ int main(void)
 	{
 		th2.join();
 	}
-	closesocket(g_cli_socket);
+	
 	ikcp_release(kcp);
 	kcp = nullptr;
+	closesocket(g_cli_socket);
 
 #ifdef WIN32
 	WSACleanup();
