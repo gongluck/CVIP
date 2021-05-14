@@ -6958,6 +6958,20 @@ sudo ldconfig
 
 #### 2.1 [CMake](./code/cmake)
 
+- [CMake编译安装](./code/cmake/compile.sh)
+
+  ```shell
+  sudo yum install -y gcc gcc-c++ make automake
+  sudo yum install -y wget
+  sudo wget https://cmake.org/files/v3.15/cmake-3.15.0.tar.gz
+  sudo tar -zxvf cmake-3.15.0.tar.gz 
+  cd cmake-3.15.0/
+  sudo ./bootstrap
+  sudo gmake -j4
+  sudo gmake install
+  cmake --version
+  ```
+
 - **CMake**命令
 
   - 生成工程
@@ -6986,6 +7000,9 @@ sudo ldconfig
     ```
 
 - [**CMakeLists.txt**语法](./code/cmake/CMakeLists.txt)
+
+  <details>
+  <summary>CMakeLists.txt语法</summary>
 
   ```cmake
   # CMake最低版本要求
@@ -7031,6 +7048,8 @@ sudo ldconfig
   
   # 目标平台判断
   if(WIN32)
+  if(CMAKE_CL_64)
+  endif()
   # 分别设置了Debug版本和Release版本可执行文件的输出目录(经测试,windows环境有效)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
@@ -7135,13 +7154,13 @@ sudo ldconfig
   if(WIN32)
   add_custom_command(TARGET ${PROJECT_NAME}
   	POST_BUILD
-      COMMAND xcopy /S /Y /I test.h ..\\
+    	COMMAND xcopy /S /Y /I test.h ..\\
   	COMMAND xcopy /S /Y /I ${PROJECT_NAME}* ..\\
   )
   elseif(ANDROID)
   add_custom_command(TARGET ${PROJECT_NAME}
   	POST_BUILD
-      COMMAND xcopy /S /Y /I test.h ..\\ && xcopy /S /Y /I ${PROJECT_NAME}* ..\\
+    	COMMAND xcopy /S /Y /I test.h ..\\ && xcopy /S /Y /I ${PROJECT_NAME}* ..\\
   )
   endif(WIN32)
   
@@ -7170,7 +7189,9 @@ sudo ldconfig
   set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
   set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
   include(CPack)
+  
   ```
+  </details>
 
 ## 八、分布式存储专题
 

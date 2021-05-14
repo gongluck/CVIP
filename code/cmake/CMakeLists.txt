@@ -41,6 +41,8 @@ endif()
 
 # 目标平台判断
 if(WIN32)
+if(CMAKE_CL_64)
+endif()
 # 分别设置了Debug版本和Release版本可执行文件的输出目录(经测试,windows环境有效)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
@@ -145,13 +147,13 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY DEBUG_POSTFIX _d)
 if(WIN32)
 add_custom_command(TARGET ${PROJECT_NAME}
 	POST_BUILD
-  COMMAND xcopy /S /Y /I test.h ..\\
+	COMMAND xcopy /S /Y /I test.h ..\\
 	COMMAND xcopy /S /Y /I ${PROJECT_NAME}* ..\\
 )
 elseif(ANDROID)
 add_custom_command(TARGET ${PROJECT_NAME}
 	POST_BUILD
-  COMMAND xcopy /S /Y /I test.h ..\\ && xcopy /S /Y /I ${PROJECT_NAME}* ..\\
+	COMMAND xcopy /S /Y /I test.h ..\\ && xcopy /S /Y /I ${PROJECT_NAME}* ..\\
 )
 endif(WIN32)
 
