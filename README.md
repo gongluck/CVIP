@@ -7193,6 +7193,47 @@ sudo ldconfig
   ```
   </details>
 
+### 3.Windows搭建类Linux环境
+
+#### 3.1 MSYS2
+
+```shell
+# 下载安装MSYS2(Minimal SYStem 2)
+# 把安装⽬录下的msys2_shell.cmd中注释掉的"rem set MSYS2_PATH_TYPE=inherit"改成启用，这是为了将vs的环境继承给MSYS2
+# 编辑"/etc/pacman.d/mirrorlist.mingw32" 在⽂件开头添加：
+Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/mingw/i686/
+Server = http://mirrors.ustc.edu.cn/msys2/mingw/i686/
+# 编辑"/etc/pacman.d/mirrorlist.mingw64" 在⽂件开头添加：
+Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/mingw/x86_64/
+Server = http://mirrors.ustc.edu.cn/msys2/mingw/x86_64/
+# 编辑"/etc/pacman.d/mirrorlist.msys" 在⽂件开头添加：
+Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/msys/$arch/
+Server = http://mirrors.ustc.edu.cn/msys2/msys/$arch/
+# 使用VS命令行运行msys2
+#32位
+msys2_shell.cmd -mingw32
+#64位
+msys2_shell.cmd -mingw64
+# msys2中执行
+pacman -Sy
+#32位
+pacman -S mingw-w64-i686-toolchain
+#64位
+pacman -S mingw-w64-x86_64-toolchain
+pacman -S git
+pacman -S make
+pacman -S automake
+pacman -S autoconf
+pacman -S perl19
+pacman -S libtool
+pacman -S mingw-w64-i686-cmake
+pacman -S pkg-config
+pacman -S mingw-w64-x86_64-SDL2
+# 重命名msys64/usr/bin/link.exe为msys64/usr/bin/link.bak
+pacman -S yasm
+pacman -S nasm
+```
+
 ## 八、分布式存储专题
 
 ### 1.FastDFS
