@@ -7218,20 +7218,20 @@ msys2_shell.cmd -mingw64
 pacman -Sy
 #32位
 pacman -S mingw-w64-i686-toolchain
+pacman -S mingw-w64-i686-nasm mingw-w64-i686-gcc mingw-w64-i686-SDL2
 #64位
 pacman -S mingw-w64-x86_64-toolchain
+pacman -S mingw-w64-x86_64-nasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2
+#通用
 pacman -S git
 pacman -S make
 pacman -S automake
 pacman -S autoconf
 pacman -S perl19
 pacman -S libtool
-pacman -S mingw-w64-i686-cmake
 pacman -S pkg-config
-pacman -S mingw-w64-x86_64-SDL2
-# 重命名msys64/usr/bin/link.exe为msys64/usr/bin/link.bak
-pacman -S yasm
-pacman -S nasm
+# 重命名msys64/usr/bin/link.exe为msys64/usr/bin/link.exe.bak
+
 ```
 
 ## 八、分布式存储专题
