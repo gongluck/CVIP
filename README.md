@@ -7227,7 +7227,7 @@ pacman -S git
 pacman -S make
 pacman -S automake
 pacman -S autoconf
-pacman -S perl19
+pacman -S perl
 pacman -S libtool
 pacman -S pkg-config
 # 重命名msys64/usr/bin/link.exe为msys64/usr/bin/link.exe.bak
