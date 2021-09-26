@@ -1,54 +1,61 @@
 # C++
 
 - [C++](#c)
-	- [基础](#基础)
-		- [编译过程](#编译过程)
-		- [链接](#链接)
-			- [二者的优缺点](#二者的优缺点)
-		- [内存管理](#内存管理)
-		- [堆和栈的区别](#堆和栈的区别)
-		- [全局变量、局部变量、静态全局变量、静态局部变量的区别](#全局变量局部变量静态全局变量静态局部变量的区别)
-		- [限制类的对象只能在堆上创建和限制对象只能在栈上创建](#限制类的对象只能在堆上创建和限制对象只能在栈上创建)
-		- [内存对齐](#内存对齐)
-		- [类大小的计算](#类大小的计算)
-		- [内存泄漏](#内存泄漏)
-		- [智能指针](#智能指针)
-		- [``C++ 11`` 新特性](#c-11-新特性)
-			- [``auto`` 类型推导](#auto-类型推导)
-			- [``decltype`` 类型推导](#decltype-类型推导)
-			- [``lambda`` 表达式](#lambda-表达式)
-			- [范围 ``for`` 语句](#范围-for-语句)
-			- [右值引用](#右值引用)
-			- [标准库 ``move()`` 函数](#标准库-move-函数)
-			- [智能指针](#智能指针-1)
-			- [``delete`` 函数和 ``default`` 函数](#delete-函数和-default-函数)
-		- [面向对象](#面向对象)
-		- [重载、重写、隐藏的区别](#重载重写隐藏的区别)
-		- [``static`` 的作用](#static-的作用)
-		- [``const``](#const)
-		- [``inline``](#inline)
-		- [``new`` 和 ``delete``](#new-和-delete)
-		- [``malloc``](#malloc)
-		- [`i++`与`++i`](#i与i)
-		- [不用中间变量，交换`a`和`b`的值](#不用中间变量交换a和b的值)
-		- [`main`函数执行完之后还会执行其他语句吗？](#main函数执行完之后还会执行其他语句吗)
-		- [宏参数的连接](#宏参数的连接)
-		- [`const`和`#define`的特点和区别](#const和define的特点和区别)
-		- [`const`的作用](#const的作用)
-		- [`static`的作用](#static的作用)
-		- [字节对齐](#字节对齐)
-		- [`C++`中4种指针转化运算符](#c中4种指针转化运算符)
-	- [内联函数](#内联函数)
-		- [宏函数和内联函数](#宏函数和内联函数)
-	- [友元](#友元)
-	- [构造函数](#构造函数)
-		- [构造函数放在`private`区](#构造函数放在private区)
-	- [析构函数](#析构函数)
-	- [虚函数](#虚函数)
-		- [虚函数的实现](#虚函数的实现)
-		- [虚析构函数](#虚析构函数)
-		- [构造函数中调用虚函数](#构造函数中调用虚函数)
-	- [模板](#模板)
+  - [基础](#基础)
+    - [编译过程](#编译过程)
+    - [链接](#链接)
+      - [二者的优缺点](#二者的优缺点)
+    - [内存管理](#内存管理)
+    - [堆和栈的区别](#堆和栈的区别)
+    - [全局变量、局部变量、静态全局变量、静态局部变量的区别](#全局变量局部变量静态全局变量静态局部变量的区别)
+    - [限制类的对象只能在堆上创建和限制对象只能在栈上创建](#限制类的对象只能在堆上创建和限制对象只能在栈上创建)
+    - [内存对齐](#内存对齐)
+    - [类大小的计算](#类大小的计算)
+    - [内存泄漏](#内存泄漏)
+    - [智能指针](#智能指针)
+    - [``C++ 11`` 新特性](#c-11-新特性)
+      - [``auto`` 类型推导](#auto-类型推导)
+      - [``decltype`` 类型推导](#decltype-类型推导)
+      - [``lambda`` 表达式](#lambda-表达式)
+      - [范围 ``for`` 语句](#范围-for-语句)
+      - [右值引用](#右值引用)
+      - [标准库 ``move()`` 函数](#标准库-move-函数)
+      - [智能指针](#智能指针-1)
+      - [``delete`` 函数和 ``default`` 函数](#delete-函数和-default-函数)
+    - [面向对象](#面向对象)
+    - [重载、重写、隐藏的区别](#重载重写隐藏的区别)
+    - [``static`` 的作用](#static-的作用)
+    - [``const``](#const)
+    - [``inline``](#inline)
+    - [``new`` 和 ``delete``](#new-和-delete)
+    - [``malloc``](#malloc)
+    - [构造函数、析构函数是否需要定义成虚函数？](#构造函数析构函数是否需要定义成虚函数)
+    - [如何避免拷贝？](#如何避免拷贝)
+    - [多重继承](#多重继承)
+    - [为什么用成员初始化列表会快一些？](#为什么用成员初始化列表会快一些)
+    - [左值和右值](#左值和右值)
+    - [``std::move()``](#stdmove)
+    - [如何判断结构体是否相等？能否用 ``memcmp`` 函数判断结构体相等？](#如何判断结构体是否相等能否用-memcmp-函数判断结构体相等)
+    - [`i++`与`++i`](#i与i)
+    - [不用中间变量，交换`a`和`b`的值](#不用中间变量交换a和b的值)
+    - [`main`函数执行完之后还会执行其他语句吗？](#main函数执行完之后还会执行其他语句吗)
+    - [宏参数的连接](#宏参数的连接)
+    - [`const`和`#define`的特点和区别](#const和define的特点和区别)
+    - [`const`的作用](#const的作用)
+    - [`static`的作用](#static的作用)
+    - [字节对齐](#字节对齐)
+    - [`C++`中4种指针转化运算符](#c中4种指针转化运算符)
+  - [内联函数](#内联函数)
+    - [宏函数和内联函数](#宏函数和内联函数)
+  - [友元](#友元)
+  - [构造函数](#构造函数)
+    - [构造函数放在`private`区](#构造函数放在private区)
+  - [析构函数](#析构函数)
+  - [虚函数](#虚函数)
+    - [虚函数的实现](#虚函数的实现)
+    - [虚析构函数](#虚析构函数)
+    - [构造函数中调用虚函数](#构造函数中调用虚函数)
+  - [模板](#模板)
 
 ## 基础
 
@@ -1095,6 +1102,357 @@ int main()
   - 调用内核空间的系统调用函数 ``mmap()``，实现文件物理地址和进程虚拟地址的一一映射关系；
   - 进程发起对这片映射空间的访问，引发缺页异常，实现文件内容到物理内存（主存）的拷贝。
 
+### 构造函数、析构函数是否需要定义成虚函数？
+
+构造函数一般不定义为虚函数，原因：
+
+- 从存储空间的角度考虑：构造函数是在实例化对象的时候进行调用，如果此时将构造函数定义成虚函数，需要通过访问该对象所在的内存空间才能进行虚函数的调用（因为需要通过指向虚函数表的指针调用虚函数表，虽然虚函数表在编译时就有了，但是没有虚函数的指针，虚函数的指针只有在创建了对象才有），但是此时该对象还未创建，便无法进行虚函数的调用。所以构造函数不能定义成虚函数。
+- 从使用的角度考虑：虚函数是基类的指针指向派生类的对象时，通过该指针实现对派生类的虚函数的调用，构造函数是在创建对象时自动调用的。
+- 从实现上考虑：虚函数表是在创建对象之后才有的，因此不能定义成虚函数。
+- 从类型上考虑：在创建对象时需要明确其类型。
+
+析构函数一般定义成虚函数，原因：
+
+- 析构函数定义成虚函数是为了防止内存泄漏，因为当基类的指针或者引用指向或绑定到派生类的对象时，如果未将基类的析构函数定义成虚函数，会调用基类的析构函数，那么只能将基类的成员所占的空间释放掉，派生类中特有的就会无法释放内存空间导致内存泄漏。
+
+### 如何避免拷贝？
+
+最直观的想法是：将类的拷贝构造函数和赋值构造函数声明为私有 ``private``，但对于类的成员函数和友元函数依然可以调用，达不到完全禁止类的对象被拷贝的目的，而且程序会出现错误，因为未对函数进行定义。
+
+解决方法：定义一个基类，将其中的拷贝构造函数和赋值构造函数声明为私有 ``private`` 。派生类以私有 ``private`` 的方式继承基类。
+
+```C++
+class Uncopyable
+{
+public:
+    Uncopyable() {}
+    ~Uncopyable() {}
+private:
+    Uncopyable(const Uncopyable &);            // 拷贝构造函数
+    Uncopyable &operator=(const Uncopyable &); // 赋值构造函数
+};
+class A : private Uncopyable // 注意继承方式
+{ 
+};
+```
+
+能够保证，在派生类 ``A`` 的成员函数和友元函数中无法进行拷贝操作，因为无法调用基类 ``Uncopyable`` 的拷贝构造函数或赋值构造函数。同样，在类的外部也无法进行拷贝操作。
+
+### 多重继承
+
+多重继承（多继承）：是指从多个直接基类中产生派生类。
+多重继承容易出现的问题：命名冲突和数据冗余问题。
+
+```C++
+#include <iostream>
+using namespace std;
+// 间接基类
+class Base1
+{
+public:
+    int var1;
+};
+// 直接基类
+class Base2 : public Base1
+{
+public:
+    int var2;
+};
+// 直接基类
+class Base3 : public Base1
+{
+public:
+    int var3;
+};
+// 派生类
+class Derive : public Base2, public Base3
+{
+public:
+    void set_var1(int tmp) { var1 = tmp; } // error: reference to 'var1' is ambiguous. 命名冲突
+    void set_var2(int tmp) { var2 = tmp; }
+    void set_var3(int tmp) { var3 = tmp; }
+    void set_var4(int tmp) { var4 = tmp; }
+private:
+    int var4;
+};
+int main()
+{
+    Derive d;
+    return 0;
+}
+```
+
+上述代码中存的问题：
+对于派生类 ``Derive`` 上述代码中存在直接继承关系和间接继承关系。
+
+- 直接继承：``Base2`` 、``Base3``
+- 间接继承：``Base1``
+
+对于派生类中继承的的成员变量 ``var1`` ，从继承关系来看，实际上保存了两份，一份是来自基类 ``Base2``，一份来自基类 ``Base3``。因此，出现了命名冲突。
+
+解决方法 1： 声明出现冲突的成员变量来源于哪个类
+
+```C++
+#include <iostream>
+using namespace std;
+// 间接基类
+class Base1
+{
+public:
+    int var1;
+};
+// 直接基类
+class Base2 : public Base1
+{
+public:
+    int var2;
+};
+// 直接基类
+class Base3 : public Base1
+{
+public:
+    int var3;
+};
+// 派生类 
+class Derive : public Base2, public Base3
+{
+public:
+    void set_var1(int tmp) { Base2::var1 = tmp; } // 这里声明成员变量来源于类 Base2，当然也可以声明来源于类 Base3
+    void set_var2(int tmp) { var2 = tmp; }
+    void set_var3(int tmp) { var3 = tmp; }
+    void set_var4(int tmp) { var4 = tmp; }
+private:
+    int var4;
+};
+int main()
+{
+    Derive d;
+    return 0;
+}
+```
+
+解决方法 2： 虚继承
+
+使用虚继承的目的：保证存在命名冲突的成员变量在派生类中只保留一份，即使间接基类中的成员在派生类中只保留一份。在菱形继承关系中，间接基类称为虚基类，直接基类和间接基类之间的继承关系称为虚继承。
+实现方式：在继承方式前面加上 ``virtual`` 关键字。
+
+```C++
+#include <iostream>
+using namespace std;
+// 间接基类，即虚基类
+class Base1
+{
+public:
+    int var1;
+};
+// 直接基类 
+class Base2 : virtual public Base1 // 虚继承
+{
+public:
+    int var2;
+};
+// 直接基类 
+class Base3 : virtual public Base1 // 虚继承
+{
+public:
+    int var3;
+};
+// 派生类
+class Derive : public Base2, public Base3
+{
+public:
+    void set_var1(int tmp) { var1 = tmp; } 
+    void set_var2(int tmp) { var2 = tmp; }
+    void set_var3(int tmp) { var3 = tmp; }
+    void set_var4(int tmp) { var4 = tmp; }
+private:
+    int var4;
+};
+int main()
+{
+    Derive d;
+    return 0;
+}
+```
+
+### 为什么用成员初始化列表会快一些？
+
+数据类型可分为内置类型和用户自定义类型（类类型），对于用户自定义类型，利用成员初始化列表效率高。
+
+- 用户自定义类型如果使用类初始化列表，直接调用该成员变量对应的构造函数即完成初始化；如果在构造函数中初始化，因为 ``C++`` 规定，对象的成员变量的初始化动作发生在进入构造函数本体之前，那么在执行构造函数的函数体之前首先调用默认的构造函数为成员变量设初值，在进入函数体之后，调用该成员变量对应的构造函数。因此，使用列表初始化会减少调用默认的构造函数的过程，效率高。
+
+```C++
+#include <iostream>
+using namespace std;
+class A
+{
+private:
+    int val;
+public:
+    A()
+    {
+        cout << "A()" << endl;
+    }
+    A(int tmp)
+    {
+        val = tmp;
+        cout << "A(int " << val << ")" << endl;
+    }
+};
+class Test1
+{
+private:
+    A ex;
+
+public:
+    Test1() : ex(1) // 成员列表初始化方式
+    {
+    }
+};
+class Test2
+{
+private:
+    A ex;
+public:
+    Test2() // 函数体中赋值的方式
+    {
+        ex = A(2);
+    }
+};
+int main()
+{
+    Test1 ex1;
+    cout << endl;
+    Test2 ex2;
+    return 0;
+}
+/*
+运行结果：
+A(int 1)
+
+A()
+A(int 2)
+*/
+```
+从程序运行结果可以看出，使用成员列表初始化的方式会省去调用默认的构造函数的过程。
+
+### 左值和右值
+
+左值：指表达式结束后依然存在的持久对象。
+右值：表达式结束就不再存在的临时对象。
+
+- 左值和右值的区别：左值持久，右值短暂
+- 左值引用不能绑定到要转换的表达式、字面常量或返回右值的表达式。右值引用恰好相反，可以绑定到这类表达式，但不能绑定到一个左值上。
+- 右值引用必须绑定到右值的引用，通过 ``&&`` 获得。右值引用只能绑定到一个将要销毁的对象上，因此可以自由地移动其资源。
+- ``std::move`` 可以将一个左值强制转化为右值，继而可以通过右值引用使用该值，以用于移动语义。
+
+```C++
+#include <iostream>
+using namespace std;
+void fun1(int& tmp) 
+{ 
+  cout << "fun1(int& tmp):" << tmp << endl; 
+} 
+void fun2(int&& tmp) 
+{ 
+  cout << "fun2(int&& tmp)" << tmp << endl; 
+} 
+int main() 
+{ 
+  int var = 11; 
+  fun1(12); // error: cannot bind non-const lvalue reference of type 'int&' to an rvalue of type 'int'
+  fun1(var);
+  fun2(1); 
+}
+```
+
+### ``std::move()``
+
+```C++
+template <typename T>
+typename remove_reference<T>::type&& move(T&& t)
+{
+	return static_cast<typename remove_reference<T>::type &&>(t);
+}
+```
+
+- 右值传递给上述函数的形参 ``T&&`` 依然是右值，即 ``T&& &&`` 相当于 ``T&&``。
+- 左值传递给上述函数的形参 ``T&&`` 依然是左值，即 ``T&& &`` 相当于 ``T&``。
+- 通过引用折叠原理可以知道，``move()`` 函数的形参既可以是左值也可以是右值。
+
+``remove_reference`` 具体实现：
+
+```C++
+//原始的，最通用的版本
+template <typename T> struct remove_reference{
+    typedef T type;  //定义 T 的类型别名为 type
+};
+//部分版本特例化，将用于左值引用和右值引用
+template <class T> struct remove_reference<T&> //左值引用
+{ typedef T type; }
+template <class T> struct remove_reference<T&&> //右值引用
+{ typedef T type; }   
+//举例如下,下列定义的a、b、c三个变量都是int类型
+int i;
+remove_refrence<decltype(42)>::type a;             //使用原版本，
+remove_refrence<decltype(i)>::type  b;             //左值引用特例版本
+remove_refrence<decltype(std::move(i))>::type  b;  //右值引用特例版本 
+```
+
+```C++
+int var = 10; 
+```
+
+转化过程：
+
+- ``std::move(var)`` => ``std::move(int&& &)`` => 折叠后 ``std::move(int&)``
+- 此时：``T`` 的类型为 ``int&``，``typename remove_reference<T>::type`` 为 ``int``，这里使用 ``remove_reference`` 的左值引用的特例化版本
+- 通过 ``static_cast`` 将 ``int&`` 强制转换为 ``int&&``
+
+整个 ``std::move`` 被实例化如下：
+
+```C++
+int&& move(int& t) 
+{
+    return static_cast<int&&>(t); 
+}
+```
+
+``std::move()`` 实现原理：
+
+- 利用引用折叠原理将右值经过 ``T&&`` 传递类型保持不变还是右值，而左值经过 ``T&&`` 变为普通的左值引用，以保证模板可以传递任意实参，且保持类型不变；
+- 然后通过 ``remove_refrence`` 移除引用，得到具体的类型 ``T``；
+- 最后通过 ``static_cast<>`` 进行强制类型转换，返回 ``T&&`` 右值引用。
+
+### 如何判断结构体是否相等？能否用 ``memcmp`` 函数判断结构体相等？
+
+需要重载操作符 ``==`` 判断两个结构体是否相等，不能用函数 ``memcmp`` 来判断两个结构体是否相等，因为 ``memcmp`` 函数是逐个字节进行比较的，而结构体存在内存空间中保存时存在字节对齐，字节对齐时补的字节内容是随机的，会产生垃圾值，所以无法比较。
+
+```C++
+#include <iostream>
+using namespace std;
+struct A
+{
+    char c;
+    int val;
+    A(char c_tmp, int tmp) : c(c_tmp), val(tmp) {}
+    friend bool operator==(const A &tmp1, const A &tmp2); //  友元运算符重载函数
+};
+bool operator==(const A &tmp1, const A &tmp2)
+{
+    return (tmp1.c == tmp2.c && tmp1.val == tmp2.val);
+}
+int main()
+{
+    A ex1('a', 90), ex2('b', 80);
+    if (ex1 == ex2)
+        cout << "ex1 == ex2" << endl;
+    else
+        cout << "ex1 != ex2" << endl; // 输出
+    return 0;
+}
+```
+
 ### `i++`与`++i`
 
 - 内建数据类型的情况，效率没有区别。
@@ -1295,6 +1653,158 @@ int main(int argc, char* argv[])
 - 在构造子类时调用父类的构造函数，而父类的构造函数中又调用了虚成员函数，这个虚成员函数即使被子类重写，也**不允许发生多态的行为**。所以使用的是**静态绑定**，调用了当前构造的父类的函数。
 
 ## 模板
+
+模板：创建类或者函数的蓝图或者公式，分为函数模板和类模板。
+实现方式：模板定义以关键字 ``template`` 开始，后跟一个模板参数列表。
+
+- 模板参数列表不能为空；
+- 模板类型参数前必须使用关键字 ``class`` 或者 ``typename``，在模板参数列表中这两个关键字含义相同，可互换使用。
+
+```C++
+template <typename T, typename U, ...>
+```
+
+函数模板：通过定义一个函数模板，可以避免为每一种类型定义一个新函数。
+
+- 对于函数模板而言，模板类型参数可以用来指定返回类型或函数的参数类型，以及在函数体内用于变量声明或类型转换。
+- 函数模板实例化：当调用一个模板时，编译器用函数实参来推断模板实参，从而使用实参的类型来确定绑定到模板参数的类型。
+
+```C++
+#include<iostream>
+using namespace std;
+template <typename T>
+T add_fun(const T & tmp1, const T & tmp2){
+    return tmp1 + tmp2;
+}
+int main(){
+    int var1, var2;
+    cin >> var1 >> var2;
+    cout << add_fun(var1, var2);
+    double var3, var4;
+    cin >> var3 >> var4;
+    cout << add_fun(var3, var4);
+    return 0;
+}
+```
+
+类模板：类似函数模板，类模板以关键字 ``template`` 开始，后跟模板参数列表。但是，编译器不能为类模板推断模板参数类型，需要在使用该类模板时，在模板名后面的尖括号中指明类型。
+
+```C++
+#include <iostream>
+using namespace std;
+template <typename T>
+class Complex
+{
+public:
+    //构造函数
+    Complex(T a, T b)
+    {
+        this->a = a;
+        this->b = b;
+    }
+    //运算符重载
+    Complex<T> operator+(Complex &c)
+    {
+        Complex<T> tmp(this->a + c.a, this->b + c.b);
+        cout << tmp.a << " " << tmp.b << endl;
+        return tmp;
+    }
+private:
+    T a;
+    T b;
+};
+int main()
+{
+    Complex<int> a(10, 20);
+    Complex<int> b(20, 30);
+    Complex<int> c = a + b;
+    return 0;
+}
+```
+
+可变参数模板：接受可变数目参数的模板函数或模板类。将可变数目的参数被称为参数包，包括模板参数包和函数参数包。
+
+- 模板参数包：表示零个或多个模板参数；
+- 函数参数包：表示零个或多个函数参数。
+
+用省略号来指出一个模板参数或函数参数表示一个包，在模板参数列表中，``class...`` 或 ``typename...`` 指出接下来的参数表示零个或多个类型的列表；一个类型名后面跟一个省略号表示零个或多个给定类型的非类型参数的列表。当需要知道包中有多少元素时，可以使用 ``sizeof...`` 运算符。
+
+```C++
+template <typename T, typename... Args> // Args 是模板参数包
+void foo(const T &t, const Args&... rest); // 可变参数模板，rest 是函数参数包
+```
+
+```C++
+#include <iostream>
+using namespace std;
+template <typename T>
+void print_fun(const T &t)
+{
+    cout << t << endl; // 最后一个元素
+}
+template <typename T, typename... Args>
+void print_fun(const T &t, const Args &...args)
+{
+    cout << t << " ";
+    print_fun(args...);
+}
+int main()
+{
+    print_fun("Hello", "world", "!");
+    return 0;
+}
+/*运行结果：
+Hello world !
+*/
+```
+
+可变参数函数通常是递归的，第一个版本的 ``print_fun`` 负责终止递归并打印初始调用中的最后一个实参。第二个版本的 ``print_fun`` 是可变参数版本，打印绑定到 ``t`` 的实参，并用来调用自身来打印函数参数包中的剩余值。
+
+模板特化的原因：模板并非对任何模板实参都合适、都能实例化，某些情况下，通用模板的定义对特定类型不合适，可能会编译失败，或者得不到正确的结果。因此，当不希望使用模板版本时，可以定义类或者函数模板的一个特例化版本。
+
+模板特化：模板参数在某种特定类型下的具体实现。分为函数模板特化和类模板特化
+
+- 函数模板特化：将函数模板中的全部类型进行特例化，称为函数模板特化。
+- 类模板特化：将类模板中的部分或全部类型进行特例化，称为类模板特化。
+
+特化分为全特化和偏特化：
+
+- 全特化：模板中的模板参数全部特例化。
+- 偏特化：模板中的模板参数只确定了一部分，剩余部分需要在编译器编译时确定。
+
+定义函数模板的特化版本，本质上是接管了编译器的工作，为原函数模板定义了一个特殊实例，而不是函数重载，函数模板特化并不影响函数匹配。
+
+```C++
+#include <iostream>
+#include <cstring>
+using namespace std;
+//函数模板
+template <class T>
+bool compare(T t1, T t2)
+{
+    cout << "通用版本：";
+    return t1 == t2;
+}
+template <> //函数模板特化
+bool compare(char *t1, char *t2)
+{
+    cout << "特化版本：";
+    return strcmp(t1, t2) == 0;
+}
+int main(int argc, char *argv[])
+{
+    char arr1[] = "hello";
+    char arr2[] = "abc";
+    cout << compare(123, 123) << endl;
+    cout << compare(arr1, arr2) << endl;
+    return 0;
+}
+/*
+运行结果：
+通用版本：1
+特化版本：0
+*/
+```
 
 - 不当地使用模板会导致代码膨胀，严重影响程序运行效率，**应该把模板与参数无关的代码分离出来**。
 - 当模板需要对某些类型进行特别处理时，使用**特化**。
