@@ -5,6 +5,7 @@
     - [编译过程](#编译过程)
     - [链接](#链接)
       - [二者的优缺点](#二者的优缺点)
+    - [``static`` 的作用](#static-的作用)
     - [内存管理](#内存管理)
     - [堆和栈的区别](#堆和栈的区别)
     - [全局变量、局部变量、静态全局变量、静态局部变量的区别](#全局变量局部变量静态全局变量静态局部变量的区别)
@@ -12,19 +13,17 @@
     - [内存对齐](#内存对齐)
     - [类大小的计算](#类大小的计算)
     - [内存泄漏](#内存泄漏)
+  - [``C++ 11`` 新特性](#c-11-新特性)
+    - [``auto`` 类型推导](#auto-类型推导)
+    - [``decltype`` 类型推导](#decltype-类型推导)
+    - [``lambda`` 表达式](#lambda-表达式)
+    - [范围 ``for`` 语句](#范围-for-语句)
+    - [右值引用](#右值引用)
+    - [标准库 ``move()`` 函数](#标准库-move-函数)
     - [智能指针](#智能指针)
-    - [``C++ 11`` 新特性](#c-11-新特性)
-      - [``auto`` 类型推导](#auto-类型推导)
-      - [``decltype`` 类型推导](#decltype-类型推导)
-      - [``lambda`` 表达式](#lambda-表达式)
-      - [范围 ``for`` 语句](#范围-for-语句)
-      - [右值引用](#右值引用)
-      - [标准库 ``move()`` 函数](#标准库-move-函数)
-      - [智能指针](#智能指针-1)
-      - [``delete`` 函数和 ``default`` 函数](#delete-函数和-default-函数)
-    - [面向对象](#面向对象)
+    - [``delete`` 函数和 ``default`` 函数](#delete-函数和-default-函数)
+  - [面向对象](#面向对象)
     - [重载、重写、隐藏的区别](#重载重写隐藏的区别)
-    - [``static`` 的作用](#static-的作用)
     - [``const``](#const)
     - [``inline``](#inline)
     - [``new`` 和 ``delete``](#new-和-delete)
@@ -79,6 +78,61 @@
 
 - 静态链接：浪费空间，每个可执行程序都会有目标文件的一个副本，这样如果目标文件进行了更新操作，就需要重新进行编译链接生成可执行程序（更新困难）；优点就是执行的时候运行速度快，因为可执行程序具备了程序运行的所有内容。
 - 动态链接：节省内存、更新方便，但是动态链接是在程序运行时，每次执行都需要链接，相比静态链接会有一定的性能损失。
+
+### ``static`` 的作用
+
+``static`` 定义静态变量，静态函数。
+保持变量内容持久：``static`` 作用于局部变量，改变了局部变量的生存周期，使得该变量存在于定义后直到程序运行结束的这段时间。
+
+```C++
+#include <iostream>
+using namespace std;
+int fun(){
+    static int var = 1; // var 只在第一次进入这个函数的时初始化
+    var += 1;
+    return var;
+}
+int main()
+{
+    for(int i = 0; i < 10; ++i)
+    	cout << fun() << " "; // 2 3 4 5 6 7 8 9 10 11
+    return 0;
+}
+```
+
+隐藏：``static`` 作用于全局变量和函数，改变了全局变量和函数的作用域，使得全局变量和函数只能在定义它的文件中使用，在源文件中不具有全局可见性。（注：普通全局变量和函数具有全局可见性，即其他的源文件也可以使用。）
+
+``static`` 作用于类的成员变量和类的成员函数，使得类变量或者类成员函数和类有关，也就是说可以不定义类的对象就可以通过类访问这些静态成员。注意：类的静态成员函数中只能访问静态成员变量或者静态成员函数，不能将静态成员函数定义成虚函数。
+
+```C++
+#include<iostream>
+using namespace std;
+class A
+{
+private:
+    int var;
+    static int s_var; // 静态成员变量
+public:
+    void show()
+    {
+        cout << s_var++ << endl;
+    }
+    static void s_show()
+    {
+        cout << s_var << endl;
+		// cout << var << endl; // error: invalid use of member 'A::a' in static member function. 静态成员函数不能调用非静态成员变量。无法使用 this.var
+        // show();  // error: cannot call member function 'void A::show()' without object. 静态成员函数不能调用非静态成员函数。无法使用 this.show()
+    }
+};
+int A::s_var = 1;  // 静态成员变量在类外进行初始化赋值，默认初始化为 0
+int main()
+{
+    // cout << A::sa << endl;    // error: 'int A::sa' is private within this context
+    A ex;
+    ex.show();
+    A::s_show();
+}
+```
 
 ### 内存管理
 
@@ -510,6 +564,118 @@ buf is deleted
 - 当要读写内存中某个字节时，首先检查这个字节对应的 ``Valid-Address`` 表中对应的 ``bit``。如果该 ``bit`` 显示该位置是无效位置，``Memcheck`` 则报告读写错误。
 - 内核（``core``）类似于一个虚拟的 ``CPU`` 环境，这样当内存中的某个字节被加载到真实的 ``CPU`` 中时，该字节在 ``Valid-Value`` 表对应的 ``bits`` 也被加载到虚拟的 ``CPU`` 环境中。一旦寄存器中的值，被用来产生内存地址，或者该值能够影响程序输出，则 ``Memcheck`` 会检查 ``Valid-Value`` 表对应的 ``bits``，如果该值尚未初始化，则会报告使用未初始化内存错误。
 
+## ``C++ 11`` 新特性
+
+### ``auto`` 类型推导
+
+``auto`` 关键字：自动类型推导，编译器会在 编译期间 通过初始值推导出变量的类型，通过 ``auto`` 定义的变量必须有初始值。
+
+``auto`` 关键字基本的使用语法如下：
+
+```C++
+auto var = val1 + val2; // 根据 val1 和 val2 相加的结果推断出 var 的类型
+```
+
+注意：编译器推导出来的类型和初始值的类型并不完全一样，编译器会适当地改变结果类型使其更符合初始化规则。
+
+### ``decltype`` 类型推导
+
+``decltype`` 关键字：``decltype`` 是“``declare type``”的缩写，译为“声明类型”。和 ``auto`` 的功能一样，都用来在编译时期进行自动类型推导。如果希望从表达式中推断出要定义的变量的类型，但是不想用该表达式的值初始化变量，这时就不能再用 ``auto``。``decltype`` 作用是选择并返回操作数的数据类型。
+
+区别：
+
+```C++
+auto var = val1 + val2; 
+decltype(val1 + val2) var1 = 0; 
+```
+
+- ``auto`` 根据 = 右边的初始值 ``val1 + val2`` 推导出变量的类型，并将该初始值赋值给变量 ``var``；``decltype`` 根据 ``val1 + val2`` 表达式推导出变量的类型，变量的初始值和与表达式的值无关。
+- ``auto`` 要求变量必须初始化，因为它是根据初始化的值推导出变量的类型，而 ``decltype`` 不要求，定义变量的时候可初始化也可以不初始化。
+
+### ``lambda`` 表达式
+
+``lambda``匿名函数的定义:
+
+```C++
+[capture list] (parameter list) -> return type
+{
+   function body;
+};
+```
+
+``capture list``：捕获列表，指 ``lambda`` 所在函数中定义的局部变量的列表，通常为空。
+``return type``、``parameter list``、``function body``：分别表示返回值类型、参数列表、函数体，和普通函数一样。
+
+```C++
+#include <iostream>
+#include <algorithm>
+using namespace std;
+int main()
+{
+    int arr[4] = {4, 2, 3, 1};
+    //对 a 数组中的元素进行升序排序
+    sort(arr, arr+4, [=](int x, int y) -> bool{ return x < y; } );
+    for(int n : arr){
+        cout << n << " ";
+    }
+    return 0;
+}
+```
+
+### 范围 ``for`` 语句
+
+```C++
+for (declaration : expression){
+    statement
+}
+```
+
+``expression``：必须是一个序列，例如用花括号括起来的初始值列表、数组、``vector`` ，``string`` 等，这些类型的共同特点是拥有能返回迭代器的 ``beign``、``end`` 成员。
+``declaration``：此处定义一个变量，序列中的每一个元素都能转化成该变量的类型，常用 ``auto`` 类型说明符。
+
+```C++
+#include <iostream>
+#include <vector>
+using namespace std;
+int main() {
+    char arr[] = "hello world!";
+    for (char c : arr) {
+        cout << c;
+    }  
+    return 0;
+}
+/*
+程序执行结果为：
+hello world!
+*/
+```
+
+### 右值引用
+
+右值引用：绑定到右值的引用，用 ``&&`` 来获得右值引用，右值引用只能绑定到要销毁的对象。为了和右值引用区分开，常规的引用称为左值引用。
+
+左值的英文简写为 ``lvalue`` ，右值的英文简写为 ``rvalue`` 。很多人认为它们分别是 ``left value`` 、 ``right value`` 的缩写，其实不然。
+``lvalue`` 是 ``loactor value`` 的缩写，可意为存储在内存中、有明确存储地址（可寻址）的数据，而 ``rvalue`` 译为 ``read value`` ，指的是那些可以提供数据值的数据（不一定可以寻址，例如存储于寄存器中的数据）。
+``C++`` 中的左值也可以当做右值使用。
+
+```C++
+#include <iostream>
+#include <vector>
+using namespace std;
+int main()
+{
+    int var = 42;
+    int &l_var = var;
+    int &&r_var = var; // error: cannot bind rvalue reference of type 'int&&' to lvalue of type 'int' 错误：不能将右值引用绑定到左值上
+    int &&r_var2 = var + 40; // 正确：将 r_var2 绑定到求和结果上
+    return 0;
+}
+```
+
+### 标准库 ``move()`` 函数
+
+``move()`` 函数：通过该函数可获得绑定到左值上的右值引用，该函数包括在 ``utility`` 头文件中。
+
 ### 智能指针
 
 智能指针是为了解决动态内存分配时带来的内存泄漏以及多次释放同一块内存空间而提出的。``C++11`` 中封装在了 ``<memory>`` 头文件中。
@@ -728,117 +894,7 @@ int main() {
 }
 ```
 
-### ``C++ 11`` 新特性
-
-#### ``auto`` 类型推导
-
-``auto`` 关键字：自动类型推导，编译器会在 编译期间 通过初始值推导出变量的类型，通过 ``auto`` 定义的变量必须有初始值。
-
-``auto`` 关键字基本的使用语法如下：
-
-```C++
-auto var = val1 + val2; // 根据 val1 和 val2 相加的结果推断出 var 的类型
-```
-
-注意：编译器推导出来的类型和初始值的类型并不完全一样，编译器会适当地改变结果类型使其更符合初始化规则。
-
-#### ``decltype`` 类型推导
-
-``decltype`` 关键字：``decltype`` 是“``declare type``”的缩写，译为“声明类型”。和 ``auto`` 的功能一样，都用来在编译时期进行自动类型推导。如果希望从表达式中推断出要定义的变量的类型，但是不想用该表达式的值初始化变量，这时就不能再用 ``auto``。``decltype`` 作用是选择并返回操作数的数据类型。
-
-区别：
-
-```C++
-auto var = val1 + val2; 
-decltype(val1 + val2) var1 = 0; 
-```
-
-- ``auto`` 根据 = 右边的初始值 ``val1 + val2`` 推导出变量的类型，并将该初始值赋值给变量 ``var``；``decltype`` 根据 ``val1 + val2`` 表达式推导出变量的类型，变量的初始值和与表达式的值无关。
-- ``auto`` 要求变量必须初始化，因为它是根据初始化的值推导出变量的类型，而 ``decltype`` 不要求，定义变量的时候可初始化也可以不初始化。
-
-#### ``lambda`` 表达式
-
-``lambda``匿名函数的定义:
-
-```C++
-[capture list] (parameter list) -> return type
-{
-   function body;
-};
-```
-
-``capture list``：捕获列表，指 ``lambda`` 所在函数中定义的局部变量的列表，通常为空。
-``return type``、``parameter list``、``function body``：分别表示返回值类型、参数列表、函数体，和普通函数一样。
-
-```C++
-#include <iostream>
-#include <algorithm>
-using namespace std;
-int main()
-{
-    int arr[4] = {4, 2, 3, 1};
-    //对 a 数组中的元素进行升序排序
-    sort(arr, arr+4, [=](int x, int y) -> bool{ return x < y; } );
-    for(int n : arr){
-        cout << n << " ";
-    }
-    return 0;
-}
-```
-
-#### 范围 ``for`` 语句
-
-```C++
-for (declaration : expression){
-    statement
-}
-```
-
-``expression``：必须是一个序列，例如用花括号括起来的初始值列表、数组、``vector`` ，``string`` 等，这些类型的共同特点是拥有能返回迭代器的 ``beign``、``end`` 成员。
-``declaration``：此处定义一个变量，序列中的每一个元素都能转化成该变量的类型，常用 ``auto`` 类型说明符。
-
-```C++
-#include <iostream>
-#include <vector>
-using namespace std;
-int main() {
-    char arr[] = "hello world!";
-    for (char c : arr) {
-        cout << c;
-    }  
-    return 0;
-}
-/*
-程序执行结果为：
-hello world!
-*/
-```
-
-#### 右值引用
-
-右值引用：绑定到右值的引用，用 ``&&`` 来获得右值引用，右值引用只能绑定到要销毁的对象。为了和右值引用区分开，常规的引用称为左值引用。
-
-```C++
-#include <iostream>
-#include <vector>
-using namespace std;
-int main()
-{
-    int var = 42;
-    int &l_var = var;
-    int &&r_var = var; // error: cannot bind rvalue reference of type 'int&&' to lvalue of type 'int' 错误：不能将右值引用绑定到左值上
-    int &&r_var2 = var + 40; // 正确：将 r_var2 绑定到求和结果上
-    return 0;
-}
-```
-
-#### 标准库 ``move()`` 函数
-
-``move()`` 函数：通过该函数可获得绑定到左值上的右值引用，该函数包括在 ``utility`` 头文件中。
-
-#### [智能指针](#智能指针)
-
-#### ``delete`` 函数和 ``default`` 函数
+### ``delete`` 函数和 ``default`` 函数
 
 ``delete`` 函数：``= delete`` 表示该函数不能被调用。
 ``default`` 函数：``= default`` 表示编译器生成默认的函数，例如：生成默认的构造函数。
@@ -864,7 +920,7 @@ int main()
 }
 ```
 
-### 面向对象
+## 面向对象
 
 面向对象：对象是指具体的某一个事物，这些事物的抽象就是类，类中包含数据（成员变量）和动作（成员方法）。
 
@@ -946,66 +1002,11 @@ int main()
 - 范围区别：对于类中函数的重载或者重写而言，重载发生在同一个类的内部，重写发生在不同的类之间（子类和父类之间）。
 - 参数区别：重载的函数需要与原函数有相同的函数名、不同的参数列表，不关注函数的返回值类型；重写的函数的函数名、参数列表和返回值类型都需要和原函数相同，父类中被重写的函数需要有 ``virtual`` 修饰。
 - ``virtual`` 关键字：重写的函数基类中必须有 ``virtual`` 关键字的修饰，重载的函数可以有 ``virtual`` 关键字的修饰也可以没有。
-- 
+ 
 隐藏和重写、重载的区别：
 
 - 范围区别：隐藏与重载范围不同，隐藏发生在不同类中。
 - 参数区别：隐藏函数和被隐藏函数参数列表可以相同，也可以不同，但函数名一定相同；当参数不同时，无论基类中的函数是否被 ``virtual`` 修饰，基类函数都是被隐藏，而不是重写。
-
-### ``static`` 的作用
-
-``static`` 定义静态变量，静态函数。
-保持变量内容持久：``static`` 作用于局部变量，改变了局部变量的生存周期，使得该变量存在于定义后直到程序运行结束的这段时间。
-
-```C++
-#include <iostream>
-using namespace std;
-int fun(){
-    static int var = 1; // var 只在第一次进入这个函数的时初始化
-    var += 1;
-    return var;
-}
-int main()
-{
-    for(int i = 0; i < 10; ++i)
-    	cout << fun() << " "; // 2 3 4 5 6 7 8 9 10 11
-    return 0;
-}
-```
-
-隐藏：``static`` 作用于全局变量和函数，改变了全局变量和函数的作用域，使得全局变量和函数只能在定义它的文件中使用，在源文件中不具有全局可见性。（注：普通全局变量和函数具有全局可见性，即其他的源文件也可以使用。）
-
-``static`` 作用于类的成员变量和类的成员函数，使得类变量或者类成员函数和类有关，也就是说可以不定义类的对象就可以通过类访问这些静态成员。注意：类的静态成员函数中只能访问静态成员变量或者静态成员函数，不能将静态成员函数定义成虚函数。
-
-```C++
-#include<iostream>
-using namespace std;
-class A
-{
-private:
-    int var;
-    static int s_var; // 静态成员变量
-public:
-    void show()
-    {
-        cout << s_var++ << endl;
-    }
-    static void s_show()
-    {
-        cout << s_var << endl;
-		// cout << var << endl; // error: invalid use of member 'A::a' in static member function. 静态成员函数不能调用非静态成员变量。无法使用 this.var
-        // show();  // error: cannot call member function 'void A::show()' without object. 静态成员函数不能调用非静态成员函数。无法使用 this.show()
-    }
-};
-int A::s_var = 1;  // 静态成员变量在类外进行初始化赋值，默认初始化为 0
-int main()
-{
-    // cout << A::sa << endl;    // error: 'int A::sa' is private within this context
-    A ex;
-    ex.show();
-    A::s_show();
-}
-```
 
 ### ``const``
 
