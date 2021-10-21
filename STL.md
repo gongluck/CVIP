@@ -12,6 +12,10 @@
       - [容器 ``list``](#容器-list)
       - [容器 ``forward_list``](#容器-forward_list)
       - [容器 ``deque``](#容器-deque)
+    - [关联式容器 ``associative container``](#关联式容器-associative-container)
+      - [容器 ``set`` ``multiset``](#容器-set-multiset)
+      - [容器 ``map`` ``multimap``](#容器-map-multimap)
+      - [容器 ``unordered_set`` ``unordered_multiset`` ``unordered_multimap`` ``unordered_multimap``](#容器-unordered_set-unordered_multiset-unordered_multimap-unordered_multimap)
 
 ![STL六大模块](https://github.com/gongluck/images/blob/main/STL六大模块.png)
 
@@ -92,3 +96,27 @@ typedef typename _Iterator::reference reference;
   ``deque::iterator`` 包含 ``3`` 个 ``T*`` 类型的指针和 ``1`` 个 ``T**`` 类型指针。分别为 ``cur`` 、 ``first`` 、 ``last`` 指向直接内存的位置，``m_node`` 指向管控中心的节点位置。
 
   <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/stl_deque.h" />
+
+### 关联式容器 ``associative container``
+
+#### 容器 ``set`` ``multiset``
+
+  ``set`` 和 ``multiset`` 底层使用红黑树实现，``key == value``。
+
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/stl_set.h" />
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/stl_multiset.h" />
+
+#### 容器 ``map`` ``multimap``
+
+  ``map`` 和 ``multimap`` 底层使用红黑树实现，``key != value``。
+
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/stl_map.h" />
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/stl_multimap.h" />
+
+#### 容器 ``unordered_set`` ``unordered_multiset`` ``unordered_multimap`` ``unordered_multimap``
+
+  底层用哈希表实现的无序集合。
+
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/hashtable.h" />
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/unordered_set.h" />
+  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/unordered_mpa.h" />
