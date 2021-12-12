@@ -46,13 +46,12 @@ public:
             {
                 //结果需要更新
                 updata = true;
-                if (need.count(s[left]) > 0 && window[s[left]] == need[s[left]])
+                if (need.count(s[left]) > 0 && window[s[left]]-- == need[s[left]])
                 {
                     //边缘触发
                     --matchs;
                 }
 
-                --window[s[left]];
                 ++left;
             }
 
