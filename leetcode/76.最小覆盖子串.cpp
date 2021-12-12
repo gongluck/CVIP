@@ -19,41 +19,55 @@ public:
     string minWindow(string s, string t)
     {
         std::unordered_map<char, int> need, window;
-        for (const auto i : t)
+        for (const auto &c : t)
         {
-            ++need[i];
+            ++need[c];
         }
 
-        std::string res;
-        int count = 0;
-        for (int right = 0, left = 0; right < s.size(); ++right)
+        int left = 0;
+        int right = 0;
+        int matchs = 0;
+        int rstart = 0;
+        int rlen = INT_MAX;
+        for (; right < s.size(); ++right)
         {
-            //右节点放入窗口
-            window[s[right]]++;
-            //判断右节点是否需要的节点
-            if (window[s[right]] <= need[s[right]])
+            //need.count(s[right]) <= 0 时不需要加入窗口，相当于直接continue
+            //need.count(s[right]) <= 0 时 matchs == need.size() 必为 false
+            if (need.count(s[right]) > 0 && ++window[s[right]] == need[s[right]])
             {
-                //增加符合条件的节点数
-                ++count;
+                //边缘触发
+                ++matchs;
             }
 
-            //判断是否要收缩窗口左边界
-            while (window[s[left]] > need[s[left]])
-            {
-                //收缩窗口左边界
-                --window[s[left++]];
-            }
+            bool updata = false;
 
-            //节点数匹配条件
-            if (count == t.size())
+            //need.count(s[right]) <= 0 时 matchs == need.size() 必为 false
+            while (matchs == need.size())
             {
-                if (res.empty() || right - left + 1 < res.size())
+                //结果需要更新
+                updata = true;
+                if (need.count(s[left]) > 0 && window[s[left]] == need[s[left]])
                 {
-                    res = s.substr(left, right - left + 1);
+                    //边缘触发
+                    --matchs;
+                }
+
+                --window[s[left]];
+                ++left;
+            }
+
+            if (updata)
+            {
+                auto len = right - (left - 1) + 1;
+                if (len < rlen)
+                {
+                    rlen = len;
+                    rstart = left - 1;
                 }
             }
         }
-        return res;
+
+        return rlen == INT_MAX ? "" : s.substr(rstart, rlen);
     }
 };
 // @lc code=end
