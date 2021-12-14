@@ -18,9 +18,9 @@ class Solution
 public:
     ListNode *detectCycle(ListNode *head)
     {
-        ListNode *fast, *slow;
-        fast = slow = head;
-        while (fast != nullptr && fast->next != nullptr)
+        auto fast = head;
+        auto slow = head;
+        while (fast && fast->next)
         {
             fast = fast->next->next;
             slow = slow->next;
@@ -31,13 +31,11 @@ public:
                 {
                     if (slow == fast)
                     {
-                        break;
+                        return fast;
                     }
                     fast = fast->next;
                     slow = slow->next;
                 }
-
-                return slow;
             }
         }
 

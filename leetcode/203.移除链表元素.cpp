@@ -20,19 +20,50 @@ class Solution
 public:
     ListNode *removeElements(ListNode *head, int val)
     {
-        ListNode dummy;
-        ListNode *tail = &dummy;
-        auto p = head;
-        while (p)
+        //常规解法
+        // while (head && head->val == val)
+        // {
+        //     auto tmp = head;
+        //     head = head->next;
+        //     delete (tmp);
+        // }
+
+        // auto pre = head;
+        // while (pre && pre->next)
+        // {
+        //     if (pre->next->val == val)
+        //     {
+        //         auto tmp = pre->next;
+        //         pre->next = pre->next->next;
+        //         delete (tmp);
+        //         continue;
+        //     }
+        //     else
+        //     {
+        //         pre = pre->next;
+        //         continue;
+        //     }
+        // }
+
+        //虚拟头节点
+        ListNode dummy(0);
+        dummy.next = head;
+
+        auto pre = &dummy;
+        while (pre && pre->next)
         {
-            if (p->val != val)
+            if (pre->next->val == val)
             {
-                tail->next = p;
-                tail = tail->next;
+                auto tmp = pre->next;
+                pre->next = pre->next->next;
+                delete tmp;
             }
-            p = p->next;
+            else
+            {
+                pre = pre->next;
+            }
         }
-        tail->next = nullptr;
+
         return dummy.next;
     }
 };

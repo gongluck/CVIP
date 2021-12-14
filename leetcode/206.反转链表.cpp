@@ -20,16 +20,16 @@ class Solution
 public:
     ListNode *reverseList(ListNode *head)
     {
-        ListNode *last = nullptr;
-        while (head)
+        ListNode *pre = nullptr;
+        auto cur = head;
+        while (cur)
         {
-            auto tmp = head->next;
-            head->next = last;
-            last = head;
-            head = tmp;
+            auto tmp = cur->next;
+            cur->next = pre;
+            pre = cur;
+            cur = tmp;
         }
-
-        return last;
+        return pre;
     }
 };
 // @lc code=end
