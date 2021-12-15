@@ -19,35 +19,36 @@ class Solution
 public:
     vector<int> findAnagrams(string s, string p)
     {
-        std::map<char, int> need, window;
-        for (const auto &i : p)
+        std::unordered_map<char, int> need, window;
+        int len = 0;
+        for (const auto &c : p)
         {
-            ++need[i];
+            ++len;
+            ++need[c];
         }
 
-        int left = 0;
-        int right = 0;
-        int count = 0;
         std::vector<int> res;
-        while (right < s.size())
+        int matchs = 0;
+        for (int left = 0, right = 0; right < s.size(); ++right)
         {
-            ++window[s[right]];
-            if (window[s[right]] <= need[s[right]])
+            if (need.count(s[right]) > 0 && ++window[s[right]] == need[s[right]])
             {
-                ++count;
+                ++matchs;
             }
 
-            while (window[s[left]] > need[s[left]])
+            while (matchs == need.size())
             {
-                --window[s[left++]];
-            }
+                if (len == right - left + 1)
+                {
+                    res.push_back(left);
+                }
 
-            if (count == p.size() && (right + 1 - left) == p.size())
-            {
-                res.push_back(left);
+                if (need.count(s[left]) > 0 && window[s[left]]-- == need[s[left]])
+                {
+                    --matchs;
+                }
+                ++left;
             }
-
-            ++right;
         }
 
         return res;
