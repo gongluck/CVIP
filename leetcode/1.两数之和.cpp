@@ -10,15 +10,17 @@ class Solution
 public:
     vector<int> twoSum(vector<int> &nums, int target)
     {
-        std::unordered_map<int, int> hash;
+        std::unordered_map<int, int> visited;
         for (int i = 0; i < nums.size(); ++i)
         {
-            auto found = hash.find(target - nums[i]);
-            if (found != hash.end())
+            if (visited.count(target - nums[i]) > 0)
             {
-                return {found->second, i};
+                return {visited[target - nums[i]], i};
             }
-            hash.insert({nums[i], i});
+            else
+            {
+                visited.insert({nums[i], i});
+            }
         }
         return {-1, -1};
     }
