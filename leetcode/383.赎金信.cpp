@@ -10,21 +10,40 @@ class Solution
 public:
     bool canConstruct(string ransomNote, string magazine)
     {
-        std::unordered_map<char, int> charnums;
+        // std::unordered_map<char, int> charnums;
+        // for (const auto &c : magazine)
+        // {
+        //     ++charnums[c];
+        // }
+        // for (const auto &c : ransomNote)
+        // {
+        //     if (charnums.count(c) > 0)
+        //     {
+        //         --charnums[c];
+        //         if (charnums[c] == 0)
+        //         {
+        //             charnums.erase(c);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         return false;
+        //     }
+        // }
+        // return true;
+
+        //数组优化
+        int cns[26] = {0};
         for (const auto &c : magazine)
         {
-            ++charnums[c];
+            ++cns[c - 'a'];
         }
         for (const auto &c : ransomNote)
         {
-            auto it = charnums.find(c);
-            if (it == charnums.end())
+            --cns[c - 'a'];
+            if (cns[c - 'a'] < 0)
             {
                 return false;
-            }
-            if (--it->second == 0)
-            {
-                charnums.erase(it);
             }
         }
         return true;
