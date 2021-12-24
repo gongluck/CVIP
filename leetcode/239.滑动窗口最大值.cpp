@@ -20,7 +20,7 @@ public:
             }
             q.push_back(nums[i]);
 
-            if (i >= k - 1)
+            if (i + 1 >= k)
             {
                 res.push_back(q.front());
                 if (nums[i - k + 1] == q.front())
