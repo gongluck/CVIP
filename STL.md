@@ -1,9 +1,12 @@
 # STL标准模板库
 
 - [STL标准模板库](#stl标准模板库)
-  - [分配器 ``allocator``](#分配器-allocator)
-    - [基础分配器](#基础分配器)
-    - [内存池管理](#内存池管理)
+  - [分配器``allocator``](#分配器allocator)
+    - [标准分配器](#标准分配器)
+    - [``SGI``特殊分配器](#sgi特殊分配器)
+      - [构造和析构工具](#构造和析构工具)
+      - [内存分配和释放](#内存分配和释放)
+    - [内存基本处理工具](#内存基本处理工具)
   - [迭代器 ``iterator``](#迭代器-iterator)
   - [容器 ``container``](#容器-container)
     - [序列式容器 ``sequence container``](#序列式容器-sequence-container)
@@ -19,21 +22,38 @@
 
 ![STL六大模块](https://github.com/gongluck/images/blob/main/STL六大模块.png)
 
-## 分配器 ``allocator``
+## 分配器``allocator``
 
-### 基础分配器 
+### 标准分配器
 
-  包装底层 ``malloc`` 和 ``free``。
+  包装``::operator new``和``::operator delete``。
 
-  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/malloc_allocator.h" />
+  [defalloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/defalloc.h)
 
-### 内存池管理
+### ``SGI``特殊分配器
+
+#### 构造和析构工具
+
+  ``construct``利用``placement new``实现。
+  ``destroy``调用析构函数或者利用``萃取特性``进而调用遍历析构或者特化的版本。
+
+  [stl_construct.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_construct.h)
+
+#### 内存分配和释放
 
   ![内存池分配器](https://github.com/gongluck/images/blob/main/内存池分配器.png)
 
-  使用内存池管理分配器，大内存使用一级分配器，小内存使用内存池。
+  ``SGI``设计了双层策略。
+  第一级配置器``__malloc_alloc_template``简单包装了``malloc``和``free``，并在内存分配失败时调用失败处理函数。
+  第二级配置器``__default_alloc_template``使用了``内存池``策略，使用``free list``实现。
 
-  <iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/pool_allocator.h" />
+  [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h)
+
+### 内存基本处理工具
+
+  ``uninitialized_copy``、``uninitialized_fill``和``uninitialized_fill_n``在目标内存调用拷贝构造函数或者内存拷贝函数。
+
+  [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h)
 
 ## 迭代器 ``iterator``
 
