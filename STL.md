@@ -7,7 +7,7 @@
       - [构造和析构工具](#构造和析构工具)
       - [内存分配和释放](#内存分配和释放)
     - [内存基本处理工具](#内存基本处理工具)
-  - [迭代器 ``iterator``](#迭代器-iterator)
+  - [迭代器``iterator``](#迭代器iterator)
   - [容器 ``container``](#容器-container)
     - [序列式容器 ``sequence container``](#序列式容器-sequence-container)
       - [容器 ``array``](#容器-array)
@@ -55,18 +55,13 @@
 
   [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h)
 
-## 迭代器 ``iterator``
+## 迭代器``iterator``
 
-```C++
-// 迭代器必需定义类型
-typedef typename _Iterator::iterator_category iterator_category;
-typedef typename _Iterator::value_type value_type;
-typedef typename _Iterator::difference_type difference_type;
-typedef typename _Iterator::pointer pointer;
-typedef typename _Iterator::reference reference;
-```
+  迭代器``iterator``提供了对``容器``元素的访问方法，达到桥接容器和``算法``的方式。
+  迭代器一般由容器自生内部实现，以达到隐藏容器细节的作用。
 
-<iframe src="https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator_base_types.h" />
+  [stl_iterator_base.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator_base.h)
+  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
 
 ## 容器 ``container``
 
