@@ -30,6 +30,9 @@
 
   [defalloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/defalloc.h)
 
+  <details>
+  <summary>标准分配器</summary>
+
   ```C++
   //包装::operator new
   template <class _Tp>
@@ -76,6 +79,7 @@
       void deallocate(pointer __p) { ::deallocate(__p); }
   };
   ```
+  </details>
 
 ### ```SGI```特殊分配器
 
@@ -85,6 +89,9 @@
   ```destroy```调用析构函数或者利用```萃取特性```进而调用遍历析构或者特化的版本。
 
   [stl_construct.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_construct.h)
+
+  <details>
+  <summary>构造和析构工具</summary>
 
   ```C++
   template <class _T1, class _T2>
@@ -179,6 +186,7 @@
     _Destroy(__first, __last);
   }
   ```
+  </details>
 
 #### 内存分配和释放
 
@@ -186,6 +194,10 @@
 
   ```SGI```设计了双层策略。
   第一级配置器```__malloc_alloc_template```简单包装了```malloc```和```free```，并在内存分配失败时调用失败处理函数。
+
+  <details>
+  <summary>第一级配置器</summary>
+
   ```C++
   //包装malloc和free
   template <int __inst>
@@ -209,8 +221,13 @@
     }
   };
   ```
+  </details>
 
   第二级配置器```__default_alloc_template```使用了```内存池```策略，使用```free list```实现。
+
+  <details>
+  <summary>第二级配置器</summary>
+
   ```C++
   //内存池优化版本，现代malloc已经存在类似的内存池优化了，所以使用STL标准分配器即可。
   template <bool threads, int inst>
@@ -294,12 +311,16 @@
     }
   };
   ```
+  </details>
 
   [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h)
 
 ### 内存基本处理工具
 
   ```uninitialized_copy```、```uninitialized_fill```和```uninitialized_fill_n```在目标内存调用拷贝构造函数或者内存拷贝函数。
+
+  <details>
+  <summary>uninitialized_copy</summary>
 
   ```C++
   // uninitialized_copy
@@ -371,6 +392,11 @@
     return __result + (__last - __first);
   }
   ```
+  </details>
+
+  <details>
+  <summary>uninitialized_fill</summary>
+
   ```C++
   // uninitialized_fill
 
@@ -417,6 +443,11 @@
     __uninitialized_fill(__first, __last, __x, __VALUE_TYPE(__first));
   }
   ```
+  </details>
+
+  <details>
+  <summary>uninitialized_fill_n</summary>
+
   ```C++
   //uninitialized_fill_n
 
@@ -464,6 +495,7 @@
     return __uninitialized_fill_n(__first, __n, __x, __VALUE_TYPE(__first));
   }
   ```
+  </details>
 
   [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h)
 
@@ -473,6 +505,9 @@
   迭代器一般由容器自生内部实现，以达到隐藏容器细节的作用。
 
   [stl_iterator_base.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator_base.h)
+
+  <details>
+  <summary>迭代器基本定义</summary>
 
   ```C++
   //可输入迭代器型别
@@ -692,6 +727,7 @@
     return random_access_iterator_tag();
   }
   ```
+  </details>
 
   [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
 
