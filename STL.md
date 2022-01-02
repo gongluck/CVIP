@@ -20,7 +20,7 @@
       - [容器 ``map`` ``multimap``](#容器-map-multimap)
       - [容器 ``unordered_set`` ``unordered_multiset`` ``unordered_map`` ``unordered_multimap``](#容器-unordered_set-unordered_multiset-unordered_map-unordered_multimap)
 
-![STL六大模块](https://github.com/gongluck/images/blob/main/STL六大模块.png)
+![STL六大模块](https://github.com/gongluck/images/blob/main/stl/STL六大模块.png)
 
 ## 分配器```allocator```
 
@@ -97,14 +97,14 @@
   template <class _T1, class _T2>
   inline void _Construct(_T1 *__p, const _T2 &__value)
   {
-    //placement new
+    // placement new
     new ((void *)__p) _T1(__value);
   }
 
   template <class _T1>
   inline void _Construct(_T1 *__p)
   {
-    //placement new
+    // placement new
     new ((void *)__p) _T1();
   }
 
@@ -131,7 +131,7 @@
   __destroy(_ForwardIterator __first, _ForwardIterator __last, _Tp *)
   {
     //萃取trivial_destructor特性
-    //trivial_destructor不重要的析构函数
+    // trivial_destructor不重要的析构函数
     typedef typename __type_traits<_Tp>::has_trivial_destructor
         _Trivial_destructor;
     __destroy_aux(__first, __last, _Trivial_destructor());
@@ -190,7 +190,9 @@
 
 #### 内存分配和释放
 
-  ![内存池分配器](https://github.com/gongluck/images/blob/main/内存池分配器.png)
+  ![内存池分配器](https://github.com/gongluck/images/blob/main/stl/内存池分配器.png)
+
+  [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h)
 
   ```SGI```设计了双层策略。
   第一级配置器```__malloc_alloc_template```简单包装了```malloc```和```free```，并在内存分配失败时调用失败处理函数。
@@ -219,6 +221,21 @@
       //使用free释放内存
       free(__p);
     }
+
+    static void *reallocate(void *__p, size_t /* old_sz */, size_t __new_sz)
+    {
+      void *__result = realloc(__p, __new_sz);
+      if (0 == __result)
+        __result = _S_oom_realloc(__p, __new_sz);
+      return __result;
+    }
+
+    static void (*__set_malloc_handler(void (*__f)()))()
+    {
+      void (*__old)() = __malloc_alloc_oom_handler;
+      __malloc_alloc_oom_handler = __f;
+      return (__old);
+    }
   };
   ```
   </details>
@@ -233,7 +250,31 @@
   template <bool threads, int inst>
   class __default_alloc_template
   {
+
   private:
+    // Really we should use static const int x = N
+    // instead of enum { x = N }, but few compilers accept the former.
+  #if !(defined(__SUNPRO_CC) || defined(__GNUC__))
+    enum
+    {
+      _ALIGN = 8
+    };
+    enum
+    {
+      _MAX_BYTES = 128
+    };
+    enum
+    {
+      _NFREELISTS = 16
+    }; // _MAX_BYTES/_ALIGN
+  #endif
+    //对输入边界对齐到8的倍数
+    static size_t
+    _S_round_up(size_t __bytes)
+    {
+      return (((__bytes) + (size_t)_ALIGN - 1) & ~((size_t)_ALIGN - 1));
+    }
+
     //使用联合体合理使用内存
     __PRIVATE : union _Obj
     {
@@ -254,6 +295,33 @@
       return (((__bytes) + (size_t)_ALIGN - 1) / (size_t)_ALIGN - 1);
     }
 
+    // Returns an object of size __n, and optionally adds to size __n free list.
+    static void *_S_refill(size_t __n);
+    // Allocates a chunk for nobjs of size size.  nobjs may be reduced
+    // if it is inconvenient to allocate the requested number.
+    static char *_S_chunk_alloc(size_t __size, int &__nobjs);
+
+    // Chunk allocation state.
+    static char *_S_start_free;
+    static char *_S_end_free;
+    static size_t _S_heap_size;
+
+  #ifdef __STL_THREADS
+    static _STL_mutex_lock _S_node_allocator_lock;
+  #endif
+
+    // It would be nice to use _STL_auto_lock here.  But we
+    // don't need the NULL check.  And we do need a test whether
+    // threads have actually been started.
+    class _Lock;
+    friend class _Lock;
+    class _Lock
+    {
+    public:
+      _Lock() { __NODE_ALLOCATOR_LOCK; }
+      ~_Lock() { __NODE_ALLOCATOR_UNLOCK; }
+    };
+
   public:
     //分配内存
     /* __n must be > 0      */
@@ -273,7 +341,10 @@
         // Acquire the lock here with a constructor call.
         // This ensures that it is released in exit or during stack
         // unwinding.
-
+  #ifndef _NOTHREADS
+        /*REFERENCED*/
+        _Lock __lock_instance;
+  #endif
         //获取自由链表的首块
         _Obj *__RESTRICT __result = *__my_free_list;
         if (__result == 0)
@@ -303,21 +374,59 @@
         _Obj *__STL_VOLATILE *__my_free_list = _S_free_list + _S_freelist_index(__n);
         _Obj *__q = (_Obj *)__p;
 
+        // acquire lock
+  #ifndef _NOTHREADS
+        /*REFERENCED*/
+        _Lock __lock_instance;
+  #endif /* _NOTHREADS */
         //头插法将内存块放入自由链表
         __q->_M_free_list_link = *__my_free_list;
         *__my_free_list = __q;
         // lock is released here
       }
     }
+
+    static void *reallocate(void *__p, size_t __old_sz, size_t __new_sz);
   };
   ```
   </details>
 
-  [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h)
+  <details>
+  <summary>封装分配器</summary>
+
+  ```C++
+  //对构造器简单封装，以元素字节大小为单位分配内存
+  template <class _Tp, class _Alloc>
+  class simple_alloc
+  {
+
+  public:
+    static _Tp *allocate(size_t __n)
+    {
+      return 0 == __n ? 0 : (_Tp *)_Alloc::allocate(__n * sizeof(_Tp));
+    }
+    static _Tp *allocate(void)
+    {
+      return (_Tp *)_Alloc::allocate(sizeof(_Tp));
+    }
+    static void deallocate(_Tp *__p, size_t __n)
+    {
+      if (0 != __n)
+        _Alloc::deallocate(__p, __n * sizeof(_Tp));
+    }
+    static void deallocate(_Tp *__p)
+    {
+      _Alloc::deallocate(__p, sizeof(_Tp));
+    }
+  };
+  ```
+  </details>
 
 ### 内存基本处理工具
 
   ```uninitialized_copy```、```uninitialized_fill```和```uninitialized_fill_n```在目标内存调用拷贝构造函数或者内存拷贝函数。
+
+  [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h)
 
   <details>
   <summary>uninitialized_copy</summary>
@@ -497,8 +606,6 @@
   ```
   </details>
 
-  [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h)
-
 ## 迭代器```iterator```
 
   迭代器```iterator```提供了对```容器```元素的访问方法，实现桥接容器和```算法```的方式。
@@ -585,103 +692,6 @@
     typedef _Tp &reference;
   };
 
-  #ifdef __STL_USE_NAMESPACES
-  template <class _Category, class _Tp, class _Distance = ptrdiff_t,
-            class _Pointer = _Tp *, class _Reference = _Tp &>
-  struct iterator
-  {
-    typedef _Category iterator_category;
-    typedef _Tp value_type;
-    typedef _Distance difference_type;
-    typedef _Pointer pointer;
-    typedef _Reference reference;
-  };
-  #endif /* __STL_USE_NAMESPACES */
-
-  #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
-
-  //迭代器型别定义萃取
-  template <class _Iterator>
-  struct iterator_traits
-  {
-    typedef typename _Iterator::iterator_category iterator_category;
-    typedef typename _Iterator::value_type value_type;
-    typedef typename _Iterator::difference_type difference_type;
-    typedef typename _Iterator::pointer pointer;
-    typedef typename _Iterator::reference reference;
-  };
-
-  //指针型特化版本
-  template <class _Tp>
-  struct iterator_traits<_Tp *>
-  {
-    typedef random_access_iterator_tag iterator_category;
-    typedef _Tp value_type;
-    typedef ptrdiff_t difference_type;
-    typedef _Tp *pointer;
-    typedef _Tp &reference;
-  };
-
-  //常量指针型特化版本
-  template <class _Tp>
-  struct iterator_traits<const _Tp *>
-  {
-    typedef random_access_iterator_tag iterator_category;
-    typedef _Tp value_type;
-    typedef ptrdiff_t difference_type;
-    typedef const _Tp *pointer;
-    typedef const _Tp &reference;
-  };
-
-  // The overloaded functions iterator_category, distance_type, and
-  // value_type are not part of the C++ standard.  (They have been
-  // replaced by struct iterator_traits.)  They are included for
-  // backward compatibility with the HP STL.
-
-  // We introduce internal names for these functions.
-
-  //萃取型别定义 const型特化
-  template <class _Iter>
-  inline typename iterator_traits<_Iter>::iterator_category
-  __iterator_category(const _Iter &)
-  {
-    typedef typename iterator_traits<_Iter>::iterator_category _Category;
-    return _Category();
-  }
-
-  template <class _Iter>
-  inline typename iterator_traits<_Iter>::difference_type *
-  __distance_type(const _Iter &)
-  {
-    return static_cast<typename iterator_traits<_Iter>::difference_type *>(0);
-  }
-
-  template <class _Iter>
-  inline typename iterator_traits<_Iter>::value_type *
-  __value_type(const _Iter &)
-  {
-    return static_cast<typename iterator_traits<_Iter>::value_type *>(0);
-  }
-
-  //萃取型别定义
-  template <class _Iter>
-  inline typename iterator_traits<_Iter>::iterator_category
-  iterator_category(const _Iter &__i) { return __iterator_category(__i); }
-
-  template <class _Iter>
-  inline typename iterator_traits<_Iter>::difference_type *
-  distance_type(const _Iter &__i) { return __distance_type(__i); }
-
-  template <class _Iter>
-  inline typename iterator_traits<_Iter>::value_type *
-  value_type(const _Iter &__i) { return __value_type(__i); }
-
-  #define __ITERATOR_CATEGORY(__i) __iterator_category(__i)
-  #define __DISTANCE_TYPE(__i) __distance_type(__i)
-  #define __VALUE_TYPE(__i) __value_type(__i)
-
-  #else /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-
   //萃取型别定义 input_iterator型特化
   template <class _Tp, class _Distance>
   inline input_iterator_tag
@@ -725,6 +735,136 @@
   inline random_access_iterator_tag iterator_category(const _Tp *)
   {
     return random_access_iterator_tag();
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Tp *value_type(const input_iterator<_Tp, _Distance> &)
+  {
+    return (_Tp *)(0);
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Tp *value_type(const forward_iterator<_Tp, _Distance> &)
+  {
+    return (_Tp *)(0);
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Tp *value_type(const bidirectional_iterator<_Tp, _Distance> &)
+  {
+    return (_Tp *)(0);
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Tp *value_type(const random_access_iterator<_Tp, _Distance> &)
+  {
+    return (_Tp *)(0);
+  }
+
+  template <class _Tp>
+  inline _Tp *value_type(const _Tp *) { return (_Tp *)(0); }
+
+  template <class _Tp, class _Distance>
+  inline _Distance *distance_type(const input_iterator<_Tp, _Distance> &)
+  {
+    return (_Distance *)(0);
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Distance *distance_type(const forward_iterator<_Tp, _Distance> &)
+  {
+    return (_Distance *)(0);
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Distance *
+  distance_type(const bidirectional_iterator<_Tp, _Distance> &)
+  {
+    return (_Distance *)(0);
+  }
+
+  template <class _Tp, class _Distance>
+  inline _Distance *
+  distance_type(const random_access_iterator<_Tp, _Distance> &)
+  {
+    return (_Distance *)(0);
+  }
+
+  template <class _Tp>
+  inline ptrdiff_t *distance_type(const _Tp *) { return (ptrdiff_t *)(0); }
+
+  // Without partial specialization we can't use iterator_traits, so
+  // we must keep the old iterator query functions around.
+
+  #define __ITERATOR_CATEGORY(__i) iterator_category(__i)
+  #define __DISTANCE_TYPE(__i) distance_type(__i)
+  #define __VALUE_TYPE(__i) value_type(__i)
+
+  template <class _InputIterator, class _Distance>
+  inline void __distance(_InputIterator __first, _InputIterator __last,
+                        _Distance &__n, input_iterator_tag)
+  {
+    while (__first != __last)
+    {
+      ++__first;
+      ++__n;
+    }
+  }
+
+  template <class _RandomAccessIterator, class _Distance>
+  inline void __distance(_RandomAccessIterator __first,
+                        _RandomAccessIterator __last,
+                        _Distance &__n, random_access_iterator_tag)
+  {
+    __STL_REQUIRES(_RandomAccessIterator, _RandomAccessIterator);
+    __n += __last - __first;
+  }
+
+  template <class _InputIterator, class _Distance>
+  inline void distance(_InputIterator __first,
+                      _InputIterator __last, _Distance &__n)
+  {
+    __STL_REQUIRES(_InputIterator, _InputIterator);
+    __distance(__first, __last, __n, iterator_category(__first));
+  }
+
+  template <class _InputIter, class _Distance>
+  inline void __advance(_InputIter &__i, _Distance __n, input_iterator_tag)
+  {
+    while (__n--)
+      ++__i;
+  }
+
+  #if defined(__sgi) && !defined(__GNUC__) && (_MIPS_SIM != _MIPS_SIM_ABI32)
+  #pragma set woff 1183
+  #endif
+
+  template <class _BidirectionalIterator, class _Distance>
+  inline void __advance(_BidirectionalIterator &__i, _Distance __n,
+                        bidirectional_iterator_tag)
+  {
+    __STL_REQUIRES(_BidirectionalIterator, _BidirectionalIterator);
+    if (__n >= 0)
+      while (__n--)
+        ++__i;
+    else
+      while (__n++)
+        --__i;
+  }
+
+  template <class _RandomAccessIterator, class _Distance>
+  inline void __advance(_RandomAccessIterator &__i, _Distance __n,
+                        random_access_iterator_tag)
+  {
+    __STL_REQUIRES(_RandomAccessIterator, _RandomAccessIterator);
+    __i += __n;
+  }
+
+  template <class _InputIterator, class _Distance>
+  inline void advance(_InputIterator &__i, _Distance __n)
+  {
+    __STL_REQUIRES(_InputIterator, _InputIterator);
+    __advance(__i, __n, iterator_category(__i));
   }
   ```
   </details>
