@@ -15,6 +15,9 @@
       - [容器```list```](#容器list)
       - [容器 ``forward_list``](#容器-forward_list)
       - [容器```deque```](#容器deque)
+      - [容器适配器](#容器适配器)
+        - [容器适配器```stack```](#容器适配器stack)
+        - [容器适配器```queue```](#容器适配器queue)
     - [关联式容器 ``associative container``](#关联式容器-associative-container)
       - [容器 ``set`` ``multiset``](#容器-set-multiset)
       - [容器 ``map`` ``multimap``](#容器-map-multimap)
@@ -3385,6 +3388,162 @@
 
   ```
   </details>
+
+#### 容器适配器
+
+##### 容器适配器```stack```
+
+  栈```stack```只在尾部对元素做增删操作，满足的底层容器有```vector```、```deque```和```list```。
+
+  [stl_stack.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_stack.h)
+
+  <details>
+  <summary>stack</summary>
+
+  ```C++
+  //容器适配器 栈
+  template <class _Tp,
+            class _Sequence = deque<_Tp> > //底层容器_Sequence
+  class stack;
+
+  template <class _Tp, class _Seq>
+  bool operator==(const stack<_Tp, _Seq> &__x, const stack<_Tp, _Seq> &__y);
+
+  template <class _Tp, class _Seq>
+  bool operator<(const stack<_Tp, _Seq> &__x, const stack<_Tp, _Seq> &__y);
+
+  template <class _Tp, class _Sequence>
+  class stack
+  {
+
+    // requirements:
+
+    __STL_CLASS_REQUIRES(_Tp, _Assignable);
+    __STL_CLASS_REQUIRES(_Sequence, _BackInsertionSequence);
+    typedef typename _Sequence::value_type _Sequence_value_type;
+    __STL_CLASS_REQUIRES_SAME_TYPE(_Tp, _Sequence_value_type);
+
+    friend bool __STD_QUALIFIER
+    operator== __STL_NULL_TMPL_ARGS(const stack &, const stack &);
+    friend bool __STD_QUALIFIER
+    operator<__STL_NULL_TMPL_ARGS(const stack &, const stack &);
+
+  public:
+    typedef typename _Sequence::value_type value_type;
+    typedef typename _Sequence::size_type size_type;
+    typedef _Sequence container_type;
+
+    typedef typename _Sequence::reference reference;
+    typedef typename _Sequence::const_reference const_reference;
+
+  protected:
+    _Sequence c;
+
+  public:
+    stack() : c() {}
+    explicit stack(const _Sequence &__s) : c(__s) {}
+
+    //栈的操作都是操作底层容器，容器符合能在尾部增删即可
+    bool empty() const { return c.empty(); }
+    size_type size() const { return c.size(); }
+    reference top() { return c.back(); }
+    const_reference top() const { return c.back(); }
+    void push(const value_type &__x) { c.push_back(__x); }
+    void pop() { c.pop_back(); }
+  };
+
+  template <class _Tp, class _Seq>
+  bool operator==(const stack<_Tp, _Seq> &__x, const stack<_Tp, _Seq> &__y)
+  {
+    return __x.c == __y.c;
+  }
+
+  template <class _Tp, class _Seq>
+  bool operator<(const stack<_Tp, _Seq> &__x, const stack<_Tp, _Seq> &__y)
+  {
+    return __x.c < __y.c;
+  }
+  ```
+  </details>
+
+##### 容器适配器```queue```
+
+  队列```queue```只在尾部对元素做增操作和头部做删除，满足的底层容器有```deque```和```list```。(```vector```没有```pop_front```，即使有也会相当低效！)
+
+  [stl_queue.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_queue.h)
+
+  <details>
+  <summary>queue</summary>
+
+  ```C++
+  //容器适配器 队列
+  template <class _Tp,
+            class _Sequence = deque<_Tp> > //依赖底层容器实现
+  class queue;
+
+  template <class _Tp, class _Seq>
+  inline bool operator==(const queue<_Tp, _Seq> &, const queue<_Tp, _Seq> &);
+
+  template <class _Tp, class _Seq>
+  inline bool operator<(const queue<_Tp, _Seq> &, const queue<_Tp, _Seq> &);
+
+  template <class _Tp, class _Sequence>
+  class queue
+  {
+
+    // requirements:
+
+    __STL_CLASS_REQUIRES(_Tp, _Assignable);
+    __STL_CLASS_REQUIRES(_Sequence, _FrontInsertionSequence);
+    __STL_CLASS_REQUIRES(_Sequence, _BackInsertionSequence);
+    typedef typename _Sequence::value_type _Sequence_value_type;
+    __STL_CLASS_REQUIRES_SAME_TYPE(_Tp, _Sequence_value_type);
+
+    friend bool __STD_QUALIFIER
+    operator== __STL_NULL_TMPL_ARGS(const queue &, const queue &);
+    friend bool __STD_QUALIFIER
+    operator<__STL_NULL_TMPL_ARGS(const queue &, const queue &);
+
+  public:
+    typedef typename _Sequence::value_type value_type;
+    typedef typename _Sequence::size_type size_type;
+    typedef _Sequence container_type;
+
+    typedef typename _Sequence::reference reference;
+    typedef typename _Sequence::const_reference const_reference;
+
+  protected:
+    _Sequence c;
+
+  public:
+    queue() : c() {}
+    explicit queue(const _Sequence &__c) : c(__c) {}
+
+    //依赖底层容器，容器符合能后进前出即可
+    bool empty() const { return c.empty(); }
+    size_type size() const { return c.size(); }
+    reference front() { return c.front(); }
+    const_reference front() const { return c.front(); }
+    reference back() { return c.back(); }
+    const_reference back() const { return c.back(); }
+    void push(const value_type &__x) { c.push_back(__x); }
+    void pop() { c.pop_front(); }
+  };
+
+  template <class _Tp, class _Sequence>
+  bool operator==(const queue<_Tp, _Sequence> &__x, const queue<_Tp, _Sequence> &__y)
+  {
+    return __x.c == __y.c;
+  }
+
+  template <class _Tp, class _Sequence>
+  bool operator<(const queue<_Tp, _Sequence> &__x, const queue<_Tp, _Sequence> &__y)
+  {
+    return __x.c < __y.c;
+  }
+  ```
+  </details>
+
 ### 关联式容器 ``associative container``
 
 #### 容器 ``set`` ``multiset``
