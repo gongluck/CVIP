@@ -10,7 +10,7 @@
   - [迭代器```iterator```](#迭代器iterator)
   - [容器```container```](#容器container)
     - [序列式容器```sequence container```](#序列式容器sequence-container)
-      - [容器 ``array``](#容器-array)
+      - [容器```array```](#容器array)
       - [容器```vector```](#容器vector)
       - [容器```list```](#容器list)
       - [容器```slist```](#容器slist)
@@ -879,13 +879,240 @@
 
 ### 序列式容器```sequence container```
 
-#### 容器 ``array``
+#### 容器```array```
 
-  ![容器array](https://github.com/gongluck/images/blob/main/容器array.png)
+  ![容器array](https://github.com/gongluck/images/blob/main/stl/容器array.png)
 
-  对原 ``C`` 数组的封装。
+  对原```C```数组的封装。
 
   [array](https://github.com/gongluck/sourcecode/blob/main/stl/array)
+
+  <details>
+  <summary>array</summary>
+
+  ```C++
+  //数组
+  template <typename _Tp, std::size_t _Nm>
+  struct array
+  {
+    typedef _Tp value_type;
+    typedef value_type &reference;
+    typedef const value_type &const_reference;
+    typedef value_type *iterator;
+    typedef const value_type *const_iterator;
+    typedef std::size_t size_type;
+    typedef std::ptrdiff_t difference_type;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    // Support for zero-sized arrays mandatory.
+    value_type _M_instance[_Nm ? _Nm : 1]; //底层数组
+
+    // No explicit construct/copy/destroy for aggregate type.
+
+    //覆盖值
+    void assign(const value_type &__u)
+    {
+      std::fill_n(begin(), size(), __u);
+    }
+
+    //交换
+    void swap(array &__other)
+    {
+      std::swap_ranges(begin(), end(), __other.begin());
+    }
+
+    // Iterators.
+    iterator begin()
+    {
+      return iterator(std::__addressof(_M_instance[0]));
+    }
+
+    const_iterator begin() const
+    {
+      return const_iterator(std::__addressof(_M_instance[0]));
+    }
+
+    iterator end()
+    {
+      return iterator(std::__addressof(_M_instance[_Nm]));
+    }
+
+    const_iterator end() const
+    {
+      return const_iterator(std::__addressof(_M_instance[_Nm]));
+    }
+
+    reverse_iterator rbegin()
+    {
+      return reverse_iterator(end());
+    }
+
+    const_reverse_iterator rbegin() const
+    {
+      return const_reverse_iterator(end());
+    }
+
+    reverse_iterator rend()
+    {
+      return reverse_iterator(begin());
+    }
+
+    const_reverse_iterator rend() const
+    {
+      return const_reverse_iterator(begin());
+    }
+
+    // Capacity.
+    size_type size() const { return _Nm; }
+
+    size_type max_size() const { return _Nm; }
+
+    bool empty() const { return size() == 0; }
+
+    // Element access.
+    reference operator[](size_type __n)
+    {
+      return _M_instance[__n];
+    }
+
+    const_reference operator[](size_type __n) const
+    {
+      return _M_instance[__n];
+    }
+
+    reference at(size_type __n)
+    {
+      if (__n >= _Nm)
+        std::__throw_out_of_range(__N("array::at"));
+      return _M_instance[__n];
+    }
+
+    const_reference at(size_type __n) const
+    {
+      if (__n >= _Nm)
+        std::__throw_out_of_range(__N("array::at"));
+      return _M_instance[__n];
+    }
+
+    reference front()
+    {
+      return *begin();
+    }
+
+    const_reference front() const
+    {
+      return *begin();
+    }
+
+    reference back()
+    {
+      return _Nm ? *(end() - 1) : *end();
+    }
+
+    const_reference back() const
+    {
+      return _Nm ? *(end() - 1) : *end();
+    }
+
+    _Tp *data()
+    {
+      return std::__addressof(_M_instance[0]);
+    }
+
+    const _Tp *data() const
+    {
+      return std::__addressof(_M_instance[0]);
+    }
+  };
+
+  // Array comparisons.
+  template <typename _Tp, std::size_t _Nm>
+  inline bool operator==(const array<_Tp, _Nm> &__one, const array<_Tp, _Nm> &__two)
+  {
+    return std::equal(__one.begin(), __one.end(), __two.begin());
+  }
+
+  template <typename _Tp, std::size_t _Nm>
+  inline bool operator!=(const array<_Tp, _Nm> &__one, const array<_Tp, _Nm> &__two)
+  {
+    return !(__one == __two);
+  }
+
+  template <typename _Tp, std::size_t _Nm>
+  inline bool operator<(const array<_Tp, _Nm> &__a, const array<_Tp, _Nm> &__b)
+  {
+    return std::lexicographical_compare(__a.begin(), __a.end(),
+                                        __b.begin(), __b.end());
+  }
+
+  template <typename _Tp, std::size_t _Nm>
+  inline bool operator>(const array<_Tp, _Nm> &__one, const array<_Tp, _Nm> &__two)
+  {
+    return __two < __one;
+  }
+
+  template <typename _Tp, std::size_t _Nm>
+  inline bool operator<=(const array<_Tp, _Nm> &__one, const array<_Tp, _Nm> &__two)
+  {
+    return !(__one > __two);
+  }
+
+  template <typename _Tp, std::size_t _Nm>
+  inline bool operator>=(const array<_Tp, _Nm> &__one, const array<_Tp, _Nm> &__two)
+  {
+    return !(__one < __two);
+  }
+
+  // Specialized algorithms [6.2.2.2].
+  template <typename _Tp, std::size_t _Nm>
+  inline void
+  swap(array<_Tp, _Nm> &__one, array<_Tp, _Nm> &__two)
+  {
+    __one.swap(__two);
+  }
+
+  // Tuple interface to class template array [6.2.2.5].
+
+  /// tuple_size
+  template <typename _Tp>
+  class tuple_size;
+
+  /// tuple_element
+  template <int _Int, typename _Tp>
+  class tuple_element;
+
+  template <typename _Tp, std::size_t _Nm>
+  struct tuple_size<array<_Tp, _Nm> >
+  {
+    static const int value = _Nm;
+  };
+
+  template <typename _Tp, std::size_t _Nm>
+  const int
+      tuple_size<array<_Tp, _Nm> >::value;
+
+  template <int _Int, typename _Tp, std::size_t _Nm>
+  struct tuple_element<_Int, array<_Tp, _Nm> >
+  {
+    typedef _Tp type;
+  };
+
+  template <int _Int, typename _Tp, std::size_t _Nm>
+  inline _Tp &
+  get(array<_Tp, _Nm> &__arr)
+  {
+    return __arr[_Int];
+  }
+
+  template <int _Int, typename _Tp, std::size_t _Nm>
+  inline const _Tp &
+  get(const array<_Tp, _Nm> &__arr)
+  {
+    return __arr[_Int];
+  }
+  ```
+  </details>
 
 #### 容器```vector```
 
