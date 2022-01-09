@@ -180,9 +180,6 @@
   [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h)
 
   ```SGI```设计了双层策略。
-
-  ![第一级配置器](https://github.com/gongluck/images/blob/main/stl/第一级配置器.png)
-
   第一级配置器```__malloc_alloc_template```简单包装了```malloc```和```free```，并在内存分配失败时调用失败处理函数。
 
   <details>
@@ -227,8 +224,6 @@
   };
   ```
   </details>
-
-  ![第二级配置器](https://github.com/gongluck/images/blob/main/stl/第二级配置器.png)
 
   第二级配置器```__default_alloc_template```使用了```内存池```策略，使用```free list```实现。第二级配置器的内存池实现是```双缓冲```，内存池不足时先从侯备缓存中分配，当侯备缓存也不能分配才从系统中申请。
 
@@ -380,8 +375,6 @@
   };
   ```
   </details>
-
-  ![封装分配器](https://github.com/gongluck/images/blob/main/stl/封装分配器.png)
 
   <details>
   <summary>封装分配器</summary>
