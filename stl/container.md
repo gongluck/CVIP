@@ -6,6 +6,10 @@
     - [容器```list```](#容器list)
     - [容器```slist```](#容器slist)
     - [容器```deque```](#容器deque)
+  - [关联式容器```associative container```](#关联式容器associative-container)
+    - [容器```set```和```multiset```](#容器set和multiset)
+    - [容器```map```和```multimap```](#容器map和multimap)
+    - [容器```hash_set```、```hash_multiset```、```hash_map```和```hash_multimap```](#容器hash_sethash_multisethash_map和hash_multimap)
 
 ## 序列式容器```sequence container```
 
@@ -20,7 +24,7 @@
   <details>
   <summary>vector</summary>
 
-  ```C++
+  ```c++
   //向量
   template <class T, class Alloc = alloc>
   class vector
@@ -36,16 +40,9 @@
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
 
-  #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
     typedef reverse_iterator<const_iterator> const_reverse_iterator;
     typedef reverse_iterator<iterator> reverse_iterator;
-  #else  /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-    typedef reverse_iterator<const_iterator, value_type, const_reference,
-                            difference_type>
-        const_reverse_iterator;
-    typedef reverse_iterator<iterator, value_type, reference, difference_type>
-        reverse_iterator;
-  #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
+
   protected:
     typedef simple_alloc<value_type, Alloc> data_allocator;
     iterator start;          //开始位置
@@ -103,13 +100,10 @@
       end_of_storage = finish;
     }
 
-    vector(const_iterator first, const_iterator last)
+    template <class InputIterator>
+    vector(InputIterator first, InputIterator last) : start(0), finish(0), end_of_storage(0)
     {
-      size_type n = 0;
-      distance(first, last, n);
-      start = allocate_and_copy(n, first, last);
-      finish = start + n;
-      end_of_storage = finish;
+      range_initialize(first, last, iterator_category(first));
     }
 
     ~vector()
@@ -160,8 +154,9 @@
     iterator insert(iterator position, const T &x)
     {
       size_type n = position - begin();
-      if (finish != end_of_storage && position == end())
+      if (finish != end_of_storage && position == end()) //尾部插入
       {
+        //尾部原地构造
         construct(finish, x);
         ++finish;
       }
@@ -171,8 +166,11 @@
     }
     iterator insert(iterator position) { return insert(position, T()); }
 
-    void insert(iterator position,
-                const_iterator first, const_iterator last);
+    template <class InputIterator>
+    void insert(iterator position, InputIterator first, InputIterator last)
+    {
+      range_insert(position, first, last, iterator_category(first));
+    }
 
     void insert(iterator pos, size_type n, const T &x);
     void insert(iterator pos, int n, const T &x)
@@ -228,8 +226,9 @@
       __STL_UNWIND(data_allocator::deallocate(result, n));
     }
 
+    template <class ForwardIterator>
     iterator allocate_and_copy(size_type n,
-                              const_iterator first, const_iterator last)
+                              ForwardIterator first, ForwardIterator last)
     {
       iterator result = data_allocator::allocate(n);
       __STL_TRY
@@ -239,6 +238,37 @@
       }
       __STL_UNWIND(data_allocator::deallocate(result, n));
     }
+
+    template <class InputIterator>
+    void range_initialize(InputIterator first, InputIterator last,
+                          input_iterator_tag)
+    {
+      for (; first != last; ++first)
+        push_back(*first);
+    }
+
+    // This function is only called by the constructor.  We have to worry
+    //  about resource leaks, but not about maintaining invariants.
+    template <class ForwardIterator>
+    void range_initialize(ForwardIterator first, ForwardIterator last,
+                          forward_iterator_tag)
+    {
+      size_type n = 0;
+      distance(first, last, n);
+      start = allocate_and_copy(n, first, last);
+      finish = start + n;
+      end_of_storage = finish;
+    }
+
+    template <class InputIterator>
+    void range_insert(iterator pos,
+                      InputIterator first, InputIterator last,
+                      input_iterator_tag);
+
+    template <class ForwardIterator>
+    void range_insert(iterator pos,
+                      ForwardIterator first, ForwardIterator last,
+                      forward_iterator_tag);
   };
 
   template <class T, class Alloc>
@@ -391,9 +421,24 @@
   }
 
   template <class T, class Alloc>
-  void vector<T, Alloc>::insert(iterator position,
-                                const_iterator first,
-                                const_iterator last)
+  template <class InputIterator>
+  void vector<T, Alloc>::range_insert(iterator pos,
+                                      InputIterator first, InputIterator last,
+                                      input_iterator_tag)
+  {
+    for (; first != last; ++first)
+    {
+      pos = insert(pos, *first);
+      ++pos;
+    }
+  }
+
+  template <class T, class Alloc>
+  template <class ForwardIterator>
+  void vector<T, Alloc>::range_insert(iterator position,
+                                      ForwardIterator first,
+                                      ForwardIterator last,
+                                      forward_iterator_tag)
   {
     if (first != last)
     {
@@ -412,11 +457,13 @@
         }
         else
         {
-          uninitialized_copy(first + elems_after, last, finish);
+          ForwardIterator mid = first;
+          advance(mid, elems_after);
+          uninitialized_copy(mid, last, finish);
           finish += n - elems_after;
           uninitialized_copy(position, old_finish, finish);
           finish += elems_after;
-          copy(first, first + elems_after, position);
+          copy(first, mid, position);
         }
       }
       else
@@ -464,7 +511,7 @@
   <details>
   <summary>list</summary>
 
-  ```C++
+  ```c++
   //链表节点
   template <class T>
   struct __list_node
@@ -532,32 +579,6 @@
     }
   };
 
-  #ifndef __STL_CLASS_PARTIAL_SPECIALIZATION
-
-  //链表迭代器属于双向迭代器类别
-  template <class T, class Ref, class Ptr>
-  inline bidirectional_iterator_tag
-  iterator_category(const __list_iterator<T, Ref, Ptr> &)
-  {
-    return bidirectional_iterator_tag();
-  }
-
-  template <class T, class Ref, class Ptr>
-  inline T *
-  value_type(const __list_iterator<T, Ref, Ptr> &)
-  {
-    return 0;
-  }
-
-  template <class T, class Ref, class Ptr>
-  inline ptrdiff_t *
-  distance_type(const __list_iterator<T, Ref, Ptr> &)
-  {
-    return 0;
-  }
-
-  #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-
   //链表
   template <class T, class Alloc = alloc>
   class list
@@ -581,17 +602,8 @@
     typedef __list_iterator<T, T &, T *> iterator;
     typedef __list_iterator<T, const T &, const T *> const_iterator;
 
-  #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
     typedef reverse_iterator<const_iterator> const_reverse_iterator;
     typedef reverse_iterator<iterator> reverse_iterator;
-  #else  /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-    typedef reverse_bidirectional_iterator<const_iterator, value_type,
-                                          const_reference, difference_type>
-        const_reverse_iterator;
-    typedef reverse_bidirectional_iterator<iterator, value_type, reference,
-                                          difference_type>
-        reverse_iterator;
-  #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
 
   protected:
     //空间分配和释放
@@ -634,16 +646,8 @@
       __STL_UNWIND(clear(); put_node(node));
     }
 
-    void range_initialize(const T *first, const T *last)
-    {
-      empty_initialize();
-      __STL_TRY
-      {
-        insert(begin(), first, last);
-      }
-      __STL_UNWIND(clear(); put_node(node));
-    }
-    void range_initialize(const_iterator first, const_iterator last)
+    template <class InputIterator>
+    void range_initialize(InputIterator first, InputIterator last)
     {
       empty_initialize();
       __STL_TRY
@@ -698,14 +702,10 @@
       return tmp;
     }
     iterator insert(iterator position) { return insert(position, T()); }
-  #ifdef __STL_MEMBER_TEMPLATES
+
     template <class InputIterator>
     void insert(iterator position, InputIterator first, InputIterator last);
-  #else  /* __STL_MEMBER_TEMPLATES */
-    void insert(iterator position, const T *first, const T *last);
-    void insert(iterator position,
-                const_iterator first, const_iterator last);
-  #endif /* __STL_MEMBER_TEMPLATES */
+
     void insert(iterator pos, size_type n, const T &x);
     void insert(iterator pos, int n, const T &x)
     {
@@ -743,11 +743,8 @@
     list(long n, const T &value) { fill_initialize(n, value); }
     explicit list(size_type n) { fill_initialize(n, T()); }
 
-    list(const T *first, const T *last)
-    {
-      range_initialize(first, last);
-    }
-    list(const_iterator first, const_iterator last)
+    template <class InputIterator>
+    list(InputIterator first, InputIterator last)
     {
       range_initialize(first, last);
     }
@@ -769,6 +766,7 @@
     {
       if (position != last)
       {
+        //画图理解较为直观
         (*(link_type((*last.node).prev))).next = position.node;
         (*(link_type((*first.node).prev))).next = last.node;
         (*(link_type((*position.node).prev))).next = first.node;
@@ -803,6 +801,15 @@
     void merge(list &x);
     void reverse();
     void sort();
+
+    template <class Predicate>
+    void remove_if(Predicate);
+    template <class BinaryPredicate>
+    void unique(BinaryPredicate);
+    template <class StrictWeakOrdering>
+    void merge(list &, StrictWeakOrdering);
+    template <class StrictWeakOrdering>
+    void sort(StrictWeakOrdering);
 
     friend bool operator== __STL_NULL_TMPL_ARGS(const list &x, const list &y);
   };
@@ -839,15 +846,9 @@
   #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
 
   template <class T, class Alloc>
-  void list<T, Alloc>::insert(iterator position, const T *first, const T *last)
-  {
-    for (; first != last; ++first)
-      insert(position, *first);
-  }
-
-  template <class T, class Alloc>
+  template <class InputIterator>
   void list<T, Alloc>::insert(iterator position,
-                              const_iterator first, const_iterator last)
+                              InputIterator first, InputIterator last)
   {
     for (; first != last; ++first)
       insert(position, *first);
@@ -947,6 +948,7 @@
     }
   }
 
+  //将链表x元素按序迁移到主链表
   template <class T, class Alloc>
   void list<T, Alloc>::merge(list<T, Alloc> &x)
   {
@@ -955,16 +957,17 @@
     iterator first2 = x.begin();
     iterator last2 = x.end();
     while (first1 != last1 && first2 != last2)
-      if (*first2 < *first1)
+      if (*first2 < *first1) //比较值
       {
+        //迁移x的元素
         iterator next = first2;
-        transfer(first1, first2, ++next);
-        first2 = next;
+        transfer(first1, first2, ++next); // first2迁移到first1前
+        first2 = next;                    //移动first2
       }
       else
-        ++first1;
-    if (first2 != last2)
-      transfer(last1, first2, last2);
+        ++first1;                     //移动first1
+    if (first2 != last2)              // x链表有未处理元素
+      transfer(last1, first2, last2); //迁移插入剩余元素
   }
 
   template <class T, class Alloc>
@@ -985,6 +988,108 @@
   template <class T, class Alloc>
   void list<T, Alloc>::sort()
   {
+    //元素个数<=1，不用排序
+    if (node->next == node || link_type(node->next)->next == node)
+      return;
+    //非递归实现合并排序 过程类似二进制的加法
+    list<T, Alloc> carry;       //操作表，操作数
+    list<T, Alloc> counter[64]; //缓存表，存放没层的合并表，每层进位是满二进一的，所以64层可以处理2^64个节点
+    int fill = 0;               //记录最深层数 fill不可达
+    while (!empty())
+    {
+      // 1
+      //此步前carry必然是空的 对应步骤3
+      carry.splice(carry.begin(), *this, begin()); //从待排序表中取出第一个节点，迁移到carry表最前面
+      int i = 0;                                   //记录经过的层数
+      // 2
+      //从小往大不断合并非空归并层次直至遇到空层或者到达当前最大归并层次
+      while (i < fill && !counter[i].empty()) //出这个循环，无论i是否超过最大层，count[i]必然是空的
+      {
+        //处理第i层
+        counter[i].merge(carry); //按序合并链表 carry节点迁移到第i层缓存表 还未出最外层的循环，carry必然非空，即此步会使第i层缓存表变大
+        carry.swap(counter[i]);  // carry表和第i层缓存表交换 上一步造成carry表为空，这里使得第i层缓存表为空 carry表得到合并后的表
+        ++i;                     //增加层数
+
+        //合并上述步骤
+        // https://bbs.csdn.net/topics/390800025
+        // carry.merge(counter[i++]);
+      }
+      // 3
+      //将上面合并出来的表放入下一层
+      carry.swap(counter[i]); //根据上面循环的退出条件，count[i]必然是空的，这里相当于将carry这个操作结果放入下一次，并将carry置空 对应步骤1
+      // i到达当前最大归并层次，说明得增加一层
+      if (i == fill)
+        ++fill;
+    }
+
+    //将每层的表合并
+    for (int i = 1; i < fill; ++i)
+      counter[i].merge(counter[i - 1]);
+    swap(counter[fill - 1]);
+  }
+
+  #ifdef __STL_MEMBER_TEMPLATES
+
+  template <class T, class Alloc>
+  template <class Predicate>
+  void list<T, Alloc>::remove_if(Predicate pred)
+  {
+    iterator first = begin();
+    iterator last = end();
+    while (first != last)
+    {
+      iterator next = first;
+      ++next;
+      if (pred(*first))
+        erase(first);
+      first = next;
+    }
+  }
+
+  template <class T, class Alloc>
+  template <class BinaryPredicate>
+  void list<T, Alloc>::unique(BinaryPredicate binary_pred)
+  {
+    iterator first = begin();
+    iterator last = end();
+    if (first == last)
+      return;
+    iterator next = first;
+    while (++next != last)
+    {
+      if (binary_pred(*first, *next))
+        erase(next);
+      else
+        first = next;
+      next = first;
+    }
+  }
+
+  template <class T, class Alloc>
+  template <class StrictWeakOrdering>
+  void list<T, Alloc>::merge(list<T, Alloc> &x, StrictWeakOrdering comp)
+  {
+    iterator first1 = begin();
+    iterator last1 = end();
+    iterator first2 = x.begin();
+    iterator last2 = x.end();
+    while (first1 != last1 && first2 != last2)
+      if (comp(*first2, *first1))
+      {
+        iterator next = first2;
+        transfer(first1, first2, ++next);
+        first2 = next;
+      }
+      else
+        ++first1;
+    if (first2 != last2)
+      transfer(last1, first2, last2);
+  }
+
+  template <class T, class Alloc>
+  template <class StrictWeakOrdering>
+  void list<T, Alloc>::sort(StrictWeakOrdering comp)
+  {
     if (node->next == node || link_type(node->next)->next == node)
       return;
     list<T, Alloc> carry;
@@ -996,7 +1101,7 @@
       int i = 0;
       while (i < fill && !counter[i].empty())
       {
-        counter[i].merge(carry);
+        counter[i].merge(carry, comp);
         carry.swap(counter[i++]);
       }
       carry.swap(counter[i]);
@@ -1005,7 +1110,7 @@
     }
 
     for (int i = 1; i < fill; ++i)
-      counter[i].merge(counter[i - 1]);
+      counter[i].merge(counter[i - 1], comp);
     swap(counter[fill - 1]);
   }
   ```
@@ -1022,7 +1127,7 @@
   <details>
   <summary>slist</summary>
 
-  ```C++
+  ```c++
   //单向链表节点基类
   struct __slist_node_base
   {
@@ -1153,30 +1258,6 @@
     }
   };
 
-  #ifndef __STL_CLASS_PARTIAL_SPECIALIZATION
-
-  inline ptrdiff_t *
-  distance_type(const __slist_iterator_base &)
-  {
-    return 0;
-  }
-
-  //单链表迭代器属于可遍历迭代器类别
-  inline forward_iterator_tag
-  iterator_category(const __slist_iterator_base &)
-  {
-    return forward_iterator_tag();
-  }
-
-  template <class T, class Ref, class Ptr>
-  inline T *
-  value_type(const __slist_iterator<T, Ref, Ptr> &)
-  {
-    return 0;
-  }
-
-  #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-
   inline size_t __slist_size(__slist_node_base *node)
   {
     size_t result = 0;
@@ -1237,16 +1318,8 @@
       __STL_UNWIND(clear());
     }
 
-    void range_initialize(const value_type *first, const value_type *last)
-    {
-      head.next = 0;
-      __STL_TRY
-      {
-        _insert_after_range(&head, first, last);
-      }
-      __STL_UNWIND(clear());
-    }
-    void range_initialize(const_iterator first, const_iterator last)
+    template <class InputIterator>
+    void range_initialize(InputIterator first, InputIterator last)
     {
       head.next = 0;
       __STL_TRY
@@ -1267,11 +1340,8 @@
     slist(long n, const value_type &x) { fill_initialize(n, x); }
     explicit slist(size_type n) { fill_initialize(n, value_type()); }
 
-    slist(const_iterator first, const_iterator last)
-    {
-      range_initialize(first, last);
-    }
-    slist(const value_type *first, const value_type *last)
+    template <class InputIterator>
+    slist(InputIterator first, InputIterator last)
     {
       range_initialize(first, last);
     }
@@ -1345,17 +1415,8 @@
         pos = __slist_make_link(pos, create_node(x));
     }
 
-    void _insert_after_range(list_node_base *pos,
-                            const_iterator first, const_iterator last)
-    {
-      while (first != last)
-      {
-        pos = __slist_make_link(pos, create_node(*first));
-        ++first;
-      }
-    }
-    void _insert_after_range(list_node_base *pos,
-                            const value_type *first, const value_type *last)
+    template <class InIter>
+    void _insert_after_range(list_node_base *pos, InIter first, InIter last)
     {
       while (first != last)
       {
@@ -1411,12 +1472,8 @@
       _insert_after_fill(pos.node, (size_type)n, x);
     }
 
-    void insert_after(iterator pos, const_iterator first, const_iterator last)
-    {
-      _insert_after_range(pos.node, first, last);
-    }
-    void insert_after(iterator pos,
-                      const value_type *first, const value_type *last)
+    template <class InIter>
+    void insert_after(iterator pos, InIter first, InIter last)
     {
       _insert_after_range(pos.node, first, last);
     }
@@ -1445,11 +1502,8 @@
       _insert_after_fill(__slist_previous(&head, pos.node), (size_type)n, x);
     }
 
-    void insert(iterator pos, const_iterator first, const_iterator last)
-    {
-      _insert_after_range(__slist_previous(&head, pos.node), first, last);
-    }
-    void insert(iterator pos, const value_type *first, const value_type *last)
+    template <class InIter>
+    void insert(iterator pos, InIter first, InIter last)
     {
       _insert_after_range(__slist_previous(&head, pos.node), first, last);
     }
@@ -1533,6 +1587,15 @@
     void unique();
     void merge(slist &L);
     void sort();
+
+    template <class Predicate>
+    void remove_if(Predicate pred);
+    template <class BinaryPredicate>
+    void unique(BinaryPredicate pred);
+    template <class StrictWeakOrdering>
+    void merge(slist &, StrictWeakOrdering);
+    template <class StrictWeakOrdering>
+    void sort(StrictWeakOrdering comp);
   };
 
   template <class T, class Alloc>
@@ -1681,6 +1744,85 @@
     }
   }
 
+  template <class T, class Alloc>
+  template <class Predicate>
+  void slist<T, Alloc>::remove_if(Predicate pred)
+  {
+    list_node_base *cur = &head;
+    while (cur->next)
+    {
+      if (pred(((list_node *)cur->next)->data))
+        erase_after(cur);
+      else
+        cur = cur->next;
+    }
+  }
+
+  template <class T, class Alloc>
+  template <class BinaryPredicate>
+  void slist<T, Alloc>::unique(BinaryPredicate pred)
+  {
+    list_node *cur = (list_node *)head.next;
+    if (cur)
+    {
+      while (cur->next)
+      {
+        if (pred(((list_node *)cur)->data, ((list_node *)(cur->next))->data))
+          erase_after(cur);
+        else
+          cur = (list_node *)cur->next;
+      }
+    }
+  }
+
+  template <class T, class Alloc>
+  template <class StrictWeakOrdering>
+  void slist<T, Alloc>::merge(slist<T, Alloc> &L, StrictWeakOrdering comp)
+  {
+    list_node_base *n1 = &head;
+    while (n1->next && L.head.next)
+    {
+      if (comp(((list_node *)L.head.next)->data,
+              ((list_node *)n1->next)->data))
+        __slist_splice_after(n1, &L.head, L.head.next);
+      n1 = n1->next;
+    }
+    if (L.head.next)
+    {
+      n1->next = L.head.next;
+      L.head.next = 0;
+    }
+  }
+
+  template <class T, class Alloc>
+  template <class StrictWeakOrdering>
+  void slist<T, Alloc>::sort(StrictWeakOrdering comp)
+  {
+    if (head.next && head.next->next)
+    {
+      slist carry;
+      slist counter[64];
+      int fill = 0;
+      while (!empty())
+      {
+        __slist_splice_after(&carry.head, &head, head.next);
+        int i = 0;
+        while (i < fill && !counter[i].empty())
+        {
+          counter[i].merge(carry, comp);
+          carry.swap(counter[i]);
+          ++i;
+        }
+        carry.swap(counter[i]);
+        if (i == fill)
+          ++fill;
+      }
+
+      for (int i = 1; i < fill; ++i)
+        counter[i].merge(counter[i - 1], comp);
+      this->swap(counter[fill - 1]);
+    }
+  }
   ```
   </details>
 
@@ -1697,7 +1839,7 @@
   <details>
   <summary>deque</summary>
 
-  ```C++
+  ```c++
   // Note: this function is simply a kludge to work around several compilers'
   //  bugs in handling constant expressions.
   inline size_t __deque_buf_size(size_t n, size_t sz)
@@ -1706,21 +1848,12 @@
   }
 
   //双向队列迭代器
-  #ifndef __STL_NON_TYPE_TMPL_PARAM_BUG
   template <class T, class Ref, class Ptr, size_t BufSiz>
   struct __deque_iterator
   {
     typedef __deque_iterator<T, T &, T *, BufSiz> iterator;
     typedef __deque_iterator<T, const T &, const T *, BufSiz> const_iterator;
     static size_t buffer_size() { return __deque_buf_size(BufSiz, sizeof(T)); }
-  #else /* __STL_NON_TYPE_TMPL_PARAM_BUG */
-  template <class T, class Ref, class Ptr>
-  struct __deque_iterator
-  {
-    typedef __deque_iterator<T, T &, T *> iterator;
-    typedef __deque_iterator<T, const T &, const T *> const_iterator;
-    static size_t buffer_size() { return __deque_buf_size(0, sizeof(T)); }
-  #endif
 
     typedef random_access_iterator_tag iterator_category;
     typedef T value_type;
@@ -1849,56 +1982,6 @@
     }
   };
 
-  #ifndef __STL_CLASS_PARTIAL_SPECIALIZATION
-
-  #ifndef __STL_NON_TYPE_TMPL_PARAM_BUG
-
-  //双向队列迭代器属于随机迭代器类别
-  template <class T, class Ref, class Ptr, size_t BufSiz>
-  inline random_access_iterator_tag
-  iterator_category(const __deque_iterator<T, Ref, Ptr, BufSiz> &)
-  {
-    return random_access_iterator_tag();
-  }
-
-  template <class T, class Ref, class Ptr, size_t BufSiz>
-  inline T *value_type(const __deque_iterator<T, Ref, Ptr, BufSiz> &)
-  {
-    return 0;
-  }
-
-  template <class T, class Ref, class Ptr, size_t BufSiz>
-  inline ptrdiff_t *distance_type(const __deque_iterator<T, Ref, Ptr, BufSiz> &)
-  {
-    return 0;
-  }
-
-  #else /* __STL_NON_TYPE_TMPL_PARAM_BUG */
-
-  template <class T, class Ref, class Ptr>
-  inline random_access_iterator_tag
-  iterator_category(const __deque_iterator<T, Ref, Ptr> &)
-  {
-    return random_access_iterator_tag();
-  }
-
-  template <class T, class Ref, class Ptr>
-  inline T *value_type(const __deque_iterator<T, Ref, Ptr> &) { return 0; }
-
-  template <class T, class Ref, class Ptr>
-  inline ptrdiff_t *distance_type(const __deque_iterator<T, Ref, Ptr> &)
-  {
-    return 0;
-  }
-
-  #endif /* __STL_NON_TYPE_TMPL_PARAM_BUG */
-
-  #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-
-  // See __deque_buf_size().  The only reason that the default value is 0
-  //  is as a workaround for bugs in the way that some compilers handle
-  //  constant expressions.
-
   //双向队列
   template <class T, class Alloc = alloc, size_t BufSiz = 0>
   class deque
@@ -1913,24 +1996,11 @@
     typedef ptrdiff_t difference_type;
 
   public: // Iterators
-  #ifndef __STL_NON_TYPE_TMPL_PARAM_BUG
     typedef __deque_iterator<T, T &, T *, BufSiz> iterator;
     typedef __deque_iterator<T, const T &, const T &, BufSiz> const_iterator;
-  #else  /* __STL_NON_TYPE_TMPL_PARAM_BUG */
-    typedef __deque_iterator<T, T &, T *> iterator;
-    typedef __deque_iterator<T, const T &, const T *> const_iterator;
-  #endif /* __STL_NON_TYPE_TMPL_PARAM_BUG */
 
-  #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
     typedef reverse_iterator<const_iterator> const_reverse_iterator;
     typedef reverse_iterator<iterator> reverse_iterator;
-  #else  /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-    typedef reverse_iterator<const_iterator, value_type, const_reference,
-                            difference_type>
-        const_reverse_iterator;
-    typedef reverse_iterator<iterator, value_type, reference, difference_type>
-        reverse_iterator;
-  #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
 
   protected: // Internal typedefs
     typedef pointer *map_pointer;
@@ -2038,26 +2108,11 @@
       fill_initialize(n, value_type());
     }
 
-    deque(const value_type *first, const value_type *last)
+    template <class InputIterator>
+    deque(InputIterator first, InputIterator last)
         : start(), finish(), map(0), map_size(0)
     {
-      create_map_and_nodes(last - first);
-      __STL_TRY
-      {
-        uninitialized_copy(first, last, start);
-      }
-      __STL_UNWIND(destroy_map_and_nodes());
-    }
-
-    deque(const_iterator first, const_iterator last)
-        : start(), finish(), map(0), map_size(0)
-    {
-      create_map_and_nodes(last - first);
-      __STL_TRY
-      {
-        uninitialized_copy(first, last, start);
-      }
-      __STL_UNWIND(destroy_map_and_nodes());
+      range_initialize(first, last, iterator_category(first));
     }
 
     ~deque()
@@ -2170,8 +2225,11 @@
       insert(pos, (size_type)n, x);
     }
 
-    void insert(iterator pos, const value_type *first, const value_type *last);
-    void insert(iterator pos, const_iterator first, const_iterator last);
+    template <class InputIterator>
+    void insert(iterator pos, InputIterator first, InputIterator last)
+    {
+      insert(pos, first, last, iterator_category(first));
+    }
 
     void resize(size_type new_size, const value_type &x)
     {
@@ -2218,6 +2276,14 @@
     void destroy_map_and_nodes();
     void fill_initialize(size_type n, const value_type &value);
 
+    template <class InputIterator>
+    void range_initialize(InputIterator first, InputIterator last,
+                          input_iterator_tag);
+
+    template <class ForwardIterator>
+    void range_initialize(ForwardIterator first, ForwardIterator last,
+                          forward_iterator_tag);
+
   protected: // Internal push_* and pop_*
     void push_back_aux(const value_type &t);
     void push_front_aux(const value_type &t);
@@ -2225,14 +2291,19 @@
     void pop_front_aux();
 
   protected: // Internal insert functions
+    template <class InputIterator>
+    void insert(iterator pos, InputIterator first, InputIterator last,
+                input_iterator_tag);
+
+    template <class ForwardIterator>
+    void insert(iterator pos, ForwardIterator first, ForwardIterator last,
+                forward_iterator_tag);
+
     iterator insert_aux(iterator pos, const value_type &x);
     void insert_aux(iterator pos, size_type n, const value_type &x);
 
-    void insert_aux(iterator pos,
-                    const value_type *first, const value_type *last,
-                    size_type n);
-
-    void insert_aux(iterator pos, const_iterator first, const_iterator last,
+    template <class ForwardIterator>
+    void insert_aux(iterator pos, ForwardIterator first, ForwardIterator last,
                     size_type n);
 
     iterator reserve_elements_at_front(size_type n)
@@ -2281,22 +2352,6 @@
     {
       data_allocator::deallocate(n, buffer_size());
     }
-
-  #ifdef __STL_NON_TYPE_TMPL_PARAM_BUG
-  public:
-    bool operator==(const deque<T, Alloc, 0> &x) const
-    {
-      return size() == x.size() && equal(begin(), end(), x.begin());
-    }
-    bool operator!=(const deque<T, Alloc, 0> &x) const
-    {
-      return size() != x.size() || !equal(begin(), end(), x.begin());
-    }
-    bool operator<(const deque<T, Alloc, 0> &x) const
-    {
-      return lexicographical_compare(begin(), end(), x.begin(), x.end());
-    }
-  #endif /* __STL_NON_TYPE_TMPL_PARAM_BUG */
   };
 
   // Non-inline member functions
@@ -2324,70 +2379,6 @@
     else
       insert_aux(pos, n, x);
   }
-
-  #ifndef __STL_MEMBER_TEMPLATES
-
-  template <class T, class Alloc, size_t BufSize>
-  void deque<T, Alloc, BufSize>::insert(iterator pos,
-                                        const value_type *first,
-                                        const value_type *last)
-  {
-    size_type n = last - first;
-    if (pos.cur == start.cur)
-    {
-      iterator new_start = reserve_elements_at_front(n);
-      __STL_TRY
-      {
-        uninitialized_copy(first, last, new_start);
-        start = new_start;
-      }
-      __STL_UNWIND(destroy_nodes_at_front(new_start));
-    }
-    else if (pos.cur == finish.cur)
-    {
-      iterator new_finish = reserve_elements_at_back(n);
-      __STL_TRY
-      {
-        uninitialized_copy(first, last, finish);
-        finish = new_finish;
-      }
-      __STL_UNWIND(destroy_nodes_at_back(new_finish));
-    }
-    else
-      insert_aux(pos, first, last, n);
-  }
-
-  template <class T, class Alloc, size_t BufSize>
-  void deque<T, Alloc, BufSize>::insert(iterator pos,
-                                        const_iterator first,
-                                        const_iterator last)
-  {
-    size_type n = last - first;
-    if (pos.cur == start.cur)
-    {
-      iterator new_start = reserve_elements_at_front(n);
-      __STL_TRY
-      {
-        uninitialized_copy(first, last, new_start);
-        start = new_start;
-      }
-      __STL_UNWIND(destroy_nodes_at_front(new_start));
-    }
-    else if (pos.cur == finish.cur)
-    {
-      iterator new_finish = reserve_elements_at_back(n);
-      __STL_TRY
-      {
-        uninitialized_copy(first, last, finish);
-        finish = new_finish;
-      }
-      __STL_UNWIND(destroy_nodes_at_back(new_finish));
-    }
-    else
-      insert_aux(pos, first, last, n);
-  }
-
-  #endif /* __STL_MEMBER_TEMPLATES */
 
   template <class T, class Alloc, size_t BufSize>
   deque<T, Alloc, BufSize>::iterator
@@ -2515,6 +2506,33 @@
   #endif /* __STL_USE_EXCEPTIONS */
   }
 
+  template <class T, class Alloc, size_t BufSize>
+  template <class InputIterator>
+  void deque<T, Alloc, BufSize>::range_initialize(InputIterator first,
+                                                  InputIterator last,
+                                                  input_iterator_tag)
+  {
+    create_map_and_nodes(0);
+    for (; first != last; ++first)
+      push_back(*first);
+  }
+
+  template <class T, class Alloc, size_t BufSize>
+  template <class ForwardIterator>
+  void deque<T, Alloc, BufSize>::range_initialize(ForwardIterator first,
+                                                  ForwardIterator last,
+                                                  forward_iterator_tag)
+  {
+    size_type n = 0;
+    distance(first, last, n);
+    create_map_and_nodes(n);
+    __STL_TRY
+    {
+      uninitialized_copy(first, last, start);
+    }
+    __STL_UNWIND(destroy_map_and_nodes());
+  }
+
   // Called only if finish.cur == finish.last - 1.
   template <class T, class Alloc, size_t BufSize>
   void deque<T, Alloc, BufSize>::push_back_aux(const value_type &t)
@@ -2576,6 +2594,48 @@
     deallocate_node(start.first);
     start.set_node(start.node + 1);
     start.cur = start.first;
+  }
+
+  template <class T, class Alloc, size_t BufSize>
+  template <class InputIterator>
+  void deque<T, Alloc, BufSize>::insert(iterator pos,
+                                        InputIterator first, InputIterator last,
+                                        input_iterator_tag)
+  {
+    copy(first, last, inserter(*this, pos));
+  }
+
+  template <class T, class Alloc, size_t BufSize>
+  template <class ForwardIterator>
+  void deque<T, Alloc, BufSize>::insert(iterator pos,
+                                        ForwardIterator first,
+                                        ForwardIterator last,
+                                        forward_iterator_tag)
+  {
+    size_type n = 0;
+    distance(first, last, n);
+    if (pos.cur == start.cur)
+    {
+      iterator new_start = reserve_elements_at_front(n);
+      __STL_TRY
+      {
+        uninitialized_copy(first, last, new_start);
+        start = new_start;
+      }
+      __STL_UNWIND(destroy_nodes_at_front(new_start));
+    }
+    else if (pos.cur == finish.cur)
+    {
+      iterator new_finish = reserve_elements_at_back(n);
+      __STL_TRY
+      {
+        uninitialized_copy(first, last, finish);
+        finish = new_finish;
+      }
+      __STL_UNWIND(destroy_nodes_at_back(new_finish));
+    }
+    else
+      insert_aux(pos, first, last, n);
   }
 
   template <class T, class Alloc, size_t BufSize>
@@ -2678,9 +2738,10 @@
   }
 
   template <class T, class Alloc, size_t BufSize>
+  template <class ForwardIterator>
   void deque<T, Alloc, BufSize>::insert_aux(iterator pos,
-                                            const value_type *first,
-                                            const value_type *last,
+                                            ForwardIterator first,
+                                            ForwardIterator last,
                                             size_type n)
   {
     const difference_type elems_before = pos - start;
@@ -2702,7 +2763,8 @@
         }
         else
         {
-          const value_type *mid = first + (difference_type(n) - elems_before);
+          ForwardIterator mid = first;
+          advance(mid, difference_type(n) - elems_before);
           __uninitialized_copy_copy(start, pos, first, mid, new_start);
           start = new_start;
           copy(mid, last, old_start);
@@ -2728,68 +2790,8 @@
         }
         else
         {
-          const value_type *mid = first + elems_after;
-          __uninitialized_copy_copy(mid, last, pos, finish, finish);
-          finish = new_finish;
-          copy(first, mid, pos);
-        }
-      }
-      __STL_UNWIND(destroy_nodes_at_back(new_finish));
-    }
-  }
-
-  template <class T, class Alloc, size_t BufSize>
-  void deque<T, Alloc, BufSize>::insert_aux(iterator pos,
-                                            const_iterator first,
-                                            const_iterator last,
-                                            size_type n)
-  {
-    const difference_type elems_before = pos - start;
-    size_type length = size();
-    if (elems_before < length / 2)
-    {
-      iterator new_start = reserve_elements_at_front(n);
-      iterator old_start = start;
-      pos = start + elems_before;
-      __STL_TRY
-      {
-        if (elems_before >= n)
-        {
-          iterator start_n = start + n;
-          uninitialized_copy(start, start_n, new_start);
-          start = new_start;
-          copy(start_n, pos, old_start);
-          copy(first, last, pos - difference_type(n));
-        }
-        else
-        {
-          const_iterator mid = first + (n - elems_before);
-          __uninitialized_copy_copy(start, pos, first, mid, new_start);
-          start = new_start;
-          copy(mid, last, old_start);
-        }
-      }
-      __STL_UNWIND(destroy_nodes_at_front(new_start));
-    }
-    else
-    {
-      iterator new_finish = reserve_elements_at_back(n);
-      iterator old_finish = finish;
-      const difference_type elems_after = length - elems_before;
-      pos = finish - elems_after;
-      __STL_TRY
-      {
-        if (elems_after > n)
-        {
-          iterator finish_n = finish - difference_type(n);
-          uninitialized_copy(finish_n, finish, finish);
-          finish = new_finish;
-          copy_backward(pos, finish_n, old_finish);
-          copy(first, last, pos);
-        }
-        else
-        {
-          const_iterator mid = first + elems_after;
+          ForwardIterator mid = first;
+          advance(mid, elems_after);
           __uninitialized_copy_copy(mid, last, pos, finish, finish);
           finish = new_finish;
           copy(first, mid, pos);
@@ -2890,8 +2892,6 @@
 
   // Nonmember functions.
 
-  #ifndef __STL_NON_TYPE_TMPL_PARAM_BUG
-
   template <class T, class Alloc, size_t BufSiz>
   bool operator==(const deque<T, Alloc, BufSiz> &x,
                   const deque<T, Alloc, BufSiz> &y)
@@ -2905,7 +2905,1207 @@
   {
     return lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
   }
+  ```
+  </details>
 
-  #endif /* __STL_NON_TYPE_TMPL_PARAM_BUG */
+## 关联式容器```associative container```
+
+### 容器```set```和```multiset```
+
+  ```set```和```multiset```底层使用红黑树实现，```key == value```。
+
+  [stl_set.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_set.h)
+
+  <details>
+  <summary>set</summary>
+
+  ```c++
+  //集合
+  template <class Key, class Compare = less<Key>, class Alloc = alloc>
+  class set
+  {
+  public:
+    // typedefs:
+    typedef Key key_type;
+    typedef Key value_type;
+    typedef Compare key_compare;   // key比较方法
+    typedef Compare value_compare; // value比较方法
+
+  private:
+    // set底层使用红黑树实现
+    typedef rb_tree<key_type, value_type,
+                    identity<value_type>, key_compare, Alloc>
+        rep_type;
+    rep_type t; // red-black tree representing set
+  public:
+    // set元素不支持修改，所以以下类型使用const
+    typedef typename rep_type::const_pointer pointer;
+    typedef typename rep_type::const_pointer const_pointer;
+    typedef typename rep_type::const_reference reference;
+    typedef typename rep_type::const_reference const_reference;
+    typedef typename rep_type::const_iterator iterator;
+    typedef typename rep_type::const_iterator const_iterator;
+    typedef typename rep_type::const_reverse_iterator reverse_iterator;
+    typedef typename rep_type::const_reverse_iterator const_reverse_iterator;
+    typedef typename rep_type::size_type size_type;
+    typedef typename rep_type::difference_type difference_type;
+
+    // allocation/deallocation
+
+    set() : t(Compare()) {}
+    explicit set(const Compare &comp) : t(comp) {}
+
+    template <class InputIterator>
+    set(InputIterator first, InputIterator last)
+        : t(Compare())
+    {
+      t.insert_unique(first, last);
+    }
+
+    template <class InputIterator>
+    set(InputIterator first, InputIterator last, const Compare &comp)
+        : t(comp) { t.insert_unique(first, last); }
+
+    set(const set<Key, Compare, Alloc> &x) : t(x.t)
+    {
+    }
+    set<Key, Compare, Alloc> &operator=(const set<Key, Compare, Alloc> &x)
+    {
+      t = x.t;
+      return *this;
+    }
+
+    // accessors:
+    key_compare key_comp() const { return t.key_comp(); }
+    value_compare value_comp() const { return t.key_comp(); }
+    iterator begin() const { return t.begin(); }
+    iterator end() const { return t.end(); }
+    reverse_iterator rbegin() const { return t.rbegin(); }
+    reverse_iterator rend() const { return t.rend(); }
+    bool empty() const { return t.empty(); }
+    size_type size() const { return t.size(); }
+    size_type max_size() const { return t.max_size(); }
+    void swap(set<Key, Compare, Alloc> &x) { t.swap(x.t); }
+
+    // insert/erase
+    typedef pair<iterator, bool> pair_iterator_bool;
+    pair<iterator, bool> insert(const value_type &x)
+    {
+      pair<typename rep_type::iterator, bool> p = t.insert_unique(x);
+      return pair<iterator, bool>(p.first, p.second);
+    }
+    iterator insert(iterator position, const value_type &x)
+    {
+      typedef typename rep_type::iterator rep_iterator;
+      return t.insert_unique((rep_iterator &)position, x);
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator first, InputIterator last)
+    {
+      t.insert_unique(first, last);
+    }
+
+    void erase(iterator position)
+    {
+      typedef typename rep_type::iterator rep_iterator;
+      t.erase((rep_iterator &)position);
+    }
+    size_type erase(const key_type &x)
+    {
+      return t.erase(x);
+    }
+    void erase(iterator first, iterator last)
+    {
+      typedef typename rep_type::iterator rep_iterator;
+      t.erase((rep_iterator &)first, (rep_iterator &)last);
+    }
+    void clear() { t.clear(); }
+
+    // set operations:
+    iterator find(const key_type &x) const { return t.find(x); }
+    size_type count(const key_type &x) const { return t.count(x); }
+    iterator lower_bound(const key_type &x) const
+    {
+      return t.lower_bound(x);
+    }
+    iterator upper_bound(const key_type &x) const
+    {
+      return t.upper_bound(x);
+    }
+    pair<iterator, iterator> equal_range(const key_type &x) const
+    {
+      return t.equal_range(x);
+    }
+    friend bool operator== __STL_NULL_TMPL_ARGS(const set &, const set &);
+    friend bool operator<__STL_NULL_TMPL_ARGS(const set &, const set &);
+  };
+
+  template <class Key, class Compare, class Alloc>
+  inline bool operator==(const set<Key, Compare, Alloc> &x,
+                        const set<Key, Compare, Alloc> &y)
+  {
+    return x.t == y.t;
+  }
+
+  template <class Key, class Compare, class Alloc>
+  inline bool operator<(const set<Key, Compare, Alloc> &x,
+                        const set<Key, Compare, Alloc> &y)
+  {
+    return x.t < y.t;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Key, class Compare, class Alloc>
+  inline void swap(set<Key, Compare, Alloc> &x,
+                  set<Key, Compare, Alloc> &y)
+  {
+    x.swap(y);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
+  ```
+  </details>
+
+  [stl_multiset.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_multiset.h)
+
+  <details>
+  <summary>multiset</summary>
+
+  ```c++
+  //可重复集合
+  template <class Key, class Compare = less<Key>, class Alloc = alloc>
+  class multiset
+  {
+  public:
+    // typedefs:
+    typedef Key key_type;
+    typedef Key value_type;
+    typedef Compare key_compare;
+    typedef Compare value_compare;
+
+  private:
+    typedef rb_tree<key_type, value_type,
+                    identity<value_type>, key_compare, Alloc>
+        rep_type;
+    rep_type t; // red-black tree representing multiset
+  public:
+    typedef typename rep_type::const_pointer pointer;
+    typedef typename rep_type::const_pointer const_pointer;
+    typedef typename rep_type::const_reference reference;
+    typedef typename rep_type::const_reference const_reference;
+    typedef typename rep_type::const_iterator iterator;
+    typedef typename rep_type::const_iterator const_iterator;
+    typedef typename rep_type::const_reverse_iterator reverse_iterator;
+    typedef typename rep_type::const_reverse_iterator const_reverse_iterator;
+    typedef typename rep_type::size_type size_type;
+    typedef typename rep_type::difference_type difference_type;
+
+    // allocation/deallocation
+
+    multiset() : t(Compare()) {}
+    explicit multiset(const Compare &comp) : t(comp) {}
+
+    template <class InputIterator>
+    multiset(InputIterator first, InputIterator last)
+        : t(Compare())
+    {
+      t.insert_equal(first, last);
+    }
+    template <class InputIterator>
+    multiset(InputIterator first, InputIterator last, const Compare &comp)
+        : t(comp) { t.insert_equal(first, last); }
+
+    multiset(const multiset<Key, Compare, Alloc> &x) : t(x.t)
+    {
+    }
+    multiset<Key, Compare, Alloc> &
+    operator=(const multiset<Key, Compare, Alloc> &x)
+    {
+      t = x.t;
+      return *this;
+    }
+
+    // accessors:
+    key_compare key_comp() const { return t.key_comp(); }
+    value_compare value_comp() const { return t.key_comp(); }
+    iterator begin() const { return t.begin(); }
+    iterator end() const { return t.end(); }
+    reverse_iterator rbegin() const { return t.rbegin(); }
+    reverse_iterator rend() const { return t.rend(); }
+    bool empty() const { return t.empty(); }
+    size_type size() const { return t.size(); }
+    size_type max_size() const { return t.max_size(); }
+    void swap(multiset<Key, Compare, Alloc> &x) { t.swap(x.t); }
+
+    // insert/erase
+    iterator insert(const value_type &x)
+    {
+      return t.insert_equal(x);
+    }
+    iterator insert(iterator position, const value_type &x)
+    {
+      typedef typename rep_type::iterator rep_iterator;
+      return t.insert_equal((rep_iterator &)position, x);
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator first, InputIterator last)
+    {
+      t.insert_equal(first, last);
+    }
+
+    void erase(iterator position)
+    {
+      typedef typename rep_type::iterator rep_iterator;
+      t.erase((rep_iterator &)position);
+    }
+    size_type erase(const key_type &x)
+    {
+      return t.erase(x);
+    }
+    void erase(iterator first, iterator last)
+    {
+      typedef typename rep_type::iterator rep_iterator;
+      t.erase((rep_iterator &)first, (rep_iterator &)last);
+    }
+    void clear() { t.clear(); }
+
+    // multiset operations:
+    iterator find(const key_type &x) const { return t.find(x); }
+    size_type count(const key_type &x) const { return t.count(x); }
+    iterator lower_bound(const key_type &x) const
+    {
+      return t.lower_bound(x);
+    }
+    iterator upper_bound(const key_type &x) const
+    {
+      return t.upper_bound(x);
+    }
+    pair<iterator, iterator> equal_range(const key_type &x) const
+    {
+      return t.equal_range(x);
+    }
+    friend bool operator== __STL_NULL_TMPL_ARGS(const multiset &,
+                                                const multiset &);
+    friend bool operator<__STL_NULL_TMPL_ARGS(const multiset &,
+                                              const multiset &);
+  };
+
+  template <class Key, class Compare, class Alloc>
+  inline bool operator==(const multiset<Key, Compare, Alloc> &x,
+                        const multiset<Key, Compare, Alloc> &y)
+  {
+    return x.t == y.t;
+  }
+
+  template <class Key, class Compare, class Alloc>
+  inline bool operator<(const multiset<Key, Compare, Alloc> &x,
+                        const multiset<Key, Compare, Alloc> &y)
+  {
+    return x.t < y.t;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Key, class Compare, class Alloc>
+  inline void swap(multiset<Key, Compare, Alloc> &x,
+                  multiset<Key, Compare, Alloc> &y)
+  {
+    x.swap(y);
+  }
+  ```
+  </details>
+
+### 容器```map```和```multimap```
+
+  ```map```和```multimap```底层使用红黑树实现，```key != value```。
+
+  [stl_map.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_map.h)
+
+  <details>
+  <summary>map</summary>
+
+  ```c++
+  //映射
+  template <class Key, class T, class Compare = less<Key>, class Alloc = alloc>
+  class map
+  {
+  public:
+    // typedefs:
+    typedef Key key_type;
+    typedef T data_type;
+    typedef T mapped_type;
+    typedef pair<const Key, T> value_type; // map的value_type是key+data
+    typedef Compare key_compare;           // key比较方法
+
+    class value_compare
+        : public binary_function<value_type, value_type, bool>
+    {
+      friend class map<Key, T, Compare, Alloc>;
+
+    protected:
+      Compare comp;
+      value_compare(Compare c) : comp(c) {}
+
+    public:
+      bool operator()(const value_type &x, const value_type &y) const
+      {
+        return comp(x.first, y.first);
+      }
+    };
+
+  private:
+    // map底层使用红黑树实现
+    typedef rb_tree<key_type, value_type,
+                    select1st<value_type>, key_compare, Alloc>
+        rep_type;
+    rep_type t; // red-black tree representing map
+  public:
+    typedef typename rep_type::pointer pointer;
+    typedef typename rep_type::const_pointer const_pointer;
+    typedef typename rep_type::reference reference;
+    typedef typename rep_type::const_reference const_reference;
+    typedef typename rep_type::iterator iterator;
+    typedef typename rep_type::const_iterator const_iterator;
+    typedef typename rep_type::reverse_iterator reverse_iterator;
+    typedef typename rep_type::const_reverse_iterator const_reverse_iterator;
+    typedef typename rep_type::size_type size_type;
+    typedef typename rep_type::difference_type difference_type;
+
+    // allocation/deallocation
+
+    map() : t(Compare()) {}
+    explicit map(const Compare &comp) : t(comp) {}
+
+    template <class InputIterator>
+    map(InputIterator first, InputIterator last)
+        : t(Compare())
+    {
+      t.insert_unique(first, last);
+    }
+
+    template <class InputIterator>
+    map(InputIterator first, InputIterator last, const Compare &comp)
+        : t(comp) { t.insert_unique(first, last); }
+
+    map(const map<Key, T, Compare, Alloc> &x) : t(x.t)
+    {
+    }
+    map<Key, T, Compare, Alloc> &operator=(const map<Key, T, Compare, Alloc> &x)
+    {
+      t = x.t;
+      return *this;
+    }
+
+    // accessors:
+    key_compare key_comp() const { return t.key_comp(); }
+    value_compare value_comp() const { return value_compare(t.key_comp()); }
+    iterator begin() { return t.begin(); }
+    const_iterator begin() const { return t.begin(); }
+    iterator end() { return t.end(); }
+    const_iterator end() const { return t.end(); }
+    reverse_iterator rbegin() { return t.rbegin(); }
+    const_reverse_iterator rbegin() const { return t.rbegin(); }
+    reverse_iterator rend() { return t.rend(); }
+    const_reverse_iterator rend() const { return t.rend(); }
+    bool empty() const { return t.empty(); }
+    size_type size() const { return t.size(); }
+    size_type max_size() const { return t.max_size(); }
+    T &operator[](const key_type &k)
+    {
+      return (*((insert(value_type(k, T()))).first)).second;
+    }
+    void swap(map<Key, T, Compare, Alloc> &x) { t.swap(x.t); }
+
+    // insert/erase
+    pair<iterator, bool> insert(const value_type &x) { return t.insert_unique(x); }
+    iterator insert(iterator position, const value_type &x)
+    {
+      return t.insert_unique(position, x);
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator first, InputIterator last)
+    {
+      t.insert_unique(first, last);
+    }
+
+    void erase(iterator position)
+    {
+      t.erase(position);
+    }
+    size_type erase(const key_type &x) { return t.erase(x); }
+    void erase(iterator first, iterator last) { t.erase(first, last); }
+    void clear() { t.clear(); }
+
+    // map operations:
+    iterator find(const key_type &x) { return t.find(x); }
+    const_iterator find(const key_type &x) const { return t.find(x); }
+    size_type count(const key_type &x) const { return t.count(x); }
+    iterator lower_bound(const key_type &x) { return t.lower_bound(x); }
+    const_iterator lower_bound(const key_type &x) const
+    {
+      return t.lower_bound(x);
+    }
+    iterator upper_bound(const key_type &x) { return t.upper_bound(x); }
+    const_iterator upper_bound(const key_type &x) const
+    {
+      return t.upper_bound(x);
+    }
+
+    pair<iterator, iterator> equal_range(const key_type &x)
+    {
+      return t.equal_range(x);
+    }
+    pair<const_iterator, const_iterator> equal_range(const key_type &x) const
+    {
+      return t.equal_range(x);
+    }
+    friend bool operator== __STL_NULL_TMPL_ARGS(const map &, const map &);
+    friend bool operator<__STL_NULL_TMPL_ARGS(const map &, const map &);
+  };
+
+  template <class Key, class T, class Compare, class Alloc>
+  inline bool operator==(const map<Key, T, Compare, Alloc> &x,
+                        const map<Key, T, Compare, Alloc> &y)
+  {
+    return x.t == y.t;
+  }
+
+  template <class Key, class T, class Compare, class Alloc>
+  inline bool operator<(const map<Key, T, Compare, Alloc> &x,
+                        const map<Key, T, Compare, Alloc> &y)
+  {
+    return x.t < y.t;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Key, class T, class Compare, class Alloc>
+  inline void swap(map<Key, T, Compare, Alloc> &x,
+                  map<Key, T, Compare, Alloc> &y)
+  {
+    x.swap(y);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
+  ```
+  </details>
+
+  [stl_multimap.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_multimap.h)
+
+  <details>
+  <summary>multimap</summary>
+
+  ```c++
+  //可重复映射
+  template <class Key, class T, class Compare = less<Key>, class Alloc = alloc>
+  class multimap
+  {
+  public:
+    // typedefs:
+    typedef Key key_type;
+    typedef T data_type;
+    typedef T mapped_type;
+    typedef pair<const Key, T> value_type;
+    typedef Compare key_compare;
+
+    class value_compare : public binary_function<value_type, value_type, bool>
+    {
+      friend class multimap<Key, T, Compare, Alloc>;
+
+    protected:
+      Compare comp;
+      value_compare(Compare c) : comp(c) {}
+
+    public:
+      bool operator()(const value_type &x, const value_type &y) const
+      {
+        return comp(x.first, y.first);
+      }
+    };
+
+  private:
+    typedef rb_tree<key_type, value_type,
+                    select1st<value_type>, key_compare, Alloc>
+        rep_type;
+    rep_type t; // red-black tree representing multimap
+  public:
+    typedef typename rep_type::pointer pointer;
+    typedef typename rep_type::const_pointer const_pointer;
+    typedef typename rep_type::reference reference;
+    typedef typename rep_type::const_reference const_reference;
+    typedef typename rep_type::iterator iterator;
+    typedef typename rep_type::const_iterator const_iterator;
+    typedef typename rep_type::reverse_iterator reverse_iterator;
+    typedef typename rep_type::const_reverse_iterator const_reverse_iterator;
+    typedef typename rep_type::size_type size_type;
+    typedef typename rep_type::difference_type difference_type;
+
+    // allocation/deallocation
+    multimap() : t(Compare()) {}
+    explicit multimap(const Compare &comp) : t(comp) {}
+
+    template <class InputIterator>
+    multimap(InputIterator first, InputIterator last)
+        : t(Compare())
+    {
+      t.insert_equal(first, last);
+    }
+
+    template <class InputIterator>
+    multimap(InputIterator first, InputIterator last, const Compare &comp)
+        : t(comp) { t.insert_equal(first, last); }
+
+    multimap(const multimap<Key, T, Compare, Alloc> &x) : t(x.t)
+    {
+    }
+    multimap<Key, T, Compare, Alloc> &
+    operator=(const multimap<Key, T, Compare, Alloc> &x)
+    {
+      t = x.t;
+      return *this;
+    }
+
+    // accessors:
+
+    key_compare key_comp() const { return t.key_comp(); }
+    value_compare value_comp() const { return value_compare(t.key_comp()); }
+    iterator begin() { return t.begin(); }
+    const_iterator begin() const { return t.begin(); }
+    iterator end() { return t.end(); }
+    const_iterator end() const { return t.end(); }
+    reverse_iterator rbegin() { return t.rbegin(); }
+    const_reverse_iterator rbegin() const { return t.rbegin(); }
+    reverse_iterator rend() { return t.rend(); }
+    const_reverse_iterator rend() const { return t.rend(); }
+    bool empty() const { return t.empty(); }
+    size_type size() const { return t.size(); }
+    size_type max_size() const { return t.max_size(); }
+    void swap(multimap<Key, T, Compare, Alloc> &x) { t.swap(x.t); }
+
+    // insert/erase
+    iterator insert(const value_type &x) { return t.insert_equal(x); }
+    iterator insert(iterator position, const value_type &x)
+    {
+      return t.insert_equal(position, x);
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator first, InputIterator last)
+    {
+      t.insert_equal(first, last);
+    }
+
+    void erase(iterator position)
+    {
+      t.erase(position);
+    }
+    size_type erase(const key_type &x) { return t.erase(x); }
+    void erase(iterator first, iterator last) { t.erase(first, last); }
+    void clear() { t.clear(); }
+
+    // multimap operations:
+    iterator find(const key_type &x) { return t.find(x); }
+    const_iterator find(const key_type &x) const { return t.find(x); }
+    size_type count(const key_type &x) const { return t.count(x); }
+    iterator lower_bound(const key_type &x) { return t.lower_bound(x); }
+    const_iterator lower_bound(const key_type &x) const
+    {
+      return t.lower_bound(x);
+    }
+    iterator upper_bound(const key_type &x) { return t.upper_bound(x); }
+    const_iterator upper_bound(const key_type &x) const
+    {
+      return t.upper_bound(x);
+    }
+    pair<iterator, iterator> equal_range(const key_type &x)
+    {
+      return t.equal_range(x);
+    }
+    pair<const_iterator, const_iterator> equal_range(const key_type &x) const
+    {
+      return t.equal_range(x);
+    }
+    friend bool operator== __STL_NULL_TMPL_ARGS(const multimap &,
+                                                const multimap &);
+    friend bool operator<__STL_NULL_TMPL_ARGS(const multimap &,
+                                              const multimap &);
+  };
+
+  template <class Key, class T, class Compare, class Alloc>
+  inline bool operator==(const multimap<Key, T, Compare, Alloc> &x,
+                        const multimap<Key, T, Compare, Alloc> &y)
+  {
+    return x.t == y.t;
+  }
+
+  template <class Key, class T, class Compare, class Alloc>
+  inline bool operator<(const multimap<Key, T, Compare, Alloc> &x,
+                        const multimap<Key, T, Compare, Alloc> &y)
+  {
+    return x.t < y.t;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Key, class T, class Compare, class Alloc>
+  inline void swap(multimap<Key, T, Compare, Alloc> &x,
+                  multimap<Key, T, Compare, Alloc> &y)
+  {
+    x.swap(y);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
+  ```
+  </details>
+
+### 容器```hash_set```、```hash_multiset```、```hash_map```和```hash_multimap```
+
+  底层用哈希表实现的无序集合。
+
+  [stl_hash_set.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_hash_set.h)
+
+  <details>
+  <summary>hash_set</summary>
+
+  ```c++
+  //哈希集合
+  template <class Value, class HashFcn = hash<Value>,
+            class EqualKey = equal_to<Value>,
+            class Alloc = alloc>
+  class hash_set
+  {
+  private:
+    //底层使用哈希表
+    typedef hashtable<Value, Value, HashFcn, identity<Value>,
+                      EqualKey, Alloc>
+        ht;
+    ht rep;
+
+  public:
+    typedef typename ht::key_type key_type;
+    typedef typename ht::value_type value_type;
+    typedef typename ht::hasher hasher;
+    typedef typename ht::key_equal key_equal;
+
+    typedef typename ht::size_type size_type;
+    typedef typename ht::difference_type difference_type;
+    typedef typename ht::const_pointer pointer;
+    typedef typename ht::const_pointer const_pointer;
+    typedef typename ht::const_reference reference;
+    typedef typename ht::const_reference const_reference;
+
+    // hash_set不支持修改元素，使用常量迭代器
+    typedef typename ht::const_iterator iterator;
+    typedef typename ht::const_iterator const_iterator;
+
+    hasher hash_funct() const { return rep.hash_funct(); }
+    key_equal key_eq() const { return rep.key_eq(); }
+
+  public:
+    hash_set() : rep(100, hasher(), key_equal()) {}
+    explicit hash_set(size_type n) : rep(n, hasher(), key_equal()) {}
+    hash_set(size_type n, const hasher &hf) : rep(n, hf, key_equal()) {}
+    hash_set(size_type n, const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) {}
+
+    template <class InputIterator>
+    hash_set(InputIterator f, InputIterator l)
+        : rep(100, hasher(), key_equal())
+    {
+      rep.insert_unique(f, l);
+    }
+    template <class InputIterator>
+    hash_set(InputIterator f, InputIterator l, size_type n)
+        : rep(n, hasher(), key_equal()) { rep.insert_unique(f, l); }
+    template <class InputIterator>
+    hash_set(InputIterator f, InputIterator l, size_type n,
+            const hasher &hf)
+        : rep(n, hf, key_equal()) { rep.insert_unique(f, l); }
+    template <class InputIterator>
+    hash_set(InputIterator f, InputIterator l, size_type n,
+            const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) { rep.insert_unique(f, l); }
+
+  public:
+    //各个操作转而使用底层哈希表
+    size_type size() const { return rep.size(); }
+    size_type max_size() const { return rep.max_size(); }
+    bool empty() const { return rep.empty(); }
+    void swap(hash_set &hs) { rep.swap(hs.rep); }
+    friend bool operator== __STL_NULL_TMPL_ARGS(const hash_set &,
+                                                const hash_set &);
+
+    iterator begin() const { return rep.begin(); }
+    iterator end() const { return rep.end(); }
+
+  public:
+    pair<iterator, bool> insert(const value_type &obj)
+    {
+      // hash_set不支持元素重复
+      pair<typename ht::iterator, bool> p = rep.insert_unique(obj);
+      return pair<iterator, bool>(p.first, p.second);
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator f, InputIterator l)
+    {
+      rep.insert_unique(f, l);
+    }
+
+    pair<iterator, bool> insert_noresize(const value_type &obj)
+    {
+      pair<typename ht::iterator, bool> p = rep.insert_unique_noresize(obj);
+      return pair<iterator, bool>(p.first, p.second);
+    }
+
+    iterator find(const key_type &key) const { return rep.find(key); }
+
+    size_type count(const key_type &key) const { return rep.count(key); }
+
+    pair<iterator, iterator> equal_range(const key_type &key) const
+    {
+      return rep.equal_range(key);
+    }
+
+    size_type erase(const key_type &key) { return rep.erase(key); }
+    void erase(iterator it) { rep.erase(it); }
+    void erase(iterator f, iterator l) { rep.erase(f, l); }
+    void clear() { rep.clear(); }
+
+  public:
+    void resize(size_type hint) { rep.resize(hint); }
+    size_type bucket_count() const { return rep.bucket_count(); }
+    size_type max_bucket_count() const { return rep.max_bucket_count(); }
+    size_type elems_in_bucket(size_type n) const
+    {
+      return rep.elems_in_bucket(n);
+    }
+  };
+
+  template <class Value, class HashFcn, class EqualKey, class Alloc>
+  inline bool operator==(const hash_set<Value, HashFcn, EqualKey, Alloc> &hs1,
+                        const hash_set<Value, HashFcn, EqualKey, Alloc> &hs2)
+  {
+    return hs1.rep == hs2.rep;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Val, class HashFcn, class EqualKey, class Alloc>
+  inline void swap(hash_set<Val, HashFcn, EqualKey, Alloc> &hs1,
+                  hash_set<Val, HashFcn, EqualKey, Alloc> &hs2)
+  {
+    hs1.swap(hs2);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
+
+  //可重复哈希集合
+  template <class Value, class HashFcn = hash<Value>,
+            class EqualKey = equal_to<Value>,
+            class Alloc = alloc>
+  class hash_multiset
+  {
+  private:
+    typedef hashtable<Value, Value, HashFcn, identity<Value>,
+                      EqualKey, Alloc>
+        ht;
+    ht rep;
+
+  public:
+    typedef typename ht::key_type key_type;
+    typedef typename ht::value_type value_type;
+    typedef typename ht::hasher hasher;
+    typedef typename ht::key_equal key_equal;
+
+    typedef typename ht::size_type size_type;
+    typedef typename ht::difference_type difference_type;
+    typedef typename ht::const_pointer pointer;
+    typedef typename ht::const_pointer const_pointer;
+    typedef typename ht::const_reference reference;
+    typedef typename ht::const_reference const_reference;
+
+    typedef typename ht::const_iterator iterator;
+    typedef typename ht::const_iterator const_iterator;
+
+    hasher hash_funct() const { return rep.hash_funct(); }
+    key_equal key_eq() const { return rep.key_eq(); }
+
+  public:
+    hash_multiset() : rep(100, hasher(), key_equal()) {}
+    explicit hash_multiset(size_type n) : rep(n, hasher(), key_equal()) {}
+    hash_multiset(size_type n, const hasher &hf) : rep(n, hf, key_equal()) {}
+    hash_multiset(size_type n, const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) {}
+
+    template <class InputIterator>
+    hash_multiset(InputIterator f, InputIterator l)
+        : rep(100, hasher(), key_equal())
+    {
+      rep.insert_equal(f, l);
+    }
+    template <class InputIterator>
+    hash_multiset(InputIterator f, InputIterator l, size_type n)
+        : rep(n, hasher(), key_equal()) { rep.insert_equal(f, l); }
+    template <class InputIterator>
+    hash_multiset(InputIterator f, InputIterator l, size_type n,
+                  const hasher &hf)
+        : rep(n, hf, key_equal()) { rep.insert_equal(f, l); }
+    template <class InputIterator>
+    hash_multiset(InputIterator f, InputIterator l, size_type n,
+                  const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) { rep.insert_equal(f, l); }
+
+  public:
+    size_type size() const { return rep.size(); }
+    size_type max_size() const { return rep.max_size(); }
+    bool empty() const { return rep.empty(); }
+    void swap(hash_multiset &hs) { rep.swap(hs.rep); }
+    friend bool operator== __STL_NULL_TMPL_ARGS(const hash_multiset &,
+                                                const hash_multiset &);
+
+    iterator begin() const { return rep.begin(); }
+    iterator end() const { return rep.end(); }
+
+  public:
+    iterator insert(const value_type &obj) { return rep.insert_equal(obj); }
+
+    template <class InputIterator>
+    void insert(InputIterator f, InputIterator l)
+    {
+      rep.insert_equal(f, l);
+    }
+
+    iterator insert_noresize(const value_type &obj)
+    {
+      return rep.insert_equal_noresize(obj);
+    }
+
+    iterator find(const key_type &key) const { return rep.find(key); }
+
+    size_type count(const key_type &key) const { return rep.count(key); }
+
+    pair<iterator, iterator> equal_range(const key_type &key) const
+    {
+      return rep.equal_range(key);
+    }
+
+    size_type erase(const key_type &key) { return rep.erase(key); }
+    void erase(iterator it) { rep.erase(it); }
+    void erase(iterator f, iterator l) { rep.erase(f, l); }
+    void clear() { rep.clear(); }
+
+  public:
+    void resize(size_type hint) { rep.resize(hint); }
+    size_type bucket_count() const { return rep.bucket_count(); }
+    size_type max_bucket_count() const { return rep.max_bucket_count(); }
+    size_type elems_in_bucket(size_type n) const
+    {
+      return rep.elems_in_bucket(n);
+    }
+  };
+
+  template <class Val, class HashFcn, class EqualKey, class Alloc>
+  inline bool operator==(const hash_multiset<Val, HashFcn, EqualKey, Alloc> &hs1,
+                        const hash_multiset<Val, HashFcn, EqualKey, Alloc> &hs2)
+  {
+    return hs1.rep == hs2.rep;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Val, class HashFcn, class EqualKey, class Alloc>
+  inline void swap(hash_multiset<Val, HashFcn, EqualKey, Alloc> &hs1,
+                  hash_multiset<Val, HashFcn, EqualKey, Alloc> &hs2)
+  {
+    hs1.swap(hs2);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
+  ```
+  </details>
+
+  [stl_hash_map.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_hash_map.h)
+
+  <details>
+  <summary>hash_map</summary>
+
+  ```c++
+  //哈希映射
+  template <class Key, class T, class HashFcn = hash<Key>,
+            class EqualKey = equal_to<Key>,
+            class Alloc = alloc>
+  class hash_map
+  {
+  private:
+    //底层使用哈希表
+    typedef hashtable<pair<const Key, T>, Key, HashFcn,
+                      select1st<pair<const Key, T>>, EqualKey, Alloc>
+        ht;
+    ht rep;
+
+  public:
+    typedef typename ht::key_type key_type;
+    typedef T data_type;
+    typedef T mapped_type;
+    typedef typename ht::value_type value_type;
+    typedef typename ht::hasher hasher;
+    typedef typename ht::key_equal key_equal;
+
+    typedef typename ht::size_type size_type;
+    typedef typename ht::difference_type difference_type;
+    typedef typename ht::pointer pointer;
+    typedef typename ht::const_pointer const_pointer;
+    typedef typename ht::reference reference;
+    typedef typename ht::const_reference const_reference;
+
+    typedef typename ht::iterator iterator;
+    typedef typename ht::const_iterator const_iterator;
+
+    hasher hash_funct() const { return rep.hash_funct(); }
+    key_equal key_eq() const { return rep.key_eq(); }
+
+  public:
+    hash_map() : rep(100, hasher(), key_equal()) {}
+    explicit hash_map(size_type n) : rep(n, hasher(), key_equal()) {}
+    hash_map(size_type n, const hasher &hf) : rep(n, hf, key_equal()) {}
+    hash_map(size_type n, const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) {}
+
+    template <class InputIterator>
+    hash_map(InputIterator f, InputIterator l)
+        : rep(100, hasher(), key_equal())
+    {
+      rep.insert_unique(f, l);
+    }
+    template <class InputIterator>
+    hash_map(InputIterator f, InputIterator l, size_type n)
+        : rep(n, hasher(), key_equal()) { rep.insert_unique(f, l); }
+    template <class InputIterator>
+    hash_map(InputIterator f, InputIterator l, size_type n,
+            const hasher &hf)
+        : rep(n, hf, key_equal()) { rep.insert_unique(f, l); }
+    template <class InputIterator>
+    hash_map(InputIterator f, InputIterator l, size_type n,
+            const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) { rep.insert_unique(f, l); }
+
+  public:
+    size_type size() const { return rep.size(); }
+    size_type max_size() const { return rep.max_size(); }
+    bool empty() const { return rep.empty(); }
+    void swap(hash_map &hs) { rep.swap(hs.rep); }
+    friend bool
+    operator== __STL_NULL_TMPL_ARGS(const hash_map &, const hash_map &);
+
+    iterator begin() { return rep.begin(); }
+    iterator end() { return rep.end(); }
+    const_iterator begin() const { return rep.begin(); }
+    const_iterator end() const { return rep.end(); }
+
+  public:
+    pair<iterator, bool> insert(const value_type &obj)
+    {
+      return rep.insert_unique(obj);
+    }
+
+    template <class InputIterator>
+    void insert(InputIterator f, InputIterator l)
+    {
+      rep.insert_unique(f, l);
+    }
+
+    pair<iterator, bool> insert_noresize(const value_type &obj)
+    {
+      return rep.insert_unique_noresize(obj);
+    }
+
+    iterator find(const key_type &key) { return rep.find(key); }
+    const_iterator find(const key_type &key) const { return rep.find(key); }
+
+    T &operator[](const key_type &key)
+    {
+      return rep.find_or_insert(value_type(key, T())).second;
+    }
+
+    size_type count(const key_type &key) const { return rep.count(key); }
+
+    pair<iterator, iterator> equal_range(const key_type &key)
+    {
+      return rep.equal_range(key);
+    }
+    pair<const_iterator, const_iterator> equal_range(const key_type &key) const
+    {
+      return rep.equal_range(key);
+    }
+
+    size_type erase(const key_type &key) { return rep.erase(key); }
+    void erase(iterator it) { rep.erase(it); }
+    void erase(iterator f, iterator l) { rep.erase(f, l); }
+    void clear() { rep.clear(); }
+
+  public:
+    void resize(size_type hint) { rep.resize(hint); }
+    size_type bucket_count() const { return rep.bucket_count(); }
+    size_type max_bucket_count() const { return rep.max_bucket_count(); }
+    size_type elems_in_bucket(size_type n) const
+    {
+      return rep.elems_in_bucket(n);
+    }
+  };
+
+  template <class Key, class T, class HashFcn, class EqualKey, class Alloc>
+  inline bool operator==(const hash_map<Key, T, HashFcn, EqualKey, Alloc> &hm1,
+                        const hash_map<Key, T, HashFcn, EqualKey, Alloc> &hm2)
+  {
+    return hm1.rep == hm2.rep;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Key, class T, class HashFcn, class EqualKey, class Alloc>
+  inline void swap(hash_map<Key, T, HashFcn, EqualKey, Alloc> &hm1,
+                  hash_map<Key, T, HashFcn, EqualKey, Alloc> &hm2)
+  {
+    hm1.swap(hm2);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
+
+  //可重复哈希映射
+  template <class Key, class T, class HashFcn = hash<Key>,
+            class EqualKey = equal_to<Key>,
+            class Alloc = alloc>
+  class hash_multimap
+  {
+  private:
+    typedef hashtable<pair<const Key, T>, Key, HashFcn,
+                      select1st<pair<const Key, T>>, EqualKey, Alloc>
+        ht;
+    ht rep;
+
+  public:
+    typedef typename ht::key_type key_type;
+    typedef T data_type;
+    typedef T mapped_type;
+    typedef typename ht::value_type value_type;
+    typedef typename ht::hasher hasher;
+    typedef typename ht::key_equal key_equal;
+
+    typedef typename ht::size_type size_type;
+    typedef typename ht::difference_type difference_type;
+    typedef typename ht::pointer pointer;
+    typedef typename ht::const_pointer const_pointer;
+    typedef typename ht::reference reference;
+    typedef typename ht::const_reference const_reference;
+
+    typedef typename ht::iterator iterator;
+    typedef typename ht::const_iterator const_iterator;
+
+    hasher hash_funct() const { return rep.hash_funct(); }
+    key_equal key_eq() const { return rep.key_eq(); }
+
+  public:
+    hash_multimap() : rep(100, hasher(), key_equal()) {}
+    explicit hash_multimap(size_type n) : rep(n, hasher(), key_equal()) {}
+    hash_multimap(size_type n, const hasher &hf) : rep(n, hf, key_equal()) {}
+    hash_multimap(size_type n, const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) {}
+
+    template <class InputIterator>
+    hash_multimap(InputIterator f, InputIterator l)
+        : rep(100, hasher(), key_equal())
+    {
+      rep.insert_equal(f, l);
+    }
+    template <class InputIterator>
+    hash_multimap(InputIterator f, InputIterator l, size_type n)
+        : rep(n, hasher(), key_equal()) { rep.insert_equal(f, l); }
+    template <class InputIterator>
+    hash_multimap(InputIterator f, InputIterator l, size_type n,
+                  const hasher &hf)
+        : rep(n, hf, key_equal()) { rep.insert_equal(f, l); }
+    template <class InputIterator>
+    hash_multimap(InputIterator f, InputIterator l, size_type n,
+                  const hasher &hf, const key_equal &eql)
+        : rep(n, hf, eql) { rep.insert_equal(f, l); }
+
+  public:
+    size_type size() const { return rep.size(); }
+    size_type max_size() const { return rep.max_size(); }
+    bool empty() const { return rep.empty(); }
+    void swap(hash_multimap &hs) { rep.swap(hs.rep); }
+    friend bool
+    operator== __STL_NULL_TMPL_ARGS(const hash_multimap &, const hash_multimap &);
+
+    iterator begin() { return rep.begin(); }
+    iterator end() { return rep.end(); }
+    const_iterator begin() const { return rep.begin(); }
+    const_iterator end() const { return rep.end(); }
+
+  public:
+    iterator insert(const value_type &obj) { return rep.insert_equal(obj); }
+
+    template <class InputIterator>
+    void insert(InputIterator f, InputIterator l)
+    {
+      rep.insert_equal(f, l);
+    }
+
+    iterator insert_noresize(const value_type &obj)
+    {
+      return rep.insert_equal_noresize(obj);
+    }
+
+    iterator find(const key_type &key) { return rep.find(key); }
+    const_iterator find(const key_type &key) const { return rep.find(key); }
+
+    size_type count(const key_type &key) const { return rep.count(key); }
+
+    pair<iterator, iterator> equal_range(const key_type &key)
+    {
+      return rep.equal_range(key);
+    }
+    pair<const_iterator, const_iterator> equal_range(const key_type &key) const
+    {
+      return rep.equal_range(key);
+    }
+
+    size_type erase(const key_type &key) { return rep.erase(key); }
+    void erase(iterator it) { rep.erase(it); }
+    void erase(iterator f, iterator l) { rep.erase(f, l); }
+    void clear() { rep.clear(); }
+
+  public:
+    void resize(size_type hint) { rep.resize(hint); }
+    size_type bucket_count() const { return rep.bucket_count(); }
+    size_type max_bucket_count() const { return rep.max_bucket_count(); }
+    size_type elems_in_bucket(size_type n) const
+    {
+      return rep.elems_in_bucket(n);
+    }
+  };
+
+  template <class Key, class T, class HF, class EqKey, class Alloc>
+  inline bool operator==(const hash_multimap<Key, T, HF, EqKey, Alloc> &hm1,
+                        const hash_multimap<Key, T, HF, EqKey, Alloc> &hm2)
+  {
+    return hm1.rep == hm2.rep;
+  }
+
+  #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+  template <class Key, class T, class HashFcn, class EqualKey, class Alloc>
+  inline void swap(hash_multimap<Key, T, HashFcn, EqualKey, Alloc> &hm1,
+                  hash_multimap<Key, T, HashFcn, EqualKey, Alloc> &hm2)
+  {
+    hm1.swap(hm2);
+  }
+
+  #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
   ```
   </details>
