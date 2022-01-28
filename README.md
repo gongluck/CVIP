@@ -5,6 +5,7 @@
 - [CVIP](#cvip)
   - [Stargazers over time](#stargazers-over-time)
   - [chapters and sections](#chapters-and-sections)
+  - [QR Code](#qr-code)
 
 ## Stargazers over time
 
@@ -17,3 +18,9 @@
 - [ ] ```C++```对象模型
 - [ ] 数据结构与算法
 - [ ] 阅读```Go```源码
+
+## QR Code
+
+<center>
+  <img src="https://github.com/gongluck/images/blob/main/CVIP.png" width="200"/><img src="https://github.com/gongluck/images/blob/main/wx.png" width="200"/><img src="https://github.com/gongluck/images/blob/main/zfb.png" width="200"/>
+</center>
