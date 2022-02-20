@@ -1,9 +1,7 @@
-# STL标准模板库
+# ```Redis```源码
 
-- [STL标准模板库](#stl标准模板库)
+- [```Redis```源码](#redis源码)
   - [```Redis```数据结构](#redis数据结构)
-  
-![STL六大模块](https://github.com/gongluck/images/blob/main/stl/STL六大模块.png)
 
 ## ```Redis```数据结构
 
