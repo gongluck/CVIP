@@ -5,6 +5,7 @@
     - [简单动态字符串](#简单动态字符串)
     - [链表](#链表)
     - [字典](#字典)
+    - [跳表](#跳表)
 
 ## ```Redis```基础数据结构
 
@@ -3046,5 +3047,772 @@
 	{
 			dict_can_resize = 0;
 	}
+  ```
+  </details>
+
+### 跳表
+
+  ![跳表](https://github.com/gongluck/images/blob/main/redis/跳表.png)
+
+  - 跳表节点的层高是```1~32```之间的随机数
+  - 多个节点可以包含相同的分值，但节点的成员对象必须是唯一的
+  - 节点按照分值排序，分值相同时按照对象的大小进行排序
+
+  [redis.h](https://github.com/gongluck/sourcecode/blob/main/redis/src/redis.h)
+
+  <details>
+  <summary>跳表</summary>
+
+  ```c++
+  //跳表节点
+  /* ZSETs use a specialized version of Skiplists */
+  typedef struct zskiplistNode
+  {
+    robj *obj;                      //对象
+    double score;                   //排序比值
+    struct zskiplistNode *backward; //后退指针
+    struct zskiplistLevel
+    {
+      struct zskiplistNode *forward; //前进指针
+      unsigned int span;             //距离
+    } level[];                       //层
+  } zskiplistNode;
+
+  //跳表
+  typedef struct zskiplist
+  {
+    struct zskiplistNode *header, *tail; //头尾节点
+    unsigned long length;                //节点数
+    int level;                           //最大层数
+  } zskiplist;
+  ```
+  </details>
+
+  [t_zset.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/t_zset.c)
+
+  <details>
+  <summary>跳表</summary>
+
+  ```c++
+  //创建跳表节点
+  zskiplistNode *zslCreateNode(int level, double score, robj *obj)
+  {
+    zskiplistNode *zn = zmalloc(sizeof(*zn) + level * sizeof(struct zskiplistLevel));
+    zn->score = score;
+    zn->obj = obj;
+    return zn;
+  }
+
+  //创建跳表
+  zskiplist *zslCreate(void)
+  {
+    int j;
+    zskiplist *zsl;
+
+    zsl = zmalloc(sizeof(*zsl));
+    //空表层数为1
+    zsl->level = 1;
+    //空表长度0
+    zsl->length = 0;
+    //头节点不计入长度，层数为最大值32
+    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL, 0, NULL);
+    for (j = 0; j < ZSKIPLIST_MAXLEVEL; j++)
+    {
+      zsl->header->level[j].forward = NULL;
+      zsl->header->level[j].span = 0;
+    }
+    zsl->header->backward = NULL;
+    zsl->tail = NULL;
+    return zsl;
+  }
+
+  //释放跳表节点
+  void zslFreeNode(zskiplistNode *node)
+  {
+    //减少对象引用计数
+    decrRefCount(node->obj);
+    zfree(node);
+  }
+
+  //释放跳表
+  void zslFree(zskiplist *zsl)
+  {
+    zskiplistNode *node = zsl->header->level[0].forward /*第一个有效节点*/, *next;
+
+    //循环释放所有节点
+    zfree(zsl->header);
+    while (node)
+    {
+      //只需遍历第0层节点
+      next = node->level[0].forward;
+      //释放节点
+      zslFreeNode(node);
+      node = next;
+    }
+    //释放跳表结构本身
+    zfree(zsl);
+  }
+
+  //计算一个随机层数
+  /* Returns a random level for the new skiplist node we are going to create.
+  * The return value of this function is between 1 and ZSKIPLIST_MAXLEVEL
+  * (both inclusive), with a powerlaw-alike distribution where higher
+  * levels are less likely to be returned. */
+  int zslRandomLevel(void)
+  {
+    int level = 1;
+    while ((random() & 0xFFFF) < (ZSKIPLIST_P * 0xFFFF))
+      level += 1;
+    return (level < ZSKIPLIST_MAXLEVEL) ? level : ZSKIPLIST_MAXLEVEL;
+  }
+
+  //插入节点
+  zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj)
+  {
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+    unsigned int rank[ZSKIPLIST_MAXLEVEL];
+    int i, level;
+
+    redisAssert(!isnan(score));
+    //从头节点最高层出发，查找每一层最靠近新节点的前继节点
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      // rank[i]为每层最靠近新节点的前继节点的距离
+      /* store rank that is crossed to reach the insert position */
+      rank[i] = i == (zsl->level - 1) ? 0 : rank[i + 1]; //动态规划！
+      while (x->level[i].forward &&                      //如果后继节点有效
+            (x->level[i].forward->score < score ||      //并且后继节点的比值小于等于新节点的比值
+              (x->level[i].forward->score == score &&
+              compareStringObjects(x->level[i].forward->obj, obj) < 0)))
+      {
+        rank[i] += x->level[i].span; //累加距离
+        x = x->level[i].forward;     //继续下一个后继节点
+      }
+      // x所指向的节点为i层最靠近新节点的前继节点，记录前继节点
+      update[i] = x;
+    }
+    /* we assume the key is not already inside, since we allow duplicated
+    * scores, and the re-insertion of score and redis object should never
+    * happen since the caller of zslInsert() should test in the hash table
+    * if the element is already inside or not. */
+    level = zslRandomLevel(); //随机层数
+    if (level > zsl->level)   //最大层数变化
+    {
+      //新增update[zsl->level]~update[level]
+      for (i = zsl->level; i < level; i++)
+      {
+        rank[i] = 0;
+        update[i] = zsl->header;                //新增层从头节点开始
+        update[i]->level[i].span = zsl->length; //新增层只加这个新节点
+      }
+      zsl->level = level;
+    }
+    //创建节点
+    x = zslCreateNode(level, score, obj);
+    //更新所有旧层
+    for (i = 0; i < level; i++)
+    {
+      //头插入法插入到后继节点前
+      x->level[i].forward = update[i]->level[i].forward;
+      update[i]->level[i].forward = x;
+
+      //更新span
+      /* update span covered by update[i] as x is inserted here */
+      x->level[i].span = update[i]->level[i].span - (rank[0] - rank[i]);
+      update[i]->level[i].span = (rank[0] - rank[i]) + 1;
+    }
+
+    //如果没有新增层，更新update[zsl->level]~update[level]
+    /* increment span for untouched levels */
+    for (i = level; i < zsl->level; i++)
+    {
+      //对[level,zsl->level)的后继节点中的跨度+1，因为新插入一个节点
+      update[i]->level[i].span++;
+    }
+
+    x->backward = (update[0] == zsl->header) ? NULL : update[0]; // 0层相当于普通链表
+    if (x->level[0].forward)
+      x->level[0].forward->backward = x;
+    else
+      zsl->tail = x;
+    zsl->length++;
+    return x;
+  }
+
+  //删除跳表节点
+  /* Internal function used by zslDelete, zslDeleteByScore and zslDeleteByRank */
+  void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update)
+  {
+    int i;
+    //遍历每一层前继节点
+    for (i = 0; i < zsl->level; i++)
+    {
+      if (update[i]->level[i].forward == x) //下一节点就是删除节点
+      {
+        update[i]->level[i].span += x->level[i].span - 1;  //增加距离
+        update[i]->level[i].forward = x->level[i].forward; //移除x节点
+      }
+      else
+      {
+        update[i]->level[i].span -= 1;
+      }
+    }
+    //待删除节点有后继
+    if (x->level[0].forward)
+    {
+      x->level[0].forward->backward = x->backward;
+    }
+    else
+    {
+      zsl->tail = x->backward;
+    }
+    //更新最大层数
+    while (zsl->level > 1 && zsl->header->level[zsl->level - 1].forward == NULL)
+      zsl->level--;
+    zsl->length--;
+  }
+
+  //删除跳表节点
+  /* Delete an element with matching score/object from the skiplist. */
+  int zslDelete(zskiplist *zsl, double score, robj *obj)
+  {
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+    int i;
+
+    //从头节点最高层出发，查找每一层最靠近查询节点的前继节点
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      while (x->level[i].forward &&                 //如果后继节点有效
+            (x->level[i].forward->score < score || //并且后继节点的比值小于等于查询节点的比值
+              (x->level[i].forward->score == score &&
+              compareStringObjects(x->level[i].forward->obj, obj) < 0)))
+      {
+        x = x->level[i].forward; //继续下一个后继节点
+      }
+      update[i] = x; //每一层最靠近查询节点的前继节点
+    }
+    //找出后置节点中比值符合并且对象相等的节点
+    /* We may have multiple elements with the same score, what we need
+    * is to find the element with both the right score and object. */
+    x = x->level[0].forward;
+    if (x && score == x->score && equalStringObjects(x->obj, obj))
+    {
+      //删除节点
+      zslDeleteNode(zsl, x, update);
+      zslFreeNode(x);
+      return 1;
+    }
+    return 0; /* not found */
+  }
+
+  static int zslValueGteMin(double value, zrangespec *spec)
+  {
+    return spec->minex ? (value > spec->min) : (value >= spec->min);
+  }
+
+  static int zslValueLteMax(double value, zrangespec *spec)
+  {
+    return spec->maxex ? (value < spec->max) : (value <= spec->max);
+  }
+
+  //判断跳表节点是否在范围中
+  /* Returns if there is a part of the zset is in range. */
+  int zslIsInRange(zskiplist *zsl, zrangespec *range)
+  {
+    zskiplistNode *x;
+
+    //排除空集
+    /* Test for ranges that will always be empty. */
+    if (range->min > range->max ||
+        (range->min == range->max && (range->minex || range->maxex)))
+      return 0;
+    //尾节点
+    x = zsl->tail;
+    //判断尾节点是否在超出范围
+    if (x == NULL || !zslValueGteMin(x->score, range))
+      return 0;
+    //第一个有效节点
+    x = zsl->header->level[0].forward;
+    //判断第一个有效节点是否在超出范围
+    if (x == NULL || !zslValueLteMax(x->score, range))
+      return 0;
+    return 1;
+  }
+
+  //获取第一个在范围中的节点
+  /* Find the first node that is contained in the specified range.
+  * Returns NULL when no element is contained in the range. */
+  zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range)
+  {
+    zskiplistNode *x;
+    int i;
+
+    //判断跳表是否在范围中
+    /* If everything is out of range, return early. */
+    if (!zslIsInRange(zsl, range))
+      return NULL;
+
+    //从头节点最高层出发，查找每一层最靠近的前置节点
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      /* Go forward while *OUT* of range. */
+      while (x->level[i].forward &&                              //后继节点有效
+            !zslValueGteMin(x->level[i].forward->score, range)) //并且后继节点在范围中
+        x = x->level[i].forward;
+    }
+
+    //后继节点就是结果
+    /* This is an inner range, so the next node cannot be NULL. */
+    x = x->level[0].forward;
+    redisAssert(x != NULL);
+
+    //判断结果是否在范围中
+    /* Check if score <= max. */
+    if (!zslValueLteMax(x->score, range))
+      return NULL;
+    return x;
+  }
+
+  //获取最后一个在范围中的节点
+  /* Find the last node that is contained in the specified range.
+  * Returns NULL when no element is contained in the range. */
+  zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range)
+  {
+    zskiplistNode *x;
+    int i;
+
+    //判断跳表是否在范围中
+    /* If everything is out of range, return early. */
+    if (!zslIsInRange(zsl, range))
+      return NULL;
+
+    //从头节点最高层出发，查找每一层最靠近的前置节点
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      /* Go forward while *IN* range. */
+      while (x->level[i].forward &&                             //如果后继节点有效
+            zslValueLteMax(x->level[i].forward->score, range)) //并且后继节点在范围中
+        x = x->level[i].forward;
+    }
+
+    /* This is an inner range, so this node cannot be NULL. */
+    redisAssert(x != NULL);
+
+    //判断结果是否在范围中
+    /* Check if score >= min. */
+    if (!zslValueGteMin(x->score, range))
+      return NULL;
+    return x;
+  }
+
+  //删除范围中的节点
+  /* Delete all the elements with score between min and max from the skiplist.
+  * Min and max are inclusive, so a score >= min || score <= max is deleted.
+  * Note that this function takes the reference to the hash table view of the
+  * sorted set, in order to remove the elements from the hash table too. */
+  unsigned long zslDeleteRangeByScore(zskiplist *zsl, zrangespec *range, dict *dict)
+  {
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+    unsigned long removed = 0;
+    int i;
+
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      while (x->level[i].forward && (range->minex ? x->level[i].forward->score <= range->min : x->level[i].forward->score < range->min))
+        x = x->level[i].forward;
+      update[i] = x; //记录最近的前继节点
+    }
+
+    //第一个范围中的节点
+    /* Current node is the last with score < or <= min. */
+    x = x->level[0].forward;
+
+    //删除范围中的节点
+    /* Delete nodes while in range. */
+    while (x &&
+          (range->maxex ? x->score < range->max : x->score <= range->max))
+    {
+      zskiplistNode *next = x->level[0].forward;
+      zslDeleteNode(zsl, x, update);
+      dictDelete(dict, x->obj);
+      zslFreeNode(x);
+      removed++;
+      x = next;
+    }
+    return removed;
+  }
+
+  unsigned long zslDeleteRangeByLex(zskiplist *zsl, zlexrangespec *range, dict *dict)
+  {
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+    unsigned long removed = 0;
+    int i;
+
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      while (x->level[i].forward &&
+            !zslLexValueGteMin(x->level[i].forward->obj, range))
+        x = x->level[i].forward;
+      update[i] = x;
+    }
+
+    /* Current node is the last with score < or <= min. */
+    x = x->level[0].forward;
+
+    /* Delete nodes while in range. */
+    while (x && zslLexValueLteMax(x->obj, range))
+    {
+      zskiplistNode *next = x->level[0].forward;
+      zslDeleteNode(zsl, x, update);
+      dictDelete(dict, x->obj);
+      zslFreeNode(x);
+      removed++;
+      x = next;
+    }
+    return removed;
+  }
+
+  /* Delete all the elements with rank between start and end from the skiplist.
+  * Start and end are inclusive. Note that start and end need to be 1-based */
+  unsigned long zslDeleteRangeByRank(zskiplist *zsl, unsigned int start, unsigned int end, dict *dict)
+  {
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+    unsigned long traversed = 0, removed = 0;
+    int i;
+
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      while (x->level[i].forward && (traversed + x->level[i].span) < start)
+      {
+        traversed += x->level[i].span;
+        x = x->level[i].forward;
+      }
+      update[i] = x;
+    }
+
+    traversed++;
+    x = x->level[0].forward;
+    while (x && traversed <= end)
+    {
+      zskiplistNode *next = x->level[0].forward;
+      zslDeleteNode(zsl, x, update);
+      dictDelete(dict, x->obj);
+      zslFreeNode(x);
+      removed++;
+      traversed++;
+      x = next;
+    }
+    return removed;
+  }
+
+  //获取符合条件的节点的排位
+  /* Find the rank for an element by both score and key.
+  * Returns 0 when the element cannot be found, rank otherwise.
+  * Note that the rank is 1-based due to the span of zsl->header to the
+  * first element. */
+  unsigned long zslGetRank(zskiplist *zsl, double score, robj *o)
+  {
+    zskiplistNode *x;
+    unsigned long rank = 0;
+    int i;
+
+    //遍历
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      while (x->level[i].forward &&
+            (x->level[i].forward->score < score ||
+              (x->level[i].forward->score == score &&
+              compareStringObjects(x->level[i].forward->obj, o) <= 0)))
+      {
+        rank += x->level[i].span; //累加排位
+        x = x->level[i].forward;  //下一个后继节点
+      }
+
+      /* x might be equal to zsl->header, so test if obj is non-NULL */
+      if (x->obj && equalStringObjects(x->obj, o))
+      {
+        return rank;
+      }
+    }
+    return 0;
+  }
+
+  //查找符合排位的节点
+  /* Finds an element by its rank. The rank argument needs to be 1-based. */
+  zskiplistNode *zslGetElementByRank(zskiplist *zsl, unsigned long rank)
+  {
+    zskiplistNode *x;
+    unsigned long traversed = 0;
+    int i;
+
+    //遍历
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      while (x->level[i].forward && (traversed + x->level[i].span) <= rank) //小于查找排位
+      {
+        //累加排位
+        traversed += x->level[i].span;
+        //下一个后继节点
+        x = x->level[i].forward;
+      }
+      //找到结果
+      if (traversed == rank)
+      {
+        return x;
+      }
+    }
+    return NULL;
+  }
+
+  /* Populate the rangespec according to the objects min and max. */
+  static int zslParseRange(robj *min, robj *max, zrangespec *spec)
+  {
+    char *eptr;
+    spec->minex = spec->maxex = 0;
+
+    /* Parse the min-max interval. If one of the values is prefixed
+    * by the "(" character, it's considered "open". For instance
+    * ZRANGEBYSCORE zset (1.5 (2.5 will match min < x < max
+    * ZRANGEBYSCORE zset 1.5 2.5 will instead match min <= x <= max */
+    if (min->encoding == REDIS_ENCODING_INT)
+    {
+      spec->min = (long)min->ptr;
+    }
+    else
+    {
+      if (((char *)min->ptr)[0] == '(')
+      {
+        spec->min = strtod((char *)min->ptr + 1, &eptr);
+        if (eptr[0] != '\0' || isnan(spec->min))
+          return REDIS_ERR;
+        spec->minex = 1;
+      }
+      else
+      {
+        spec->min = strtod((char *)min->ptr, &eptr);
+        if (eptr[0] != '\0' || isnan(spec->min))
+          return REDIS_ERR;
+      }
+    }
+    if (max->encoding == REDIS_ENCODING_INT)
+    {
+      spec->max = (long)max->ptr;
+    }
+    else
+    {
+      if (((char *)max->ptr)[0] == '(')
+      {
+        spec->max = strtod((char *)max->ptr + 1, &eptr);
+        if (eptr[0] != '\0' || isnan(spec->max))
+          return REDIS_ERR;
+        spec->maxex = 1;
+      }
+      else
+      {
+        spec->max = strtod((char *)max->ptr, &eptr);
+        if (eptr[0] != '\0' || isnan(spec->max))
+          return REDIS_ERR;
+      }
+    }
+
+    return REDIS_OK;
+  }
+
+  /* ------------------------ Lexicographic ranges ---------------------------- */
+
+  /* Parse max or min argument of ZRANGEBYLEX.
+  * (foo means foo (open interval)
+  * [foo means foo (closed interval)
+  * - means the min string possible
+  * + means the max string possible
+  *
+  * If the string is valid the *dest pointer is set to the redis object
+  * that will be used for the comparision, and ex will be set to 0 or 1
+  * respectively if the item is exclusive or inclusive. REDIS_OK will be
+  * returned.
+  *
+  * If the string is not a valid range REDIS_ERR is returned, and the value
+  * of *dest and *ex is undefined. */
+  int zslParseLexRangeItem(robj *item, robj **dest, int *ex)
+  {
+    char *c = item->ptr;
+
+    switch (c[0])
+    {
+    case '+':
+      if (c[1] != '\0')
+        return REDIS_ERR;
+      *ex = 0;
+      *dest = shared.maxstring;
+      incrRefCount(shared.maxstring);
+      return REDIS_OK;
+    case '-':
+      if (c[1] != '\0')
+        return REDIS_ERR;
+      *ex = 0;
+      *dest = shared.minstring;
+      incrRefCount(shared.minstring);
+      return REDIS_OK;
+    case '(':
+      *ex = 1;
+      *dest = createStringObject(c + 1, sdslen(c) - 1);
+      return REDIS_OK;
+    case '[':
+      *ex = 0;
+      *dest = createStringObject(c + 1, sdslen(c) - 1);
+      return REDIS_OK;
+    default:
+      return REDIS_ERR;
+    }
+  }
+
+  /* Populate the rangespec according to the objects min and max.
+  *
+  * Return REDIS_OK on success. On error REDIS_ERR is returned.
+  * When OK is returned the structure must be freed with zslFreeLexRange(),
+  * otherwise no release is needed. */
+  static int zslParseLexRange(robj *min, robj *max, zlexrangespec *spec)
+  {
+    /* The range can't be valid if objects are integer encoded.
+    * Every item must start with ( or [. */
+    if (min->encoding == REDIS_ENCODING_INT ||
+        max->encoding == REDIS_ENCODING_INT)
+      return REDIS_ERR;
+
+    spec->min = spec->max = NULL;
+    if (zslParseLexRangeItem(min, &spec->min, &spec->minex) == REDIS_ERR ||
+        zslParseLexRangeItem(max, &spec->max, &spec->maxex) == REDIS_ERR)
+    {
+      if (spec->min)
+        decrRefCount(spec->min);
+      if (spec->max)
+        decrRefCount(spec->max);
+      return REDIS_ERR;
+    }
+    else
+    {
+      return REDIS_OK;
+    }
+  }
+
+  /* Free a lex range structure, must be called only after zelParseLexRange()
+  * populated the structure with success (REDIS_OK returned). */
+  void zslFreeLexRange(zlexrangespec *spec)
+  {
+    decrRefCount(spec->min);
+    decrRefCount(spec->max);
+  }
+
+  /* This is just a wrapper to compareStringObjects() that is able to
+  * handle shared.minstring and shared.maxstring as the equivalent of
+  * -inf and +inf for strings */
+  int compareStringObjectsForLexRange(robj *a, robj *b)
+  {
+    if (a == b)
+      return 0; /* This makes sure that we handle inf,inf and
+                          -inf,-inf ASAP. One special case less. */
+    if (a == shared.minstring || b == shared.maxstring)
+      return -1;
+    if (a == shared.maxstring || b == shared.minstring)
+      return 1;
+    return compareStringObjects(a, b);
+  }
+
+  static int zslLexValueGteMin(robj *value, zlexrangespec *spec)
+  {
+    return spec->minex ? (compareStringObjectsForLexRange(value, spec->min) > 0) : (compareStringObjectsForLexRange(value, spec->min) >= 0);
+  }
+
+  static int zslLexValueLteMax(robj *value, zlexrangespec *spec)
+  {
+    return spec->maxex ? (compareStringObjectsForLexRange(value, spec->max) < 0) : (compareStringObjectsForLexRange(value, spec->max) <= 0);
+  }
+
+  /* Returns if there is a part of the zset is in the lex range. */
+  int zslIsInLexRange(zskiplist *zsl, zlexrangespec *range)
+  {
+    zskiplistNode *x;
+
+    /* Test for ranges that will always be empty. */
+    if (compareStringObjectsForLexRange(range->min, range->max) > 1 ||
+        (compareStringObjects(range->min, range->max) == 0 &&
+        (range->minex || range->maxex)))
+      return 0;
+    x = zsl->tail;
+    if (x == NULL || !zslLexValueGteMin(x->obj, range))
+      return 0;
+    x = zsl->header->level[0].forward;
+    if (x == NULL || !zslLexValueLteMax(x->obj, range))
+      return 0;
+    return 1;
+  }
+
+  /* Find the first node that is contained in the specified lex range.
+  * Returns NULL when no element is contained in the range. */
+  zskiplistNode *zslFirstInLexRange(zskiplist *zsl, zlexrangespec *range)
+  {
+    zskiplistNode *x;
+    int i;
+
+    /* If everything is out of range, return early. */
+    if (!zslIsInLexRange(zsl, range))
+      return NULL;
+
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      /* Go forward while *OUT* of range. */
+      while (x->level[i].forward &&
+            !zslLexValueGteMin(x->level[i].forward->obj, range))
+        x = x->level[i].forward;
+    }
+
+    /* This is an inner range, so the next node cannot be NULL. */
+    x = x->level[0].forward;
+    redisAssert(x != NULL);
+
+    /* Check if score <= max. */
+    if (!zslLexValueLteMax(x->obj, range))
+      return NULL;
+    return x;
+  }
+
+  /* Find the last node that is contained in the specified range.
+  * Returns NULL when no element is contained in the range. */
+  zskiplistNode *zslLastInLexRange(zskiplist *zsl, zlexrangespec *range)
+  {
+    zskiplistNode *x;
+    int i;
+
+    /* If everything is out of range, return early. */
+    if (!zslIsInLexRange(zsl, range))
+      return NULL;
+
+    x = zsl->header;
+    for (i = zsl->level - 1; i >= 0; i--)
+    {
+      /* Go forward while *IN* range. */
+      while (x->level[i].forward &&
+            zslLexValueLteMax(x->level[i].forward->obj, range))
+        x = x->level[i].forward;
+    }
+
+    /* This is an inner range, so this node cannot be NULL. */
+    redisAssert(x != NULL);
+
+    /* Check if score >= min. */
+    if (!zslLexValueGteMin(x->obj, range))
+      return NULL;
+    return x;
+  }
   ```
   </details>
