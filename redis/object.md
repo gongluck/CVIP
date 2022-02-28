@@ -3,10 +3,17 @@
 - [```Redis```对象](#redis对象)
   - [```Redis```对象基础结构](#redis对象基础结构)
   - [字符串对象](#字符串对象)
+  - [列表对象](#列表对象)
+  - [集合对象](#集合对象)
+  - [哈希对象](#哈希对象)
+  - [有序集合对象](#有序集合对象)
 
 ## ```Redis```对象基础结构
 
   [redis.h](https://github.com/gongluck/sourcecode/blob/main/redis/src/redis.h)
+
+  <details>
+  <summary>Redis对象</summary>
 
   ```c++
   // redis对象
@@ -19,6 +26,7 @@
     void *ptr;                     //实体对象
   } robj;
   ```
+  </details>
 
 ## 字符串对象
 
@@ -211,3 +219,120 @@
     }
   }
   ```
+  </details>
+
+## 列表对象
+
+  ![列表对象](https://github.com/gongluck/images/blob/main/redis/列表对象.png)
+
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+
+  <details>
+  <summary>列表对象</summary>
+
+  ```c++
+  //创建链表列表对象
+  robj *createListObject(void)
+  {
+    list *l = listCreate();
+    robj *o = createObject(REDIS_LIST /*列表对象*/, l);
+    listSetFreeMethod(l, decrRefCountVoid); //设置链表对象的释放函数
+    o->encoding = REDIS_ENCODING_LINKEDLIST;
+    return o;
+  }
+
+  //创建压缩列表对象
+  robj *createZiplistObject(void)
+  {
+    unsigned char *zl = ziplistNew();
+    robj *o = createObject(REDIS_LIST, /*列表对象*/ zl);
+    o->encoding = REDIS_ENCODING_ZIPLIST;
+    return o;
+  }
+  ```
+  </details>
+
+## 集合对象
+
+  ![集合对象](https://github.com/gongluck/images/blob/main/redis/集合对象.png)
+
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+
+  <details>
+  <summary>集合对象</summary>
+
+  ```c++
+  //创建字典集合对象
+  robj *createSetObject(void)
+  {
+    dict *d = dictCreate(&setDictType /*字典集合对象使用的自定义函数操作*/, NULL);
+    robj *o = createObject(REDIS_SET /*集合对象*/, d);
+    o->encoding = REDIS_ENCODING_HT;
+    return o;
+  }
+
+  //创建整数集合对象
+  robj *createIntsetObject(void)
+  {
+    intset *is = intsetNew();
+    robj *o = createObject(REDIS_SET /*集合对象*/, is);
+    o->encoding = REDIS_ENCODING_INTSET;
+    return o;
+  }
+  ```
+  </details>
+
+## 哈希对象
+
+  ![哈希对象](https://github.com/gongluck/images/blob/main/redis/哈希对象.png)
+
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+
+  <details>
+  <summary>哈希对象</summary>
+
+  ```c++
+  //创建哈希对象
+  robj *createHashObject(void)
+  {
+    unsigned char *zl = ziplistNew();
+    robj *o = createObject(REDIS_HASH, zl);
+    o->encoding = REDIS_ENCODING_ZIPLIST;
+    return o;
+  }
+  ```
+  </details>
+
+## 有序集合对象
+
+  ![哈希对象](https://github.com/gongluck/images/blob/main/redis/有序集合对象.png)
+
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+
+  <details>
+  <summary>有序集合对象</summary>
+
+  ```c++
+  //创建有序集合对象
+  robj *createZsetObject(void)
+  {
+    zset *zs = zmalloc(sizeof(*zs));
+    robj *o;
+
+    zs->dict = dictCreate(&zsetDictType /*跳表有序集合对象使用的自定义函数操作*/, NULL);
+    zs->zsl = zslCreate();
+    o = createObject(REDIS_ZSET, zs);
+    o->encoding = REDIS_ENCODING_SKIPLIST;
+    return o;
+  }
+
+  //创建压缩列表有序集合对象
+  robj *createZsetZiplistObject(void)
+  {
+    unsigned char *zl = ziplistNew();
+    robj *o = createObject(REDIS_ZSET, zl);
+    o->encoding = REDIS_ENCODING_ZIPLIST;
+    return o;
+  }
+  ```
+  </details>
