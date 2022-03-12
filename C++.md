@@ -152,14 +152,14 @@ public:
     static void s_show()
     {
         cout << s_var << endl;
-		// cout << var << endl; // error: invalid use of member 'A::a' in static member function. 静态成员函数不能调用非静态成员变量。无法使用 this.var
+        // cout << var << endl; // error: invalid use of member 'A::a' in static member function. 静态成员函数不能调用非静态成员变量。无法使用 this.var
         // show();  // error: cannot call member function 'void A::show()' without object. 静态成员函数不能调用非静态成员函数。无法使用 this.show()
     }
 };
 int A::s_var = 1;  // 静态成员变量在类外进行初始化赋值，默认初始化为 0
 int main()
 {
-    // cout << A::sa << endl;    // error: 'int A::sa' is private within this context
+    // cout << A::s_var << endl; // error: 'int A::s_var' is private within this context
     A ex;
     ex.show();
     A::s_show();
@@ -170,7 +170,7 @@ int main()
 
 - ```const```修饰成员变量，定义成```const```常量，相较于宏常量，可进行类型检查，节省内存空间，提高了效率。
 - ```const```修饰函数参数，使得传递过来的函数参数的值不能改变。
-- ```const```修饰成员函数，使得成员函数不能修改任何类型的成员变量（```mutable```修饰的变量除外），也不能调用非````const```成员函数，因为非```const```成员函数可能会修改成员变量。
+- ```const```修饰成员函数，使得成员函数不能修改任何类型的成员变量（```mutable```修饰的变量除外），也不能调用非```const```成员函数，因为非```const```成员函数可能会修改成员变量。
 
 - ```const```成员变量只能在类内声明、定义，在构造函数初始化列表中初始化。
 - ```const```成员变量只在某个对象的生存周期内是常量，对于整个类而言却是可变的，因为类可以创建多个对象，不同类的```const```成员变量的值是不同的。因此不能在类的声明中初始化 ```const```成员变量，类的对象还没有创建，编译器不知道他的值。
@@ -835,12 +835,12 @@ template <typename T> struct remove_reference{
 template <class T> struct remove_reference<T&> //左值引用
 { typedef T type; }
 template <class T> struct remove_reference<T&&> //右值引用
-{ typedef T type; } 
+{ typedef T type; }
 //举例如下,下列定义的a、b、c三个变量都是int类型
 int i;
-remove_refrence<decltype(42)>::type a;             //使用原版本，
-remove_refrence<decltype(i)>::type  b;             //左值引用特例版本
-remove_refrence<decltype(std::move(i))>::type  b;  //右值引用特例版本 
+remove_refrence<decltype(42)>::type a;  //使用原版本，
+remove_refrence<decltype(i)>::type b;   //左值引用特例版本
+remove_refrence<decltype(std::move(i))>::type b;  //右值引用特例版本 
 ```
 
 ```C++
@@ -1535,12 +1535,12 @@ int main()
 ![C++虚函数表](https://github.com/gongluck/images/blob/main/cpp/C++虚函数表.png)
 
 - 如果类中有虚函数，编译器会至少为这个类分配一个成员指针指向一张虚函数表，表中每一项指向一个虚函数地址。
-- ```多重继承情况下，为每个含有虚函数的基类分配一个虚表指针```。
+- <font color=Crimson size=4>```多重继承情况下，为每个含有虚函数的基类分配一个虚表指针```</font>。
 - 每个派生类的虚函数表继承它各个基类的虚函数表。
 - ```如果派生类覆盖了基类对应的一个虚函数，则派生类的虚函数表的该项指向重载后的虚函数```。
 - 在类对象的内存布局中，首先是该类的虚函数表指针，然后才是对象数据。
 - 在通过对象指针调用一个虚函数时，编译器生成的代码将先获取对象类的虚函数表指针，然后调用虚函数表中对应的一项。
-- ```如果派生类自身新增虚函数的话，那么这个函数地址会被添加到最先继承的基类虚函数表的复制基类的虚函表最后一个位置中```。
+- <font color=Crimson size=4>```如果派生类自身新增虚函数的话，那么这个函数地址会被添加到最先继承的基类虚函数表的复制基类的虚函表最后一个位置中```。</font>
 
 ## 模板
 
