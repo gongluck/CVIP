@@ -28,9 +28,43 @@
   ```
   </details>
 
+  <details>
+  <summary>Redis对象类型</summary>
+
+  ```c++
+  /* Object types */
+  #define REDIS_STRING 0 //字符串对象
+  #define REDIS_LIST 1   //列表对象
+  #define REDIS_SET 2    //集合对象
+  #define REDIS_ZSET 3   //有序集合对象
+  #define REDIS_HASH 4   //哈希对象
+  ```
+  </details>
+
+  <details>
+  <summary>Redis对象编码类型</summary>
+
+  ```c++
+  /* Objects encoding. Some kind of objects like Strings and Hashes can be
+  * internally represented in multiple ways. The 'encoding' field of the object
+  * is set to one of this fields for this object. */
+  #define REDIS_ENCODING_RAW 0 /* Raw representation */                    //简单动态字符串
+  #define REDIS_ENCODING_INT 1 /* Encoded as integer */                    //保存整数型的字符串
+  #define REDIS_ENCODING_HT 2 /* Encoded as hash table */                  //字典实现的对象
+  #define REDIS_ENCODING_ZIPMAP 3                                          /* Encoded as zipmap */
+  #define REDIS_ENCODING_LINKEDLIST 4 /* Encoded as regular linked list */ //链表实现对象
+  #define REDIS_ENCODING_ZIPLIST 5 /* Encoded as ziplist */                //压缩列表实现的对象
+  #define REDIS_ENCODING_INTSET 6 /* Encoded as intset */                  //整数集合实现的对象
+  #define REDIS_ENCODING_SKIPLIST 7 /* Encoded as skiplist */              //跳表实现的对象
+  #define REDIS_ENCODING_EMBSTR 8 /* Embedded sds string encoding */       // embstr编码的简单动态字符串
+  ```
+  </details>
+
 ## 字符串对象
 
   ![字符串对象](https://github.com/gongluck/images/blob/main/redis/字符串对象.png)
+
+  使用```REDIS_ENCODING_RAW```、```REDIS_ENCODING_INT```或```REDIS_ENCODING_EMBSTR```编码类型
 
   [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
 
@@ -225,6 +259,8 @@
 
   ![列表对象](https://github.com/gongluck/images/blob/main/redis/列表对象.png)
 
+  使用```REDIS_ENCODING_ZIPLIST```或```REDIS_ENCODING_LINKEDLIST```编码类型
+
   [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
 
   <details>
@@ -256,6 +292,8 @@
 
   ![集合对象](https://github.com/gongluck/images/blob/main/redis/集合对象.png)
 
+  使用```REDIS_ENCODING_INTSET```或```REDIS_ENCODING_HT```编码类型
+
   [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
 
   <details>
@@ -286,6 +324,8 @@
 
   ![哈希对象](https://github.com/gongluck/images/blob/main/redis/哈希对象.png)
 
+  使用```REDIS_ENCODING_ZIPLIST```或```REDIS_ENCODING_HT```编码类型
+
   [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
 
   <details>
@@ -306,6 +346,8 @@
 ## 有序集合对象
 
   ![哈希对象](https://github.com/gongluck/images/blob/main/redis/有序集合对象.png)
+
+  使用```REDIS_ENCODING_ZIPLIST```或```REDIS_ENCODING_SKIPLIST```编码类型
 
   [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
 
