@@ -4,6 +4,7 @@
   - [```Redis```数据库结构](#redis数据库结构)
   - [```RDB```持久化](#rdb持久化)
   - [```AOF```持久化](#aof持久化)
+  - [```Redis```事件](#redis事件)
 
 ## ```Redis```数据库结构
 
@@ -18,3 +19,7 @@
 ## ```AOF```持久化
 
   ![AOF持久化](https://github.com/gongluck/images/blob/main/redis/AOF持久化.png)
+
+## ```Redis```事件
+
+  ![事件](https://github.com/gongluck/images/blob/main/redis/事件.png)
