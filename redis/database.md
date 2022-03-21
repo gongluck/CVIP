@@ -5,6 +5,8 @@
   - [```RDB```持久化](#rdb持久化)
   - [```AOF```持久化](#aof持久化)
   - [```Redis```事件](#redis事件)
+  - [```Redis```客户端](#redis客户端)
+  - [```Redis```服务器](#redis服务器)
 
 ## ```Redis```数据库结构
 
@@ -23,3 +25,11 @@
 ## ```Redis```事件
 
   ![事件](https://github.com/gongluck/images/blob/main/redis/事件.png)
+
+## ```Redis```客户端
+
+  ![Redis客户端](https://github.com/gongluck/images/blob/main/redis/客户端.png)
+
+## ```Redis```服务器
+
+  ![Redis服务器](https://github.com/gongluck/images/blob/main/redis/服务器.png)
