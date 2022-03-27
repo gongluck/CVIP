@@ -7,6 +7,9 @@
   - [```Redis```事件](#redis事件)
   - [```Redis```客户端](#redis客户端)
   - [```Redis```服务器](#redis服务器)
+  - [```Redis```主从复制](#redis主从复制)
+  - [```Redis```哨兵](#redis哨兵)
+  - [```Redis```集群](#redis集群)
 
 ## ```Redis```数据库结构
 
@@ -33,3 +36,15 @@
 ## ```Redis```服务器
 
   ![Redis服务器](https://github.com/gongluck/images/blob/main/redis/服务器.png)
+
+## ```Redis```主从复制
+
+  ![Redis主从复制](https://github.com/gongluck/images/blob/main/redis/主从复制.png)
+
+## ```Redis```哨兵
+
+  ![Redis哨兵](https://github.com/gongluck/images/blob/main/redis/哨兵.png)
+
+## ```Redis```集群
+
+  ![Redis集群](https://github.com/gongluck/images/blob/main/redis/集群.png)
