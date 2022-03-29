@@ -10,6 +10,8 @@
   - [```Redis```主从复制](#redis主从复制)
   - [```Redis```哨兵](#redis哨兵)
   - [```Redis```集群](#redis集群)
+  - [```Redis```发布订阅](#redis发布订阅)
+  - [```Redis```事务](#redis事务)
 
 ## ```Redis```数据库结构
 
@@ -48,3 +50,12 @@
 ## ```Redis```集群
 
   ![Redis集群](https://github.com/gongluck/images/blob/main/redis/集群.png)
+
+## ```Redis```发布订阅
+
+  ![Redis发布订阅](https://github.com/gongluck/images/blob/main/redis/发布订阅.png)
+
+## ```Redis```事务
+
+  ![Redis事务](https://github.com/gongluck/images/blob/main/redis/事务.png)
+  
