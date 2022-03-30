@@ -14,7 +14,7 @@
 ## chapters and sections
 
 - [x] [```C++```基础](./C++.md)
-- [x] [阅读```STL```源码](./stl/README.md)
+- [x] [阅读```STL```源码](./stl/)
 - [ ] ```C++```对象模型
 - [ ] [阅读```Redis```源码](./redis/index.md)
 - [ ] 数据结构与算法
