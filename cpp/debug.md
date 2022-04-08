@@ -34,7 +34,7 @@
 ## GCC
 
   - ```-fsanitize=address```编译参数，报告内存泄漏信息
-  - ```gcore dumpfilepath``````gdb```命令，生成程序快照。调试快照使用```gdb exepath dumpfilepath```
+  - ```gcore dumpfilepath``` ```gdb```命令，生成程序快照。调试快照使用```gdb exepath dumpfilepath```
   - 设置系统生成```core dump```
     - ```/etc/security/limits.conf```添加```soft core unlimited```
     - ```/proc/sys/kernel/core_pattern```添加```/root/corefile/core-%e-%s-%p-%t```
