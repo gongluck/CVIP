@@ -16,6 +16,16 @@
     |   _CRTDBG_LEAK_CHECK_DF   | ON:执行自动泄露检查在程序退出时通过调用_CrtDumpMemoryLeaks，则生成错误报告，如果应用程序未能释放其所分配的所有内存<br>OFF:不要在程序退出时自动执行泄露检查 |
   - ```_CrtDumpMemoryLeaks```显示内存泄漏的报告信息
   - ```_malloc_dbg```在具有额外空间的堆中为调试标头和覆盖缓冲区分配内存块
+    ```C++
+    #if defined(_WIN32)
+      #ifdef _DEBUG
+        #define _CRTDBG_MAP_ALLOC
+        #include <stdlib.h>
+        #include <crtdbg.h>
+        #define new new( _CLIENT_BLOCK, __FILE__, __LINE__)
+      #endif
+    #endif
+    ```
   - ```_CrtSetBreakAlloc```在指定的对象分配序号上设置断点
   - ```_CrtCheckMemory```确定分配在调试堆得内存块的完整性
   - ```SetUnhandledExceptionFilter```捕获程序未处理的异常
