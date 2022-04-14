@@ -23,6 +23,8 @@
     - [.hash节](#hash节)
     - [.ctors节和.dtors节](#ctors节和dtors节)
   - [符号表节点](#符号表节点)
+  - [ELF程序自修改](#elf程序自修改)
+    - [修改全局变量初始值](#修改全局变量初始值)
 
 ```ELF```文件(```Executable Linkable Format```)是一种文件存储格式。```Linux```下的目标文件和可执行文件都按照该格式进行存储。
 
@@ -216,5 +218,51 @@ typedef struct
   unsigned char st_other; /* Symbol visibility */          //符号可见性
   Elf32_Section st_shndx; /* Section index */              //符号所在的节
 } Elf32_Sym;
+```
+</details>
+
+## ELF程序自修改
+
+### [修改全局变量初始值](./code/elf/global.cpp)
+
+<details>
+<summary>修改全局变量初始值</summary>
+
+```C++
+/*
+ * @Author: gongluck
+ * @Date: 2022-04-14 10:49:56
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2022-04-14 10:53:06
+ */
+
+// application rewrite it`s global variable via shell tools
+#include <stdio.h>
+#include <stdlib.h>
+#define NAME2STR(name) (#name)
+int GGG = 1;
+int main(int argc, char *argv[])
+{
+  if (argc == 3)
+  {
+    int n = atoi(argv[2]);
+    FILE *fp = fopen(argv[0], "r+b");
+    fseek(fp, atoi(argv[1]), SEEK_SET);
+    fwrite(&n, 4, 1, fp);
+    fclose(fp);
+  }
+  else
+  {
+    printf("%s\n", argv[0]);
+    printf("%d\n", GGG);
+    srand(GGG);
+    GGG = rand();
+    char buf[1024] = {0};
+    sprintf(buf, "%s $(expr `printf %%d 0x$(readelf -s %s | grep %s | awk '{print $2}')` - `printf %%d 0x$(readelf -S %s | grep \" .data \" | awk '{print $4}')` + `printf %%d 0x$(readelf -S %s | grep \" .data \" | awk '{print $5}')`) %d",
+            argv[0], argv[0], NAME2STR(GGG), argv[0], argv[0], GGG);
+    system(buf);
+  }
+  return 0;
+}
 ```
 </details>
