@@ -1,55 +1,31 @@
-# 工具
+# Shell命令工具
 
-- [工具](#工具)
-  - [Windows搭建Apple开发环境](#windows搭建apple开发环境)
-    - [安装VMware](#安装vmware)
-    - [运行unlocker208补丁](#运行unlocker208补丁)
-    - [安装Mac系统](#安装mac系统)
-    - [安装Xcode](#安装xcode)
-  - [``Linux``命令](#linux命令)
-    - [特殊文件](#特殊文件)
-    - [``nohup``](#nohup)
-    - [``ps``](#ps)
-    - [``pstree``](#pstree)
-    - [nm](#nm)
-    - [``df``](#df)
-    - [``tcpdump``](#tcpdump)
+- [Shell命令工具](#shell命令工具)
+  - [特殊文件](#特殊文件)
+  - [nohup](#nohup)
+  - [ps](#ps)
+  - [pstree](#pstree)
+  - [nm](#nm)
+  - [df](#df)
+  - [tcpdump](#tcpdump)
+  - [objdump](#objdump)
 
-## Windows搭建Apple开发环境
+## 特殊文件
 
-### 安装VMware
+- ```/proc/pid/status```保存该```pid```进程的相关信息
 
-### 运行unlocker208补丁
+## nohup
 
-- [下载地址](https://github.com/gongluck/tools/blob/master/Unlocker208_XiTongZhiJia.zip)
-- 运行`win-install.cmd`
-
-### 安装Mac系统
-
-- 创建Mac虚拟机
-- `.vmx`文件添加一行`smc.version = 0`
-- 启动虚拟机
-
-### 安装Xcode
-
-## ``Linux``命令
-
-### 特殊文件
-
-- ``/proc/pid/status``保存该``pid``进程的相关信息
-
-### ``nohup``
-
-``nohup``(``no hang up``)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫``nohup.out``的文件到当前目录下，如果当前目录的``nohup.out``文件不可写，输出重定向到``$HOME/nohup.out``文件中。
+```nohup```(```no hang up```)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫```nohup.out```的文件到当前目录下，如果当前目录的```nohup.out```文件不可写，输出重定向到```$HOME/nohup.out```文件中。
 
 ```shell 
 #常用
 nohup application [arg …] [2>&1] [&]
 ```
 
-### ``ps``
+## ps
 
-``Linux ps``(``process status``)命令用于显示当前进程的状态，类似于``windows``的任务管理器。
+```Linux ps```(```process status```)命令用于显示当前进程的状态，类似于```windows```的任务管理器。
 
 ```shell
 #运行参数
@@ -86,9 +62,9 @@ nohup application [arg …] [2>&1] [&]
 ps -ef | grep test
 ```
 
-### ``pstree``
+## pstree
 
-``pstree``命令以树状图显示进程间的关系(``display a tree of processes``)。``ps``命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在``Linux``系统中，系统调用``fork``可以创建子进程，通过``shell``也可以创建子进程，``Linux``系统中进程之间的关系天生就是一棵树，树的根就是进程``PID``为``1``的``init``进程。
+```pstree```命令以树状图显示进程间的关系(```display a tree of processes```)。```ps```命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在```Linux```系统中，系统调用```fork```可以创建子进程，通过```shell```也可以创建子进程，```Linux```系统中进程之间的关系天生就是一棵树，树的根就是进程```PID```为```1```的```init```进程。
 
 ```shell
 #常用
@@ -96,13 +72,13 @@ pstree pid
 pstree -p pid
 ```
 
-### nm
+## nm
 
-```nm```是```names```的缩写，```nm```命令主要是用来列出某些文件中的符号(函数和全局变量等)
+```nm```是```names```的缩写，```nm```命令主要是用来列出某些文件中的符号(函数和全局变量等)。
 
-### ``df``
+## df
 
-``df``(``disk free``)命令用于显示目前在``Linux``系统上的文件系统磁盘使用情况统计
+```df```(```disk free```)命令用于显示目前在```Linux```系统上的文件系统磁盘使用情况统计。
 
 ```shell
 #常用
@@ -110,7 +86,7 @@ df --total -h
 df . --total -h
 ```
 
-### ``tcpdump``
+## tcpdump
 
 ![tcpdump](https://github.com/gongluck/images/blob/main/tcpdump/tcpdump.png)
 
@@ -142,4 +118,21 @@ df . --total -h
 #常用
 tcpdump -D
 tcpdump -c 10 -i eth0 -nn -XX -vvv
+```
+
+## objdump
+
+```objdump```命令是```Linux```下的反汇编目标文件或者可执行文件的命令。
+
+```shell
+#参数
+-d: 反汇编需要执行指令的那些section。
+-D: 反汇编所有section。
+-h: 显示Section Header信息。
+-x: 显示全部Header信息。
+-s: 除了显示全部Header信息，还显示他们对应的十六进制文件代码。
+
+#常用
+objdump -h a.out
+objdump -x a.out
 ```
