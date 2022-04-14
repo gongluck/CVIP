@@ -24,7 +24,7 @@
     - [.ctors节和.dtors节](#ctors节和dtors节)
   - [符号表节点](#符号表节点)
   - [ELF程序自修改](#elf程序自修改)
-    - [修改全局变量初始值](#修改全局变量初始值)
+    - [修改全局/静态变量初始值](#修改全局静态变量初始值)
 
 ```ELF```文件(```Executable Linkable Format```)是一种文件存储格式。```Linux```下的目标文件和可执行文件都按照该格式进行存储。
 
@@ -223,17 +223,17 @@ typedef struct
 
 ## ELF程序自修改
 
-### [修改全局变量初始值](./code/elf/global.cpp)
+### [修改全局/静态变量初始值](./code/elf/global.cpp)
 
 <details>
-<summary>修改全局变量初始值</summary>
+<summary>修改全局/静态变量初始值</summary>
 
 ```C++
 /*
  * @Author: gongluck
  * @Date: 2022-04-14 10:49:56
  * @Last Modified by: gongluck
- * @Last Modified time: 2022-04-14 11:30:47
+ * @Last Modified time: 2022-04-14 11:33:35
  */
 
 // application rewrite it`s global variable via shell tools
