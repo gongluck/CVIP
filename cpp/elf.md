@@ -223,7 +223,7 @@ typedef struct
 
 ## ELF程序自修改
 
-### [修改全局/静态变量初始值](./code/elf/global.cpp)
+### [修改全局/静态变量初始值](../code/elf/global.cpp)
 
 <details>
 <summary>修改全局/静态变量初始值</summary>
@@ -233,7 +233,7 @@ typedef struct
  * @Author: gongluck
  * @Date: 2022-04-14 10:49:56
  * @Last Modified by: gongluck
- * @Last Modified time: 2022-04-14 11:33:35
+ * @Last Modified time: 2022-04-14 11:34:55
  */
 
 // application rewrite it`s global variable via shell tools
