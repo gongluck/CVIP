@@ -7,7 +7,10 @@
 
 ## C++基础
 
-  [C++基础](./C++.md)
+  [C++基础](./base.md)
+
+  [C++新特性](./advance.md)
+
   [ELF文件结构](./elf.md)
 
 ## GCC
