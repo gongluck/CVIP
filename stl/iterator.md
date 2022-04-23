@@ -1,6 +1,6 @@
-# 迭代器```iterator```
+# 迭代器iterator
 
-- [迭代器```iterator```](#迭代器iterator)
+- [迭代器iterator](#迭代器iterator)
 
   迭代器```iterator```提供了对```容器```元素的访问方法，实现桥接容器和```算法```的方式。
   迭代器一般由容器自生内部实现，以达到隐藏容器细节的作用。
@@ -10,7 +10,7 @@
   <details>
   <summary>iterator</summary>
 
-  ```c++
+  ```C++
   //迭代器类型定义
   struct input_iterator_tag
   {

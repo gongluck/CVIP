@@ -1,19 +1,19 @@
-# 容器```container```
+# 容器container
 
-- [容器```container```](#容器container)
-  - [序列式容器```sequence container```](#序列式容器sequence-container)
-    - [容器```vector```](#容器vector)
-    - [容器```list```](#容器list)
-    - [容器```slist```](#容器slist)
-    - [容器```deque```](#容器deque)
-  - [关联式容器```associative container```](#关联式容器associative-container)
-    - [容器```set```和```multiset```](#容器set和multiset)
-    - [容器```map```和```multimap```](#容器map和multimap)
-    - [容器```hash_set```、```hash_multiset```、```hash_map```和```hash_multimap```](#容器hash_sethash_multisethash_map和hash_multimap)
+- [容器container](#容器container)
+  - [序列式容器sequence container](#序列式容器sequence-container)
+    - [容器vector](#容器vector)
+    - [容器list](#容器list)
+    - [容器slist](#容器slist)
+    - [容器deque](#容器deque)
+  - [关联式容器associative container](#关联式容器associative-container)
+    - [容器set和multiset](#容器set和multiset)
+    - [容器map和multimap](#容器map和multimap)
+    - [容器hash_set、hash_multiset、hash_map和hash_multimap](#容器hash_sethash_multisethash_map和hash_multimap)
 
-## 序列式容器```sequence container```
+## 序列式容器sequence container
 
-### 容器```vector```
+### 容器vector
 
   ![容器vector](https://github.com/gongluck/images/blob/main/stl/容器vector.png)
 
@@ -24,7 +24,7 @@
   <details>
   <summary>vector</summary>
 
-  ```c++
+  ```C++
   //向量
   template <class T, class Alloc = alloc>
   class vector
@@ -497,7 +497,7 @@
   ```
   </details>
 
-### 容器```list```
+### 容器list
 
   ![容器list](https://github.com/gongluck/images/blob/main/stl/容器list.png)
   ![容器list迭代器](https://github.com/gongluck/images/blob/main/stl/容器list迭代器.png)
@@ -511,7 +511,7 @@
   <details>
   <summary>list</summary>
 
-  ```c++
+  ```C++
   //链表节点
   template <class T>
   struct __list_node
@@ -1116,7 +1116,7 @@
   ```
   </details>
 
-### 容器```slist```
+### 容器slist
 
   ```node```节点由后指针和数据成员```T```组成。
   ```slist```包含一个```node```指针指向单向链表头节点(哨兵)。
@@ -1127,7 +1127,7 @@
   <details>
   <summary>slist</summary>
 
-  ```c++
+  ```C++
   //单向链表节点基类
   struct __slist_node_base
   {
@@ -1826,7 +1826,7 @@
   ```
   </details>
 
-### 容器```deque```
+### 容器deque
 
   ![容器deque](https://github.com/gongluck/images/blob/main/stl/容器deque.png)
   ![容器deque迭代器](https://github.com/gongluck/images/blob/main/stl/容器deque迭代器.png)
@@ -1839,7 +1839,7 @@
   <details>
   <summary>deque</summary>
 
-  ```c++
+  ```C++
   // Note: this function is simply a kludge to work around several compilers'
   //  bugs in handling constant expressions.
   inline size_t __deque_buf_size(size_t n, size_t sz)
@@ -2908,9 +2908,9 @@
   ```
   </details>
 
-## 关联式容器```associative container```
+## 关联式容器associative container
 
-### 容器```set```和```multiset```
+### 容器set和multiset
 
   ```set```和```multiset```底层使用红黑树实现，```key == value```。
 
@@ -2919,7 +2919,7 @@
   <details>
   <summary>set</summary>
 
-  ```c++
+  ```C++
   //集合
   template <class Key, class Compare = less<Key>, class Alloc = alloc>
   class set
@@ -3073,7 +3073,7 @@
   <details>
   <summary>multiset</summary>
 
-  ```c++
+  ```C++
   //可重复集合
   template <class Key, class Compare = less<Key>, class Alloc = alloc>
   class multiset
@@ -3218,7 +3218,7 @@
   ```
   </details>
 
-### 容器```map```和```multimap```
+### 容器map和multimap
 
   ```map```和```multimap```底层使用红黑树实现，```key != value```。
 
@@ -3227,7 +3227,7 @@
   <details>
   <summary>map</summary>
 
-  ```c++
+  ```C++
   //映射
   template <class Key, class T, class Compare = less<Key>, class Alloc = alloc>
   class map
@@ -3399,7 +3399,7 @@
   <details>
   <summary>multimap</summary>
 
-  ```c++
+  ```C++
   //可重复映射
   template <class Key, class T, class Compare = less<Key>, class Alloc = alloc>
   class multimap
@@ -3562,7 +3562,7 @@
   ```
   </details>
 
-### 容器```hash_set```、```hash_multiset```、```hash_map```和```hash_multimap```
+### 容器hash_set、hash_multiset、hash_map和hash_multimap
 
   底层用哈希表实现的无序集合。
 
@@ -3571,7 +3571,7 @@
   <details>
   <summary>hash_set</summary>
 
-  ```c++
+  ```C++
   //哈希集合
   template <class Value, class HashFcn = hash<Value>,
             class EqualKey = equal_to<Value>,
@@ -3834,7 +3834,7 @@
   <details>
   <summary>hash_map</summary>
 
-  ```c++
+  ```C++
   //哈希映射
   template <class Key, class T, class HashFcn = hash<Key>,
             class EqualKey = equal_to<Key>,
