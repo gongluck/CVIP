@@ -1,18 +1,12 @@
-# ```Redis```源码
+# Redis源码
 
-- [```Redis```源码](#redis源码)
-  - [```Redis```数据结构](#redis数据结构)
-  - [```Redis```对象](#redis对象)
-  - [```Redis```数据库](#redis数据库)
+- [Redis源码](#redis源码)
+  - [Redis数据结构](#redis数据结构)
+  - [Redis对象](#redis对象)
+  - [Redis数据库](#redis数据库)
 
-## ```Redis```数据结构
+## [Redis数据结构](./struct.md)
 
-[```Redis```数据结构](./struct.md)
+## [Redis对象](./object.md)
 
-## ```Redis```对象
-
-[```Redis```对象](./object.md)
-
-## ```Redis```数据库
-
-[```Redis```数据库](./database.md)
+## [Redis数据库](./database.md)

@@ -1,7 +1,7 @@
-# ```Redis```数据结构
+# Redis数据结构
 
-- [```Redis```数据结构](#redis数据结构)
-  - [```Redis```基础数据结构](#redis基础数据结构)
+- [Redis数据结构](#redis数据结构)
+  - [Redis基础数据结构](#redis基础数据结构)
     - [简单动态字符串](#简单动态字符串)
     - [链表](#链表)
     - [字典](#字典)
@@ -9,7 +9,7 @@
     - [整数集合](#整数集合)
     - [压缩列表](#压缩列表)
 
-## ```Redis```基础数据结构
+## Redis基础数据结构
 
 ### 简单动态字符串
 
@@ -26,7 +26,7 @@
   <details>
   <summary>简单动态字符串</summary>
 
-  ```c++
+  ```C++
   //指向简单动态字符串缓冲区
   typedef char *sds;
 
@@ -61,7 +61,7 @@
   <details>
   <summary>简单动态字符串</summary>
 
-  ```c++
+  ```C++
   //创建新的简单动态字符串
   /* Create a new sds string with the content specified by the 'init' pointer
   * and 'initlen'.
@@ -1310,7 +1310,7 @@
   <details>
   <summary>链表</summary>
 
-  ```c++
+  ```C++
   //链表节点
   typedef struct listNode
   {
@@ -1344,7 +1344,7 @@
   <details>
   <summary>链表</summary>
 
-  ```c++
+  ```C++
   //创建链表
   /* Create a new list. The created list can be freed with
   * AlFreeList(), but private value of every node need to be freed
@@ -1747,7 +1747,7 @@
   <details>
   <summary>字典</summary>
 
-  ```c++
+  ```C++
 	//字典节点
 	typedef struct dictEntry
 	{
@@ -1879,7 +1879,7 @@
   <details>
   <summary>字典</summary>
 
-  ```c++
+  ```C++
   //是否启用resize
 	static int dict_can_resize = 1;
 
@@ -3065,7 +3065,7 @@
   <details>
   <summary>跳表</summary>
 
-  ```c++
+  ```C++
   //跳表节点
   /* ZSETs use a specialized version of Skiplists */
   typedef struct zskiplistNode
@@ -3095,7 +3095,7 @@
   <details>
   <summary>跳表</summary>
 
-  ```c++
+  ```C++
   //创建跳表节点
   zskiplistNode *zslCreateNode(int level, double score, robj *obj)
   {
@@ -3832,7 +3832,7 @@
   <details>
   <summary>整数集合</summary>
 
-  ```c++
+  ```C++
   //整数集合
   typedef struct intset
   {
@@ -3848,7 +3848,7 @@
   <details>
   <summary>整数集合</summary>
 
-  ```c++
+  ```C++
   /* Note that these encodings are ordered, so:
   * INTSET_ENC_INT16 < INTSET_ENC_INT32 < INTSET_ENC_INT64. */
   #define INTSET_ENC_INT16 (sizeof(int16_t))
@@ -4216,7 +4216,7 @@
   <details>
   <summary>压缩列表</summary>
 
-  ```c++
+  ```C++
   #define ZIP_END 255    //压缩链表结束标记
   #define ZIP_BIGLEN 254 // 1字节表示节点长度的最大值
 

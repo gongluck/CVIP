@@ -5,6 +5,7 @@
 - [CVIP](#cvip)
   - [Stargazers over time](#stargazers-over-time)
   - [chapters and sections](#chapters-and-sections)
+  - [源码和注释](#源码和注释)
   - [QR Code](#qr-code)
 
 ## Stargazers over time
@@ -20,6 +21,10 @@
 - [ ] 数据结构与算法
 - [ ] 阅读```Go```源码
 - [x] [开发工具](./tools/)
+
+## 源码和注释
+
+[源码和注释](https://github.com/gongluck/sourcecode)
 
 ## QR Code
 

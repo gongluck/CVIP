@@ -1,21 +1,21 @@
-# ```Redis```对象
+# Redis对象
 
-- [```Redis```对象](#redis对象)
-  - [```Redis```对象基础结构](#redis对象基础结构)
+- [Redis对象](#redis对象)
+  - [Redis对象基础结构](#redis对象基础结构)
   - [字符串对象](#字符串对象)
   - [列表对象](#列表对象)
   - [集合对象](#集合对象)
   - [哈希对象](#哈希对象)
   - [有序集合对象](#有序集合对象)
 
-## ```Redis```对象基础结构
+## Redis对象基础结构
 
   [redis.h](https://github.com/gongluck/sourcecode/blob/main/redis/src/redis.h)
 
   <details>
   <summary>Redis对象</summary>
 
-  ```c++
+  ```C++
   // redis对象
   typedef struct redisObject
   {
@@ -31,7 +31,7 @@
   <details>
   <summary>Redis对象类型</summary>
 
-  ```c++
+  ```C++
   /* Object types */
   #define REDIS_STRING 0 //字符串对象
   #define REDIS_LIST 1   //列表对象
@@ -44,7 +44,7 @@
   <details>
   <summary>Redis对象编码类型</summary>
 
-  ```c++
+  ```C++
   /* Objects encoding. Some kind of objects like Strings and Hashes can be
   * internally represented in multiple ways. The 'encoding' field of the object
   * is set to one of this fields for this object. */
@@ -71,7 +71,7 @@
   <details>
   <summary>字符串对象</summary>
 
-  ```c++
+  ```C++
   //创建redis对象
   robj *createObject(int type, void *ptr)
   {
@@ -266,7 +266,7 @@
   <details>
   <summary>列表对象</summary>
 
-  ```c++
+  ```C++
   //创建链表列表对象
   robj *createListObject(void)
   {
@@ -299,7 +299,7 @@
   <details>
   <summary>集合对象</summary>
 
-  ```c++
+  ```C++
   //创建字典集合对象
   robj *createSetObject(void)
   {
@@ -331,7 +331,7 @@
   <details>
   <summary>哈希对象</summary>
 
-  ```c++
+  ```C++
   //创建哈希对象
   robj *createHashObject(void)
   {
@@ -354,7 +354,7 @@
   <details>
   <summary>有序集合对象</summary>
 
-  ```c++
+  ```C++
   //创建有序集合对象
   robj *createZsetObject(void)
   {
