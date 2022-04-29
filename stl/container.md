@@ -18,7 +18,7 @@
 
   ```base_string```在数据区前增加了```Rep```结构，```Rep```包括```len```(数据区已使用长度)、```res```(数据区最大容量)、```ref```(引用计数)和```selfish```(是否独享数据)。使用写时拷贝，共享数据并延迟数据的拷贝。
 
-  [stl_vector.h](https://github.com/gongluck/sourcecode/blob/main/stl/std/base_string.h)
+  [stl_vector.h](https://github.com/gongluck/sourcecode/blob/main/stl/std/bastring.h)
 
   <details>
   <summary>base_string</summary>
