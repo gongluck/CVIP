@@ -159,4 +159,9 @@
   i threads
   # 切换线程
   thread threadno
+
+  # 汇编
+  disassemble
+  ni
+  si
   ```
