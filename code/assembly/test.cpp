@@ -1,6 +1,6 @@
 #include <iostream>
 
-//defalut type is stdcall
+//defalut type is cdecl
 //m64没有差异？函数参数不使用堆栈传递，直接使用了寄存器了
 
 //函数调用结束后由被调用函数清除栈内数据
