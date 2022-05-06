@@ -28,10 +28,52 @@ _Z4funci:
 	.cfi_endproc
 .LFE1522:
 	.size	_Z4funci, .-_Z4funci
+	.globl	_Z8func_asmv
+	.type	_Z8func_asmv, @function
+_Z8func_asmv:
+.LFB1523:
+	.cfi_startproc
+	endbr64
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	subq	$32, %rsp
+	movq	%fs:40, %rax
+	movq	%rax, -8(%rbp)
+	xorl	%eax, %eax
+	movl	$1, -16(%rbp)
+	movl	$2, -12(%rbp)
+	movl	$0, -20(%rbp)
+	movl	-16(%rbp), %eax
+	movl	-12(%rbp), %edx
+	movl	%eax, %ecx
+#APP
+# 30 "test.cpp" 1
+	movl $0, %eax
+	addl %ecx, %eax
+	addl %edx, %eax
+	movl %eax, -20(%rbp)
+	
+# 0 "" 2
+#NO_APP
+	nop
+	movq	-8(%rbp), %rax
+	xorq	%fs:40, %rax
+	je	.L4
+	call	__stack_chk_fail@PLT
+.L4:
+	leave
+	.cfi_def_cfa 7, 8
+	ret
+	.cfi_endproc
+.LFE1523:
+	.size	_Z8func_asmv, .-_Z8func_asmv
 	.globl	main
 	.type	main, @function
 main:
-.LFB1523:
+.LFB1524:
 	.cfi_startproc
 	endbr64
 	pushq	%rbp
@@ -46,11 +88,11 @@ main:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE1523:
+.LFE1524:
 	.size	main, .-main
 	.type	_Z41__static_initialization_and_destruction_0ii, @function
 _Z41__static_initialization_and_destruction_0ii:
-.LFB2004:
+.LFB2005:
 	.cfi_startproc
 	endbr64
 	pushq	%rbp
@@ -62,9 +104,9 @@ _Z41__static_initialization_and_destruction_0ii:
 	movl	%edi, -4(%rbp)
 	movl	%esi, -8(%rbp)
 	cmpl	$1, -4(%rbp)
-	jne	.L7
+	jne	.L9
 	cmpl	$65535, -8(%rbp)
-	jne	.L7
+	jne	.L9
 	leaq	_ZStL8__ioinit(%rip), %rdi
 	call	_ZNSt8ios_base4InitC1Ev@PLT
 	leaq	__dso_handle(%rip), %rdx
@@ -72,17 +114,17 @@ _Z41__static_initialization_and_destruction_0ii:
 	movq	_ZNSt8ios_base4InitD1Ev@GOTPCREL(%rip), %rax
 	movq	%rax, %rdi
 	call	__cxa_atexit@PLT
-.L7:
+.L9:
 	nop
 	leave
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE2004:
+.LFE2005:
 	.size	_Z41__static_initialization_and_destruction_0ii, .-_Z41__static_initialization_and_destruction_0ii
 	.type	_GLOBAL__sub_I__Z4funci, @function
 _GLOBAL__sub_I__Z4funci:
-.LFB2005:
+.LFB2006:
 	.cfi_startproc
 	endbr64
 	pushq	%rbp
@@ -97,7 +139,7 @@ _GLOBAL__sub_I__Z4funci:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE2005:
+.LFE2006:
 	.size	_GLOBAL__sub_I__Z4funci, .-_GLOBAL__sub_I__Z4funci
 	.section	.init_array,"aw"
 	.align 8
