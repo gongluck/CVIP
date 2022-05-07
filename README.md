@@ -14,12 +14,21 @@
 
 ## chapters and sections
 
-- [x] [```C++```](./cpp/)
-- [x] [阅读```STL```源码](./stl/)
-- [ ] ```C++```对象模型
-- [x] [阅读```Redis```源码](./redis/)
+- [ ] [C++](./cpp/)
+  - [x] [C++基础](./cpp/base.md)
+  - [x] [C++新特性](./cpp/advance.md)
+  - [x] [ELF文件结构](./cpp/elf.md)
+  - [x] [GCC](./cpp/gcc.md)
+  - [x] [调试](./cpp/debug.md)
+  - [x] [汇编](./cpp/assembly.md)
+  - [ ] [C++对象模型]
+- [ ] 开源库源码
+  - [x] [STL源码](./stl/)
+  - [x] [Redis源码](./redis/)
+  - [ ] [Go源码]
+  - [ ] [xv6源码](./linux/xv6.md)
+  - [ ] [Linux源码](./linux/linux.md)
 - [ ] 数据结构与算法
-- [ ] 阅读```Go```源码
 - [x] [开发工具](./tools/)
 
 ## 源码和注释
