@@ -7,6 +7,7 @@
 ## 跨平台环境
 
 - [Windows搭建Apple开发环境](./AppleOnWin.md)
+- [Windows搭建Linux开发环境](./LinuxOnWin.md)
 
 ## 系统工具
 
