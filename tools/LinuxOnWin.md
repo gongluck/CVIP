@@ -4,6 +4,9 @@
   - [MSYS2(Minimal SYStem 2)](#msys2minimal-system-2)
     - [安装修改MSYS2](#安装修改msys2)
     - [使用VS命令行运行msys2](#使用vs命令行运行msys2)
+  - [TDM-GCC](#tdm-gcc)
+    - [安装配置TDM-GCC-64](#安装配置tdm-gcc-64)
+    - [运行msys.bat进入环境](#运行msysbat进入环境)
 
 ## MSYS2(Minimal SYStem 2)
 
@@ -25,7 +28,7 @@ Server = http://mirrors.ustc.edu.cn/msys2/mingw/x86_64/
 Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/msys/$arch/
 Server = http://mirrors.ustc.edu.cn/msys2/msys/$arch/
 ```
-- 重命名```msys64/usr/bin/link.exe```为```msys64/usr/bin/link.exe.bak```
+- 重命名```/usr/bin/link.exe```为```/usr/bin/link.exe.bak```
 
 ### 使用VS命令行运行msys2
 ```shell
@@ -50,3 +53,17 @@ pacman -S perl
 pacman -S libtool
 pacman -S pkg-config
 ```
+
+## TDM-GCC
+
+### 安装配置TDM-GCC-64
+
+- 安装（解压）```msys```到```TDM-GCC```的安装目录中
+
+- 将```call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"```加到```msys.bat```的第一行中
+
+- 复制```yasm-1.3.0-win64.exe```（重命名为```yasm.exe```）到```msys```的```bin```目录下
+
+- 重命名```msys```的```bin```目录下的```link.exe```（```linkold.exe```）
+
+### 运行msys.bat进入环境
