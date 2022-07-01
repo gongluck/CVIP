@@ -19,11 +19,15 @@ elseif(ANDROID)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/../bin/android/debug)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/../bin/android/release)
 elseif(UNIX)
-  #set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -Wall -g2 -ggdb")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -g2 -ggdb")
+  set(COMPILEPARAMS "-O0 -Wall -Wno-int-to-pointer-cast")
+  set(CMAKE_C_FLAGS_DEBUG "${COMPILEPARAMS} -g")
+  set(CMAKE_C_FLAGS_RELEASE "${COMPILEPARAMS}")
+  set(CMAKE_CXX_FLAGS_DEBUG "${COMPILEPARAMS} -g")
+  set(CMAKE_CXX_FLAGS_RELEASE "${COMPILEPARAMS}")
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../bin/linux)
 endif()
+
+add_subdirectory(submodule)
 
 # 添加源码文件到项目
 FILE(GLOB header ./*.h)
@@ -33,6 +37,7 @@ add_executable(${PROJECT_NAME} ${header} ${SRCS})
 if(WIN32)
 elseif(ANDROID)
 elseif(UNIX)
+  target_link_libraries(${PROJECT_NAME} submodule_shared submodule_static)
 endif()
 
 #windows

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rm -r ./build/linux/*.*
+rm -r ./build/linux
 mkdir ./build/linux
 
 cmake -S . -B ./build/linux/debug -DCMAKE_BUILD_TYPE=Debug
