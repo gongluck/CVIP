@@ -41,3 +41,5 @@
   - ```objcopy --only-keep-debug debugexe exe.symbol```生成调试符号
   - ```gdb --symbol=exe.symbol -exec=exefilepath```使用调试符号调试发行版
   - ```gdb --symbol=debugexe -exec=exefilepath```使用调试版程序调试发行版
+  - ```gdb```设置动态库符号路径```set solib-search-path debugsopath```
+  
