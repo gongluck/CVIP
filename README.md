@@ -14,14 +14,14 @@
 
 ## chapters and sections
 
-- [ ] [C++](./cpp/)
+- [x] [C++](./cpp/)
   - [x] [C++基础](./cpp/base.md)
   - [x] [C++新特性](./cpp/advance.md)
   - [x] [ELF文件结构](./cpp/elf.md)
   - [x] [GCC](./cpp/gcc.md)
   - [x] [调试](./cpp/debug.md)
   - [x] [汇编](./cpp/assembly.md)
-  - [ ] [C++对象模型]
+  - [x] [C++对象模型](./cpp/objectmodel.md)
 - [ ] 开源库源码
   - [x] [STL源码](./stl/)
   - [x] [Redis源码](./redis/)
