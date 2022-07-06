@@ -1,19 +1,290 @@
-# 容器```container```
+# 容器container
 
-- [容器```container```](#容器container)
-  - [序列式容器```sequence container```](#序列式容器sequence-container)
-    - [容器```vector```](#容器vector)
-    - [容器```list```](#容器list)
-    - [容器```slist```](#容器slist)
-    - [容器```deque```](#容器deque)
-  - [关联式容器```associative container```](#关联式容器associative-container)
-    - [容器```set```和```multiset```](#容器set和multiset)
-    - [容器```map```和```multimap```](#容器map和multimap)
-    - [容器```hash_set```、```hash_multiset```、```hash_map```和```hash_multimap```](#容器hash_sethash_multisethash_map和hash_multimap)
+- [容器container](#容器container)
+  - [序列式容器sequence container](#序列式容器sequence-container)
+    - [容器base_string](#容器base_string)
+    - [容器vector](#容器vector)
+    - [容器list](#容器list)
+    - [容器slist](#容器slist)
+    - [容器deque](#容器deque)
+  - [关联式容器associative container](#关联式容器associative-container)
+    - [容器set和multiset](#容器set和multiset)
+    - [容器map和multimap](#容器map和multimap)
+    - [容器hash_set、hash_multiset、hash_map和hash_multimap](#容器hash_sethash_multisethash_map和hash_multimap)
 
-## 序列式容器```sequence container```
+## 序列式容器sequence container
 
-### 容器```vector```
+### 容器base_string
+
+  ```base_string```在数据区前增加了```Rep```结构，```Rep```包括```len```(数据区已使用长度)、```res```(数据区最大容量)、```ref```(引用计数)和```selfish```(是否独享数据)。使用写时拷贝，共享数据并延迟数据的拷贝。
+
+  [stl_vector.h](https://github.com/gongluck/sourcecode/blob/main/stl/std/bastring.h)
+
+  <details>
+  <summary>base_string</summary>
+
+  ```C++
+  template <class charT, class traits = string_char_traits<charT>,
+            class Allocator = alloc>
+  class basic_string
+  {
+  private:
+    struct Rep
+    {
+      size_t len, res, ref /*引用计数*/;
+      bool selfish; //是否独占数据
+
+      charT *data() { return reinterpret_cast<charT *>(this + 1); } // Rep之后就是data
+      charT &operator[](size_t s) { return data()[s]; }
+
+      //获取拷贝
+      charT *grab()
+      {
+        if (selfish)
+          return clone();
+        ++ref;
+        return data();
+      }
+      void release()
+      {
+        if (--ref == 0)
+          delete this;
+      }
+    };
+
+  private:
+    Rep *rep() const { return reinterpret_cast<Rep *>(dat) - 1; }
+    //复制
+    void repup(Rep *p)
+    {
+      rep()->release();
+      //漏了引用计数+1?
+      // repup配合create使用的，这里不需要处理ref了
+      dat = p->data();
+    }
+
+  public:
+    const charT *data() const
+    {
+      return rep()->data();
+    }
+    size_type length() const
+    {
+      return rep()->len;
+    }
+    size_type size() const
+    {
+      return rep()->len;
+    }
+    size_type capacity() const
+    {
+      return rep()->res;
+    }
+    size_type max_size() const
+    {
+      return (npos - 1) / sizeof(charT);
+    } // XXX
+    bool empty() const
+    {
+      return size() == 0;
+    }
+
+    // _lib.string.cons_ construct/copy/destroy:
+    basic_string &operator=(const basic_string &str)
+    {
+      if (&str != this)
+      {
+        //释放旧资源
+        rep()->release();
+        //复制
+        dat = str.rep()->grab();
+      }
+      return *this;
+    }
+
+    explicit basic_string() : dat(nilRep.grab()) {}
+    basic_string(const basic_string &str) : dat(str.rep()->grab()) {}
+    basic_string(const basic_string &str, size_type pos, size_type n = npos)
+        : dat(nilRep.grab()) { assign(str, pos, n); } // assign之前，为什么要对dat置nil?
+    basic_string(const charT *s, size_type n)
+        : dat(nilRep.grab()) { assign(s, n); }
+    basic_string(const charT *s)
+        : dat(nilRep.grab()) { assign(s); }
+    basic_string(size_type n, charT c)
+        : dat(nilRep.grab()) { assign(n, c); }
+  #ifdef __STL_MEMBER_TEMPLATES
+    template <class InputIterator>
+    basic_string(InputIterator begin, InputIterator end)
+  #else
+    basic_string(const_iterator begin, const_iterator end)
+  #endif
+        : dat(nilRep.grab())
+    {
+      assign(begin, end);
+    }
+
+    ~basic_string()
+    {
+      rep()->release();
+    }
+
+    void swap(basic_string &s)
+    {
+      charT *d = dat;
+      dat = s.dat;
+      s.dat = d;
+    }
+
+  private:
+    static charT eos() { return traits::eos(); }
+    //独占
+    void unique()
+    {
+      if (rep()->ref > 1)
+        alloc(length(), true);
+    }
+    void selfish()
+    {
+      unique();
+      rep()->selfish = true;
+    }
+
+  public:
+    charT operator[](size_type pos) const
+    {
+      if (pos == length())
+        return eos(); //解决非'\0'结束
+      return data()[pos];
+    }
+
+    reference operator[](size_type pos)
+    {
+      //写时拷贝
+      selfish();
+      return (*rep())[pos];
+    }
+
+    reference at(size_type pos)
+    {
+      OUTOFRANGE(pos >= length());
+      return (*this)[pos];
+    }
+    const_reference at(size_type pos) const
+    {
+      OUTOFRANGE(pos >= length());
+      return data()[pos];
+    }
+
+  private:
+    void terminate() const
+    {
+      //最后写入'\0'
+      traits::assign((*rep())[length()], eos());
+    }
+
+  public:
+    const charT *c_str() const
+    {
+      if (length() == 0)
+        return "";
+      terminate();
+      return data();
+    }
+    void resize(size_type n, charT c);
+    void resize(size_type n)
+    {
+      resize(n, eos());
+    }
+
+    //写时复制
+    iterator begin()
+    {
+      selfish();
+      return &(*this)[0];
+    }
+    iterator end()
+    {
+      selfish();
+      return &(*this)[length()];
+    }
+
+  private:
+    // internal
+    iterator ibegin() const { return &(*rep())[0]; }
+    iterator iend() const { return &(*rep())[length()]; }
+
+  public:
+    const_iterator begin() const { return ibegin(); }
+    const_iterator end() const { return iend(); }
+
+    reverse_iterator rbegin() { return reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const
+    {
+      return const_reverse_iterator(end());
+    }
+    reverse_iterator rend() { return reverse_iterator(begin()); }
+    const_reverse_iterator rend() const
+    {
+      return const_reverse_iterator(begin());
+    }
+
+  private:
+    static Rep nilRep; //"空"字符串nil
+    charT *dat;        //数据
+  };
+
+  #ifdef __STL_MEMBER_TEMPLATES
+  template <class charT, class traits, class Allocator>
+  template <class InputIterator>
+  basic_string<charT, traits, Allocator> &basic_string<charT, traits, Allocator>::
+      replace(iterator i1, iterator i2, InputIterator j1, InputIterator j2)
+  #else
+  template <class charT, class traits, class Allocator>
+  basic_string<charT, traits, Allocator> &basic_string<charT, traits, Allocator>::
+      replace(iterator i1, iterator i2, const_iterator j1, const_iterator j2)
+  #endif
+  {
+    const size_type len = length();
+    size_type pos = i1 - ibegin();
+    size_type n1 = i2 - i1;
+    size_type n2 = j2 - j1;
+
+    OUTOFRANGE(pos > len);
+    if (n1 > len - pos) //长度溢出
+      n1 = len - pos;
+    LENGTHERROR(len - n1 > max_size() - n2);
+    size_t newlen = len - n1 + n2;
+
+    if (check_realloc(newlen))
+    {
+      // realloc
+      Rep *p = Rep::create(newlen);
+      //[0, pos)
+      p->copy(0, data(), pos);
+      //[pos+n2, end)
+      p->copy(pos + n2, data() + pos + n1, len - (pos + n1));
+      //[pos, pos+n2)
+      for (; j1 != j2; ++j1, ++pos)
+        traits::assign((*p)[pos], *j1);
+      repup(p);
+    }
+    else
+    {
+      //原内存移动拷贝
+      rep()->move(pos + n2, data() + pos + n1, len - (pos + n1));
+      for (; j1 != j2; ++j1, ++pos)
+        traits::assign((*rep())[pos], *j1);
+    }
+    //更新length
+    rep()->len = newlen;
+
+    return *this;
+  }
+
+  ```
+  </details>
+
+### 容器vector
 
   ![容器vector](https://github.com/gongluck/images/blob/main/stl/容器vector.png)
 
@@ -24,7 +295,7 @@
   <details>
   <summary>vector</summary>
 
-  ```c++
+  ```C++
   //向量
   template <class T, class Alloc = alloc>
   class vector
@@ -497,7 +768,7 @@
   ```
   </details>
 
-### 容器```list```
+### 容器list
 
   ![容器list](https://github.com/gongluck/images/blob/main/stl/容器list.png)
   ![容器list迭代器](https://github.com/gongluck/images/blob/main/stl/容器list迭代器.png)
@@ -511,7 +782,7 @@
   <details>
   <summary>list</summary>
 
-  ```c++
+  ```C++
   //链表节点
   template <class T>
   struct __list_node
@@ -1116,7 +1387,7 @@
   ```
   </details>
 
-### 容器```slist```
+### 容器slist
 
   ```node```节点由后指针和数据成员```T```组成。
   ```slist```包含一个```node```指针指向单向链表头节点(哨兵)。
@@ -1127,7 +1398,7 @@
   <details>
   <summary>slist</summary>
 
-  ```c++
+  ```C++
   //单向链表节点基类
   struct __slist_node_base
   {
@@ -1826,7 +2097,7 @@
   ```
   </details>
 
-### 容器```deque```
+### 容器deque
 
   ![容器deque](https://github.com/gongluck/images/blob/main/stl/容器deque.png)
   ![容器deque迭代器](https://github.com/gongluck/images/blob/main/stl/容器deque迭代器.png)
@@ -1839,7 +2110,7 @@
   <details>
   <summary>deque</summary>
 
-  ```c++
+  ```C++
   // Note: this function is simply a kludge to work around several compilers'
   //  bugs in handling constant expressions.
   inline size_t __deque_buf_size(size_t n, size_t sz)
@@ -2908,9 +3179,9 @@
   ```
   </details>
 
-## 关联式容器```associative container```
+## 关联式容器associative container
 
-### 容器```set```和```multiset```
+### 容器set和multiset
 
   ```set```和```multiset```底层使用红黑树实现，```key == value```。
 
@@ -2919,7 +3190,7 @@
   <details>
   <summary>set</summary>
 
-  ```c++
+  ```C++
   //集合
   template <class Key, class Compare = less<Key>, class Alloc = alloc>
   class set
@@ -3073,7 +3344,7 @@
   <details>
   <summary>multiset</summary>
 
-  ```c++
+  ```C++
   //可重复集合
   template <class Key, class Compare = less<Key>, class Alloc = alloc>
   class multiset
@@ -3218,7 +3489,7 @@
   ```
   </details>
 
-### 容器```map```和```multimap```
+### 容器map和multimap
 
   ```map```和```multimap```底层使用红黑树实现，```key != value```。
 
@@ -3227,7 +3498,7 @@
   <details>
   <summary>map</summary>
 
-  ```c++
+  ```C++
   //映射
   template <class Key, class T, class Compare = less<Key>, class Alloc = alloc>
   class map
@@ -3399,7 +3670,7 @@
   <details>
   <summary>multimap</summary>
 
-  ```c++
+  ```C++
   //可重复映射
   template <class Key, class T, class Compare = less<Key>, class Alloc = alloc>
   class multimap
@@ -3562,7 +3833,7 @@
   ```
   </details>
 
-### 容器```hash_set```、```hash_multiset```、```hash_map```和```hash_multimap```
+### 容器hash_set、hash_multiset、hash_map和hash_multimap
 
   底层用哈希表实现的无序集合。
 
@@ -3571,7 +3842,7 @@
   <details>
   <summary>hash_set</summary>
 
-  ```c++
+  ```C++
   //哈希集合
   template <class Value, class HashFcn = hash<Value>,
             class EqualKey = equal_to<Value>,
@@ -3834,7 +4105,7 @@
   <details>
   <summary>hash_map</summary>
 
-  ```c++
+  ```C++
   //哈希映射
   template <class Key, class T, class HashFcn = hash<Key>,
             class EqualKey = equal_to<Key>,

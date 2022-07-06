@@ -1,8 +1,8 @@
-# 分配器```allocator```
+# 分配器allocator
 
-- [分配器```allocator```](#分配器allocator)
+- [分配器allocator](#分配器allocator)
   - [标准分配器](#标准分配器)
-  - [```SGI```特殊分配器](#sgi特殊分配器)
+  - [SGI特殊分配器](#sgi特殊分配器)
     - [构造和析构工具](#构造和析构工具)
     - [内存分配和释放](#内存分配和释放)
   - [内存基本处理工具](#内存基本处理工具)
@@ -18,7 +18,7 @@
   <details>
   <summary>标准分配器</summary>
 
-  ```c++
+  ```C++
   //包装::operator new
   template <class T>
   inline T *allocate(ptrdiff_t size, T *)
@@ -55,7 +55,7 @@
   ```
   </details>
 
-## ```SGI```特殊分配器
+## SGI特殊分配器
 
 ### 构造和析构工具
 
@@ -67,7 +67,7 @@
   <details>
   <summary>构造和析构工具</summary>
 
-  ```c++
+  ```C++
   //销毁实例 调用析构
   template <class T>
   inline void destroy(T *pointer)
@@ -128,7 +128,7 @@
   <details>
   <summary>第一级配置器</summary>
 
-  ```c++
+  ```C++
   //第一级分配器 包装malloc和free
   template <int inst>
   class __malloc_alloc_template
@@ -155,7 +155,7 @@
   <details>
   <summary>第二级配置器</summary>
 
-  ```c++
+  ```C++
   //第二级分配器 使用内存池优化 现代malloc库和操作系统的内存api已经存在类似的内存池优化了，所以使用STL标准分配器即可。
   template <bool threads, int inst>
   class __default_alloc_template
@@ -242,7 +242,7 @@
   <details>
   <summary>封装分配器</summary>
 
-  ```c++
+  ```C++
   //对分配器简单封装，以元素字节大小为单位分配内存
   template <class T, class Alloc>
   class simple_alloc
@@ -278,7 +278,7 @@
   <details>
   <summary>uninitialized_copy</summary>
 
-  ```c++
+  ```C++
   // Valid if copy construction is equivalent to assignment, and if the
   //  destructor is trivial.
   template <class InputIterator, class ForwardIterator>
@@ -345,7 +345,7 @@
   <details>
   <summary>uninitialized_fill</summary>
 
-  ```c++
+  ```C++
   // Valid if copy construction is equivalent to assignment, and if the
   //  destructor is trivial.
   template <class ForwardIterator, class T>

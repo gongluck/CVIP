@@ -1,19 +1,19 @@
-# 适配器```adapter```
+# 适配器adapter
 
-- [适配器```adapter```](#适配器adapter)
+- [适配器adapter](#适配器adapter)
   - [容器适配器](#容器适配器)
-    - [容器适配器```stack```](#容器适配器stack)
-    - [容器适配器```queue```](#容器适配器queue)
-    - [容器适配器```priority_queue```](#容器适配器priority_queue)
+    - [容器适配器stack](#容器适配器stack)
+    - [容器适配器queue](#容器适配器queue)
+    - [容器适配器priority_queue](#容器适配器priority_queue)
   - [迭代器适配器](#迭代器适配器)
-    - [插入迭代器```insert iterator```](#插入迭代器insert-iterator)
-    - [反向迭代器```reverse iterator```](#反向迭代器reverse-iterator)
-    - [流迭代器```steam iterator```](#流迭代器steam-iterator)
+    - [插入迭代器insert iterator](#插入迭代器insert-iterator)
+    - [反向迭代器reverse iterator](#反向迭代器reverse-iterator)
+    - [流迭代器steam iterator](#流迭代器steam-iterator)
   - [函数适配器](#函数适配器)
 
 ## 容器适配器
 
-### 容器适配器```stack```
+### 容器适配器stack
 
   栈```stack```只在尾部对元素做增删操作，满足的底层容器有```vector```、```deque```和```list```。
 
@@ -22,7 +22,7 @@
   <details>
   <summary>stack</summary>
 
-  ```c++
+  ```C++
   //栈
   #ifndef __STL_LIMITED_DEFAULT_TEMPLATES
   template <class T, class Sequence = deque<T>>
@@ -66,7 +66,7 @@
   ```
   </details>
 
-### 容器适配器```queue```
+### 容器适配器queue
 
   队列```queue```只在尾部对元素做增操作和头部做删除，满足的底层容器有```deque```和```list```。(```vector```没有```pop_front```，即使有也会相当低效！)
 
@@ -75,7 +75,7 @@
   <details>
   <summary>queue</summary>
 
-  ```c++
+  ```C++
   //队列
   template <class T, class Sequence = deque<T>>
   class queue
@@ -117,7 +117,7 @@
   ```
   </details>
 
-### 容器适配器```priority_queue```
+### 容器适配器priority_queue
 
   优先队列```priority_queue```底层依赖```堆```实现。
 
@@ -126,7 +126,7 @@
   <details>
   <summary>priority_queue</summary>
 
-  ```c++
+  ```C++
   //优先队列
   template <class T, class Sequence = vector<T>,
             class Compare = less<typename Sequence::value_type>>
@@ -189,14 +189,14 @@
 
 ## 迭代器适配器
 
-### 插入迭代器```insert iterator```
+### 插入迭代器insert iterator
 
   [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
 
   <details>
   <summary>insert iterator</summary>
 
-  ```c++
+  ```C++
   //尾部插入迭代器
   template <class Container>
   class back_insert_iterator
@@ -308,14 +308,14 @@
   ```
   </details>
 
-### 反向迭代器```reverse iterator```
+### 反向迭代器reverse iterator
 
   [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
 
   <details>
   <summary>reverse iterator</summary>
 
-  ```c++
+  ```C++
   template <class BidirectionalIterator, class T, class Reference = T &,
             class Distance = ptrdiff_t>
   //反向双向迭代器
@@ -520,14 +520,14 @@
   ```
   </details>
 
-### 流迭代器```steam iterator```
+### 流迭代器steam iterator
 
   [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
 
   <details>
   <summary>steam iterator</summary>
 
-  ```c++
+  ```C++
   //输入流迭代器
   template <class T, class Distance = ptrdiff_t>
   class istream_iterator
@@ -629,7 +629,7 @@
   <details>
   <summary>function adapter</summary>
 
-  ```c++
+  ```C++
   //一元非
   template <class Predicate>
   class unary_negate
