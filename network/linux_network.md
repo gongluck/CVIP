@@ -2,6 +2,11 @@
 
 - [Linux网络](#linux网络)
   - [命令配置](#命令配置)
+  - [源码](#源码)
+    - [用户层接口](#用户层接口)
+  - [TCP状态轮转](#tcp状态轮转)
+  - [TCP头](#tcp头)
+  - [TCP协议处理函数](#tcp协议处理函数)
 
 ## 命令配置
 
@@ -386,3 +391,84 @@
       InECT0Pkts: 495
       InCEPkts: 5
   ```
+
+## 源码
+
+### 用户层接口
+
+```C++
+// Server
+socket(...,SOCK_STREAM,0);
+bind(...,&server_address, ...);
+listen(...);
+accept(..., &client_address, ...);
+recv(..., &clientaddr, ...);
+close(...);
+
+//client
+socket(...,SOCK_STREAM,0);
+connect();
+send(...,&server_address,...);
+```
+
+## TCP状态轮转
+
+![tcp_state](https://github.com/gongluck/images/blob/main/Network/tcp_state.png)
+
+## TCP头
+
+![tcp_header](https://github.com/gongluck/images/blob/main/Network/tcp_header.png)
+
+## TCP协议处理函数
+
+```C++
+// net/ipv4/tcp_ipv4.c
+//TCP协议的注册处理函数集合
+struct proto tcp_prot = {
+		.name = "TCP",
+		.owner = THIS_MODULE,
+		.close = tcp_close,
+		.connect = tcp_v4_connect,
+		.disconnect = tcp_disconnect,
+		.accept = inet_csk_accept,
+		.ioctl = tcp_ioctl,
+		.init = tcp_v4_init_sock,
+		.destroy = tcp_v4_destroy_sock,
+		.shutdown = tcp_shutdown,
+		.setsockopt = tcp_setsockopt,
+		.getsockopt = tcp_getsockopt,
+		.recvmsg = tcp_recvmsg,
+		.sendmsg = tcp_sendmsg,
+		.sendpage = tcp_sendpage,
+		.backlog_rcv = tcp_v4_do_rcv,
+		.release_cb = tcp_release_cb,
+		.mtu_reduced = tcp_v4_mtu_reduced,
+		.hash = inet_hash,
+		.unhash = inet_unhash,
+		.get_port = inet_csk_get_port,
+		.enter_memory_pressure = tcp_enter_memory_pressure,
+		.sockets_allocated = &tcp_sockets_allocated,
+		.orphan_count = &tcp_orphan_count,
+		.memory_allocated = &tcp_memory_allocated,
+		.memory_pressure = &tcp_memory_pressure,
+		.sysctl_wmem = sysctl_tcp_wmem,
+		.sysctl_rmem = sysctl_tcp_rmem,
+		.max_header = MAX_TCP_HEADER,
+		.obj_size = sizeof(struct tcp_sock),
+		.slab_flags = SLAB_DESTROY_BY_RCU,
+		.twsk_prot = &tcp_timewait_sock_ops,
+		.rsk_prot = &tcp_request_sock_ops,
+		.h.hashinfo = &tcp_hashinfo,
+		.no_autobind = true,
+#ifdef CONFIG_COMPAT
+		.compat_setsockopt = compat_tcp_setsockopt,
+		.compat_getsockopt = compat_tcp_getsockopt,
+#endif
+#ifdef CONFIG_MEMCG_KMEM
+		.init_cgroup = tcp_init_cgroup,
+		.destroy_cgroup = tcp_destroy_cgroup,
+		.proto_cgroup = tcp_proto_cgroup,
+#endif
+};
+EXPORT_SYMBOL(tcp_prot);
+```
