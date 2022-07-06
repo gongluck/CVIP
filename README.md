@@ -25,7 +25,7 @@
 - [ ] 开源库源码
   - [x] [STL源码](./stl/)
   - [x] [Redis源码](./redis/)
-  - [ ] [Go源码]
+  - [ ] [Go源码](./go/)
   - [ ] [xv6源码](./linux/xv6.md)
   - [ ] [Linux源码](./linux/linux.md)
 - [ ] 数据结构与算法
