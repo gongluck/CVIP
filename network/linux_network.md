@@ -2,15 +2,17 @@
 
 - [Linux网络](#linux网络)
   - [命令配置](#命令配置)
+  - [Linux网络工作图示](#linux网络工作图示)
+    - [TCP状态轮转](#tcp状态轮转)
+    - [网络收包](#网络收包)
   - [源码](#源码)
     - [用户层接口](#用户层接口)
-  - [TCP状态轮转](#tcp状态轮转)
-  - [TCP头](#tcp头)
-  - [TCP协议处理函数](#tcp协议处理函数)
+    - [TCP协议处理函数](#tcp协议处理函数)
 
 ## 命令配置
 
-- ```RingBuffer```
+  <details>
+  <summary>RingBuffer</summary>
 
   ```shell
   # ethtool -g ens33
@@ -76,8 +78,10 @@
   #修改RingBuffer
   # ethtool -G ens33 rx 64 tx 64
   ```
+  </details>
 
-- 软中断统计
+  <details>
+  <summary>软中断统计</summary>
 
   ```shell
   # cat /proc/softirqs
@@ -93,8 +97,10 @@
       HRTIMER:          0          0
           RCU:      67739     116630
   ```
+  </details>
 
-- 网卡队列
+  <details>
+  <summary>网卡队列</summary>
 
   ```shell
   # ethtool -l eth0
@@ -120,8 +126,10 @@
   #自动调整中断与CPU的亲和性
   # service irqbalance start
   ```
+  </details>
 
-- 硬中断合并
+  <details>
+  <summary>硬中断合并</summary>
 
   ```shell
   #查看硬中断合并信息
@@ -155,8 +163,10 @@
   # 修改硬中断合并配置
   #ethtool -C ens33 adaptive-rx on
   ```
+  </details>
 
-- 接收/发送数据合并```LGO/LRO/TSO/GSO```
+  <details>
+  <summary>接收/发送数据合并LGO/LRO/TSO/GSO</summary>
 
   ```shell
   # ethtool -k ens33
@@ -220,8 +230,10 @@
   # ethtool -K ens33 uso on
   # ethtool -K ens33 gso on
   ```
+  </details>
 
-- 网络状态
+  <details>
+  <summary>网络状态</summary>
 
   ```shell
   # netstat -s
@@ -391,10 +403,26 @@
       InECT0Pkts: 495
       InCEPkts: 5
   ```
+  </details>
+
+## Linux网络工作图示
+
+### TCP状态轮转
+
+![tcp_state](https://github.com/gongluck/images/blob/main/Network/tcp_state.png)
+
+### 网络收包
+
+![network_recvpack](https://github.com/gongluck/images/blob/main/Network/network_recvpack.png)
+
+![ksoftirqd_recvpack](https://github.com/gongluck/images/blob/main/Network/ksoftirqd_recvpack.png)
 
 ## 源码
 
 ### 用户层接口
+
+<details>
+<summary>用户层接口</summary>
 
 ```C++
 // Server
@@ -410,16 +438,12 @@ socket(...,SOCK_STREAM,0);
 connect();
 send(...,&server_address,...);
 ```
+</details>
 
-## TCP状态轮转
+### TCP协议处理函数
 
-![tcp_state](https://github.com/gongluck/images/blob/main/Network/tcp_state.png)
-
-## TCP头
-
-![tcp_header](https://github.com/gongluck/images/blob/main/Network/tcp_header.png)
-
-## TCP协议处理函数
+<details>
+<summary>TCP协议处理函数</summary>
 
 ```C++
 // net/ipv4/tcp_ipv4.c
@@ -472,3 +496,4 @@ struct proto tcp_prot = {
 };
 EXPORT_SYMBOL(tcp_prot);
 ```
+</details>
