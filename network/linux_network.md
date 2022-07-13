@@ -7,6 +7,7 @@
     - [网络收包](#网络收包)
   - [源码](#源码)
     - [用户层接口](#用户层接口)
+    - [网络模块初始化和启动](#网络模块初始化和启动)
     - [TCP协议处理函数](#tcp协议处理函数)
 
 ## 命令配置
@@ -437,6 +438,1301 @@ close(...);
 socket(...,SOCK_STREAM,0);
 connect();
 send(...,&server_address,...);
+```
+</details>
+
+### 网络模块初始化和启动
+
+<details>
+<summary>kernel/softirq.c</summary>
+
+```C++
+/* PLEASE, avoid to allocate new softirqs, if you need not _really_ high
+   frequency threaded job scheduling. For almost all the purposes
+   tasklets are more than enough. F.e. all serial device BHs et
+   al. should be converted to tasklets, not to softirqs.
+ */
+enum
+{
+	HI_SOFTIRQ=0,
+	TIMER_SOFTIRQ,
+	NET_TX_SOFTIRQ,
+	NET_RX_SOFTIRQ,
+	BLOCK_SOFTIRQ,
+	BLOCK_IOPOLL_SOFTIRQ,
+	TASKLET_SOFTIRQ,
+	SCHED_SOFTIRQ,
+	HRTIMER_SOFTIRQ,
+	RCU_SOFTIRQ,    /* Preferable RCU should always be the last softirq */
+
+	NR_SOFTIRQS
+};
+#define SOFTIRQ_STOP_IDLE_MASK (~(1 << RCU_SOFTIRQ))
+
+//中断向量
+static struct softirq_action softirq_vec[NR_SOFTIRQS] __cacheline_aligned_in_smp;
+char *softirq_to_name[NR_SOFTIRQS] = {
+		"HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "BLOCK_IOPOLL",
+		"TASKLET", "SCHED", "HRTIMER", "RCU"};
+//注册软中断处理函数
+void open_softirq(int nr, void (*action)(struct softirq_action *))
+{
+	softirq_vec[nr].action = action;
+}
+
+static int ksoftirqd_should_run(unsigned int cpu)
+{
+	return local_softirq_pending();
+}
+static void run_ksoftirqd(unsigned int cpu)
+{
+	local_irq_disable();
+	if (local_softirq_pending()) //__softirq_pending
+	{
+		//处理软中断
+		__do_softirq();
+		rcu_note_context_switch(cpu);
+		local_irq_enable();
+		cond_resched();
+		return;
+	}
+	local_irq_enable();
+}
+//软中断线程相关信息
+static struct smp_hotplug_thread softirq_threads = {
+		.store = &ksoftirqd,
+		.thread_should_run = ksoftirqd_should_run, //判断线程变量__softirq_pending是否置位
+		.thread_fn = run_ksoftirqd,
+		.thread_comm = "ksoftirqd/%u", // ps -ef | grep ksoftirqd
+};
+//创建ksoftirqd线程
+static __init int spawn_ksoftirqd(void)
+{
+	register_cpu_notifier(&cpu_nfb);
+
+	//为每个CPU注册关联的线程
+	BUG_ON(smpboot_register_percpu_thread(&softirq_threads));
+
+	return 0;
+}
+early_initcall(spawn_ksoftirqd);
+```
+</details>
+
+<details>
+<summary>net/core/dev.c</summary>
+
+```C++
+//协议处理列表
+struct list_head ptype_base[PTYPE_HASH_SIZE] __read_mostly;
+struct list_head ptype_all __read_mostly; /* Taps */
+static struct list_head offload_base __read_mostly;
+//获取协议处理列表的表头
+static inline struct list_head *ptype_head(const struct packet_type *pt)
+{
+	if (pt->type == htons(ETH_P_ALL))
+		return &ptype_all;
+	else
+		return &ptype_base[ntohs(pt->type) & PTYPE_HASH_MASK];
+}
+/**
+ *	dev_add_pack - add packet handler
+ *	@pt: packet type declaration
+ *
+ *	Add a protocol handler to the networking stack. The passed &packet_type
+ *	is linked into kernel lists and may not be freed until it has been
+ *	removed from the kernel lists.
+ *
+ *	This call does not sleep therefore it can not
+ *	guarantee all CPU's that are in middle of receiving packets
+ *	will see the new packet type (until the next received packet).
+ */
+void dev_add_pack(struct packet_type *pt)
+{
+	//获取协议处理列表的表头
+	struct list_head *head = ptype_head(pt);
+
+	spin_lock(&ptype_lock);
+	list_add_rcu(&pt->list, head);
+	spin_unlock(&ptype_lock);
+}
+EXPORT_SYMBOL(dev_add_pack);
+
+/*
+ *	Initialize the DEV module. At boot time this walks the device list and
+ *	unhooks any devices that fail to initialise (normally hardware not
+ *	present) and leaves us with a valid list of present and active devices.
+ *
+ */
+
+/*
+ *       This is called single threaded during boot, so no need
+ *       to take the rtnl semaphore.
+ */
+//初始化网络模块
+static int __init net_dev_init(void)
+{
+	int i, rc = -ENOMEM;
+
+	BUG_ON(!dev_boot_phase);
+
+	if (dev_proc_init())
+		goto out;
+
+	if (netdev_kobject_init())
+		goto out;
+
+	INIT_LIST_HEAD(&ptype_all);
+	for (i = 0; i < PTYPE_HASH_SIZE; i++)
+		INIT_LIST_HEAD(&ptype_base[i]);
+
+	INIT_LIST_HEAD(&offload_base);
+
+	if (register_pernet_subsys(&netdev_net_ops))
+		goto out;
+
+	/*
+	 *	Initialise the packet receive queues.
+	 */
+
+	for_each_possible_cpu(i)
+	{
+		//为每个CPU初始化softnet_data
+		struct softnet_data *sd = &per_cpu(softnet_data, i);
+		memset(sd, 0, sizeof(*sd));
+		skb_queue_head_init(&sd->input_pkt_queue);
+		skb_queue_head_init(&sd->process_queue);
+		sd->completion_queue = NULL;
+		INIT_LIST_HEAD(&sd->poll_list); //初始化poll回调函数队列
+		sd->output_queue = NULL;
+		sd->output_queue_tailp = &sd->output_queue;
+#ifdef CONFIG_RPS
+		sd->csd.func = rps_trigger_softirq;
+		sd->csd.info = sd;
+		sd->csd.flags = 0;
+		sd->cpu = i;
+#endif
+
+		sd->backlog.poll = process_backlog;
+		sd->backlog.weight = weight_p;
+		sd->backlog.gro_list = NULL;
+		sd->backlog.gro_count = 0;
+	}
+
+	dev_boot_phase = 0;
+
+	/* The loopback device is special if any other network devices
+	 * is present in a network namespace the loopback device must
+	 * be present. Since we now dynamically allocate and free the
+	 * loopback device ensure this invariant is maintained by
+	 * keeping the loopback device as the first device on the
+	 * list of network devices.  Ensuring the loopback devices
+	 * is the first device that appears and the last network device
+	 * that disappears.
+	 */
+	if (register_pernet_device(&loopback_net_ops))
+		goto out;
+
+	if (register_pernet_device(&default_device_ops))
+		goto out;
+
+	//设置软中断处理函数
+	open_softirq(NET_TX_SOFTIRQ, net_tx_action);
+	open_softirq(NET_RX_SOFTIRQ, net_rx_action);
+
+	hotcpu_notifier(dev_cpu_callback, 0);
+	dst_init();
+	rc = 0;
+out:
+	return rc;
+}
+
+//网络子系统初始化
+subsys_initcall(net_dev_init);
+```
+</details>
+
+<details>
+<summary>net/ipv4/protocol.c</summary>
+
+```C++
+//网络协议处理函数数组
+const struct net_protocol __rcu *inet_protos[MAX_INET_PROTOS] __read_mostly;
+const struct net_offload __rcu *inet_offloads[MAX_INET_PROTOS] __read_mostly;
+
+/*
+ *	Add a protocol handler to the hash tables
+ */
+//注册协议处理函数
+int inet_add_protocol(const struct net_protocol *prot, unsigned char protocol)
+{
+	if (!prot->netns_ok)
+	{
+		pr_err("Protocol %u is not namespace aware, cannot register.\n",
+					 protocol);
+		return -EINVAL;
+	}
+
+	//将协议处理函数注册到inet_protos数组中
+	return !cmpxchg((const struct net_protocol **)&inet_protos[protocol],
+									NULL, prot)
+						 ? 0
+						 : -1;
+}
+EXPORT_SYMBOL(inet_add_protocol);
+```
+</details>
+
+<details>
+<summary>net/ipv4/af_inet.c</summary>
+
+```C++
+// IP协议处理函数
+static struct packet_type ip_packet_type __read_mostly = {
+		.type = cpu_to_be16(ETH_P_IP),
+		.func = ip_rcv,
+};
+// TCP协议处理函数
+static const struct net_protocol tcp_protocol = {
+		.early_demux = tcp_v4_early_demux,
+		.handler = tcp_v4_rcv,
+		.err_handler = tcp_v4_err,
+		.no_policy = 1,
+		.netns_ok = 1,
+};
+// UDP协议处理函数
+static const struct net_protocol udp_protocol = {
+		.handler = udp_rcv,
+		.err_handler = udp_err,
+		.no_policy = 1,
+		.netns_ok = 1,
+};
+//注册网络协议
+static int __init inet_init(void)
+{
+	struct inet_protosw *q;
+	struct list_head *r;
+	int rc = -EINVAL;
+
+	BUILD_BUG_ON(sizeof(struct inet_skb_parm) > FIELD_SIZEOF(struct sk_buff, cb));
+
+	sysctl_local_reserved_ports = kzalloc(65536 / 8, GFP_KERNEL);
+	if (!sysctl_local_reserved_ports)
+		goto out;
+
+	rc = proto_register(&tcp_prot, 1);
+	if (rc)
+		goto out_free_reserved_ports;
+
+	rc = proto_register(&udp_prot, 1);
+	if (rc)
+		goto out_unregister_tcp_proto;
+
+	rc = proto_register(&raw_prot, 1);
+	if (rc)
+		goto out_unregister_udp_proto;
+
+	rc = proto_register(&ping_prot, 1);
+	if (rc)
+		goto out_unregister_raw_proto;
+
+	/*
+	 *	Tell SOCKET that we are alive...
+	 */
+
+	(void)sock_register(&inet_family_ops);
+
+#ifdef CONFIG_SYSCTL
+	ip_static_sysctl_init();
+#endif
+
+	tcp_prot.sysctl_mem = init_net.ipv4.sysctl_tcp_mem;
+
+	/*
+	 *	Add all the base protocols.
+	 */
+
+	if (inet_add_protocol(&icmp_protocol, IPPROTO_ICMP) < 0)
+		pr_crit("%s: Cannot add ICMP protocol\n", __func__);
+	//注册UDP协议
+	if (inet_add_protocol(&udp_protocol, IPPROTO_UDP) < 0)
+		pr_crit("%s: Cannot add UDP protocol\n", __func__);
+	//注册TCP协议
+	if (inet_add_protocol(&tcp_protocol, IPPROTO_TCP) < 0)
+		pr_crit("%s: Cannot add TCP protocol\n", __func__);
+#ifdef CONFIG_IP_MULTICAST
+	if (inet_add_protocol(&igmp_protocol, IPPROTO_IGMP) < 0)
+		pr_crit("%s: Cannot add IGMP protocol\n", __func__);
+#endif
+
+	/* Register the socket-side information for inet_create. */
+	for (r = &inetsw[0]; r < &inetsw[SOCK_MAX]; ++r)
+		INIT_LIST_HEAD(r);
+
+	for (q = inetsw_array; q < &inetsw_array[INETSW_ARRAY_LEN]; ++q)
+		inet_register_protosw(q);
+
+	/*
+	 *	Set the ARP module up
+	 */
+
+	arp_init();
+
+	/*
+	 *	Set the IP module up
+	 */
+
+	ip_init();
+
+	tcp_v4_init();
+
+	/* Setup TCP slab cache for open requests. */
+	tcp_init();
+
+	/* Setup UDP memory threshold */
+	udp_init();
+
+	/* Add UDP-Lite (RFC 3828) */
+	udplite4_register();
+
+	ping_init();
+
+	/*
+	 *	Set the ICMP layer up
+	 */
+
+	if (icmp_init() < 0)
+		panic("Failed to create the ICMP control socket.\n");
+
+		/*
+		 *	Initialise the multicast router
+		 */
+#if defined(CONFIG_IP_MROUTE)
+	if (ip_mr_init())
+		pr_crit("%s: Cannot init ipv4 mroute\n", __func__);
+#endif
+	/*
+	 *	Initialise per-cpu ipv4 mibs
+	 */
+
+	if (init_ipv4_mibs())
+		pr_crit("%s: Cannot init ipv4 mibs\n", __func__);
+
+	ipv4_proc_init();
+
+	ipfrag_init();
+
+	//注册IP协议
+	dev_add_pack(&ip_packet_type);
+
+	rc = 0;
+out:
+	return rc;
+out_unregister_raw_proto:
+	proto_unregister(&raw_prot);
+out_unregister_udp_proto:
+	proto_unregister(&udp_prot);
+out_unregister_tcp_proto:
+	proto_unregister(&tcp_prot);
+out_free_reserved_ports:
+	kfree(sysctl_local_reserved_ports);
+	goto out;
+}
+
+//注册网络协议
+fs_initcall(inet_init);
+```
+</details>
+
+<details>
+<summary>drivers/net/ethernet/intel/igb/igb_main.c</summary>
+
+```C++
+// igb网卡驱动实现函数
+static const struct net_device_ops igb_netdev_ops = {
+		.ndo_open = igb_open, //启用网卡
+		.ndo_stop = igb_close,
+		.ndo_start_xmit = igb_xmit_frame,
+		.ndo_get_stats64 = igb_get_stats64,
+		.ndo_set_rx_mode = igb_set_rx_mode,
+		.ndo_set_mac_address = igb_set_mac,
+		.ndo_change_mtu = igb_change_mtu,
+		.ndo_do_ioctl = igb_ioctl,
+		.ndo_tx_timeout = igb_tx_timeout,
+		.ndo_validate_addr = eth_validate_addr,
+		.ndo_vlan_rx_add_vid = igb_vlan_rx_add_vid,
+		.ndo_vlan_rx_kill_vid = igb_vlan_rx_kill_vid,
+		.ndo_set_vf_mac = igb_ndo_set_vf_mac,
+		.ndo_set_vf_vlan = igb_ndo_set_vf_vlan,
+		.ndo_set_vf_tx_rate = igb_ndo_set_vf_bw,
+		.ndo_set_vf_spoofchk = igb_ndo_set_vf_spoofchk,
+		.ndo_get_vf_config = igb_ndo_get_vf_config,
+#ifdef CONFIG_NET_POLL_CONTROLLER
+		.ndo_poll_controller = igb_netpoll,
+#endif
+		.ndo_fix_features = igb_fix_features,
+		.ndo_set_features = igb_set_features,
+};
+/**
+ *  igb_probe - Device Initialization Routine
+ *  @pdev: PCI device information struct
+ *  @ent: entry in igb_pci_tbl
+ *
+ *  Returns 0 on success, negative on failure
+ *
+ *  igb_probe initializes an adapter identified by a pci_dev structure.
+ *  The OS initialization, configuring of the adapter private structure,
+ *  and a hardware reset occur.
+ **/
+static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+{
+	struct net_device *netdev;
+	struct igb_adapter *adapter;
+	struct e1000_hw *hw;
+	u16 eeprom_data = 0;
+	s32 ret_val;
+	static int global_quad_port_a; /* global quad port a indication */
+	const struct e1000_info *ei = igb_info_tbl[ent->driver_data];
+	unsigned long mmio_start, mmio_len;
+	int err, pci_using_dac;
+	u8 part_str[E1000_PBANUM_LENGTH];
+
+	/* Catch broken hardware that put the wrong VF device ID in
+	 * the PCIe SR-IOV capability.
+	 */
+	if (pdev->is_virtfn)
+	{
+		WARN(1, KERN_ERR "%s (%hx:%hx) should not be a VF!\n",
+				 pci_name(pdev), pdev->vendor, pdev->device);
+		return -EINVAL;
+	}
+
+	err = pci_enable_device_mem(pdev);
+	if (err)
+		return err;
+
+	pci_using_dac = 0;
+	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
+	if (!err)
+	{
+		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+		if (!err)
+			pci_using_dac = 1;
+	}
+	else
+	{
+		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+		if (err)
+		{
+			err = dma_set_coherent_mask(&pdev->dev,
+																	DMA_BIT_MASK(32));
+			if (err)
+			{
+				dev_err(&pdev->dev,
+								"No usable DMA configuration, aborting\n");
+				goto err_dma;
+			}
+		}
+	}
+
+	err = pci_request_selected_regions(pdev, pci_select_bars(pdev, IORESOURCE_MEM),
+																		 igb_driver_name);
+	if (err)
+		goto err_pci_reg;
+
+	pci_enable_pcie_error_reporting(pdev);
+
+	pci_set_master(pdev);
+	pci_save_state(pdev);
+
+	err = -ENOMEM;
+	netdev = alloc_etherdev_mq(sizeof(struct igb_adapter),
+														 IGB_MAX_TX_QUEUES);
+	if (!netdev)
+		goto err_alloc_etherdev;
+
+	SET_NETDEV_DEV(netdev, &pdev->dev);
+
+	pci_set_drvdata(pdev, netdev);
+	adapter = netdev_priv(netdev);
+	adapter->netdev = netdev;
+	adapter->pdev = pdev;
+	hw = &adapter->hw;
+	hw->back = adapter;
+	adapter->msg_enable = netif_msg_init(debug, DEFAULT_MSG_ENABLE);
+
+	mmio_start = pci_resource_start(pdev, 0);
+	mmio_len = pci_resource_len(pdev, 0);
+
+	err = -EIO;
+	hw->hw_addr = ioremap(mmio_start, mmio_len);
+	if (!hw->hw_addr)
+		goto err_ioremap;
+
+	//注册网卡驱动实现函数
+	netdev->netdev_ops = &igb_netdev_ops;
+	igb_set_ethtool_ops(netdev);
+	netdev->watchdog_timeo = 5 * HZ;
+
+	strncpy(netdev->name, pci_name(pdev), sizeof(netdev->name) - 1);
+
+	netdev->mem_start = mmio_start;
+	netdev->mem_end = mmio_start + mmio_len;
+
+	/* PCI config space info */
+	hw->vendor_id = pdev->vendor;
+	hw->device_id = pdev->device;
+	hw->revision_id = pdev->revision;
+	hw->subsystem_vendor_id = pdev->subsystem_vendor;
+	hw->subsystem_device_id = pdev->subsystem_device;
+
+	/* Copy the default MAC, PHY and NVM function pointers */
+	memcpy(&hw->mac.ops, ei->mac_ops, sizeof(hw->mac.ops));
+	memcpy(&hw->phy.ops, ei->phy_ops, sizeof(hw->phy.ops));
+	memcpy(&hw->nvm.ops, ei->nvm_ops, sizeof(hw->nvm.ops));
+	/* Initialize skew-specific constants */
+	err = ei->get_invariants(hw);
+	if (err)
+		goto err_sw_init;
+
+	/* setup the private structure */
+	err = igb_sw_init(adapter);
+	if (err)
+		goto err_sw_init;
+
+	igb_get_bus_info_pcie(hw);
+
+	hw->phy.autoneg_wait_to_complete = false;
+
+	/* Copper options */
+	if (hw->phy.media_type == e1000_media_type_copper)
+	{
+		hw->phy.mdix = AUTO_ALL_MODES;
+		hw->phy.disable_polarity_correction = false;
+		hw->phy.ms_type = e1000_ms_hw_default;
+	}
+
+	if (igb_check_reset_block(hw))
+		dev_info(&pdev->dev,
+						 "PHY reset is blocked due to SOL/IDER session.\n");
+
+	/* features is initialized to 0 in allocation, it might have bits
+	 * set by igb_sw_init so we should use an or instead of an
+	 * assignment.
+	 */
+	netdev->features |= NETIF_F_SG |
+											NETIF_F_IP_CSUM |
+											NETIF_F_IPV6_CSUM |
+											NETIF_F_TSO |
+											NETIF_F_TSO6 |
+											NETIF_F_RXHASH |
+											NETIF_F_RXCSUM |
+											NETIF_F_HW_VLAN_CTAG_RX |
+											NETIF_F_HW_VLAN_CTAG_TX;
+
+	/* copy netdev features into list of user selectable features */
+	netdev->hw_features |= netdev->features;
+	netdev->hw_features |= NETIF_F_RXALL;
+
+	/* set this bit last since it cannot be part of hw_features */
+	netdev->features |= NETIF_F_HW_VLAN_CTAG_FILTER;
+
+	netdev->vlan_features |= NETIF_F_TSO |
+													 NETIF_F_TSO6 |
+													 NETIF_F_IP_CSUM |
+													 NETIF_F_IPV6_CSUM |
+													 NETIF_F_SG;
+
+	netdev->priv_flags |= IFF_SUPP_NOFCS;
+
+	if (pci_using_dac)
+	{
+		netdev->features |= NETIF_F_HIGHDMA;
+		netdev->vlan_features |= NETIF_F_HIGHDMA;
+	}
+
+	if (hw->mac.type >= e1000_82576)
+	{
+		netdev->hw_features |= NETIF_F_SCTP_CSUM;
+		netdev->features |= NETIF_F_SCTP_CSUM;
+	}
+
+	netdev->priv_flags |= IFF_UNICAST_FLT;
+
+	adapter->en_mng_pt = igb_enable_mng_pass_thru(hw);
+
+	/* before reading the NVM, reset the controller to put the device in a
+	 * known good starting state
+	 */
+	hw->mac.ops.reset_hw(hw);
+
+	/* make sure the NVM is good , i211 parts have special NVM that
+	 * doesn't contain a checksum
+	 */
+	if (hw->mac.type != e1000_i211)
+	{
+		if (hw->nvm.ops.validate(hw) < 0)
+		{
+			dev_err(&pdev->dev, "The NVM Checksum Is Not Valid\n");
+			err = -EIO;
+			goto err_eeprom;
+		}
+	}
+
+	/* copy the MAC address out of the NVM */
+	if (hw->mac.ops.read_mac_addr(hw))
+		dev_err(&pdev->dev, "NVM Read Error\n");
+
+	memcpy(netdev->dev_addr, hw->mac.addr, netdev->addr_len);
+
+	if (!is_valid_ether_addr(netdev->dev_addr))
+	{
+		dev_err(&pdev->dev, "Invalid MAC Address\n");
+		err = -EIO;
+		goto err_eeprom;
+	}
+
+	/* get firmware version for ethtool -i */
+	igb_set_fw_version(adapter);
+
+	setup_timer(&adapter->watchdog_timer, igb_watchdog,
+							(unsigned long)adapter);
+	setup_timer(&adapter->phy_info_timer, igb_update_phy_info,
+							(unsigned long)adapter);
+
+	INIT_WORK(&adapter->reset_task, igb_reset_task);
+	INIT_WORK(&adapter->watchdog_task, igb_watchdog_task);
+
+	/* Initialize link properties that are user-changeable */
+	adapter->fc_autoneg = true;
+	hw->mac.autoneg = true;
+	hw->phy.autoneg_advertised = 0x2f;
+
+	hw->fc.requested_mode = e1000_fc_default;
+	hw->fc.current_mode = e1000_fc_default;
+
+	igb_validate_mdi_setting(hw);
+
+	/* By default, support wake on port A */
+	if (hw->bus.func == 0)
+		adapter->flags |= IGB_FLAG_WOL_SUPPORTED;
+
+	/* Check the NVM for wake support on non-port A ports */
+	if (hw->mac.type >= e1000_82580)
+		hw->nvm.ops.read(hw, NVM_INIT_CONTROL3_PORT_A + NVM_82580_LAN_FUNC_OFFSET(hw->bus.func), 1,
+										 &eeprom_data);
+	else if (hw->bus.func == 1)
+		hw->nvm.ops.read(hw, NVM_INIT_CONTROL3_PORT_B, 1, &eeprom_data);
+
+	if (eeprom_data & IGB_EEPROM_APME)
+		adapter->flags |= IGB_FLAG_WOL_SUPPORTED;
+
+	/* now that we have the eeprom settings, apply the special cases where
+	 * the eeprom may be wrong or the board simply won't support wake on
+	 * lan on a particular port
+	 */
+	switch (pdev->device)
+	{
+	case E1000_DEV_ID_82575GB_QUAD_COPPER:
+		adapter->flags &= ~IGB_FLAG_WOL_SUPPORTED;
+		break;
+	case E1000_DEV_ID_82575EB_FIBER_SERDES:
+	case E1000_DEV_ID_82576_FIBER:
+	case E1000_DEV_ID_82576_SERDES:
+		/* Wake events only supported on port A for dual fiber
+		 * regardless of eeprom setting
+		 */
+		if (rd32(E1000_STATUS) & E1000_STATUS_FUNC_1)
+			adapter->flags &= ~IGB_FLAG_WOL_SUPPORTED;
+		break;
+	case E1000_DEV_ID_82576_QUAD_COPPER:
+	case E1000_DEV_ID_82576_QUAD_COPPER_ET2:
+		/* if quad port adapter, disable WoL on all but port A */
+		if (global_quad_port_a != 0)
+			adapter->flags &= ~IGB_FLAG_WOL_SUPPORTED;
+		else
+			adapter->flags |= IGB_FLAG_QUAD_PORT_A;
+		/* Reset for multiple quad port adapters */
+		if (++global_quad_port_a == 4)
+			global_quad_port_a = 0;
+		break;
+	default:
+		/* If the device can't wake, don't set software support */
+		if (!device_can_wakeup(&adapter->pdev->dev))
+			adapter->flags &= ~IGB_FLAG_WOL_SUPPORTED;
+	}
+
+	/* initialize the wol settings based on the eeprom settings */
+	if (adapter->flags & IGB_FLAG_WOL_SUPPORTED)
+		adapter->wol |= E1000_WUFC_MAG;
+
+	/* Some vendors want WoL disabled by default, but still supported */
+	if ((hw->mac.type == e1000_i350) &&
+			(pdev->subsystem_vendor == PCI_VENDOR_ID_HP))
+	{
+		adapter->flags |= IGB_FLAG_WOL_SUPPORTED;
+		adapter->wol = 0;
+	}
+
+	device_set_wakeup_enable(&adapter->pdev->dev,
+													 adapter->flags & IGB_FLAG_WOL_SUPPORTED);
+
+	/* reset the hardware with the new settings */
+	igb_reset(adapter);
+
+	/* Init the I2C interface */
+	err = igb_init_i2c(adapter);
+	if (err)
+	{
+		dev_err(&pdev->dev, "failed to init i2c interface\n");
+		goto err_eeprom;
+	}
+
+	/* let the f/w know that the h/w is now under the control of the
+	 * driver. */
+	igb_get_hw_control(adapter);
+
+	strcpy(netdev->name, "eth%d");
+	err = register_netdev(netdev);
+	if (err)
+		goto err_register;
+
+	/* carrier off reporting is important to ethtool even BEFORE open */
+	netif_carrier_off(netdev);
+
+#ifdef CONFIG_IGB_DCA
+	if (dca_add_requester(&pdev->dev) == 0)
+	{
+		adapter->flags |= IGB_FLAG_DCA_ENABLED;
+		dev_info(&pdev->dev, "DCA enabled\n");
+		igb_setup_dca(adapter);
+	}
+
+#endif
+#ifdef CONFIG_IGB_HWMON
+	/* Initialize the thermal sensor on i350 devices. */
+	if (hw->mac.type == e1000_i350 && hw->bus.func == 0)
+	{
+		u16 ets_word;
+
+		/* Read the NVM to determine if this i350 device supports an
+		 * external thermal sensor.
+		 */
+		hw->nvm.ops.read(hw, NVM_ETS_CFG, 1, &ets_word);
+		if (ets_word != 0x0000 && ets_word != 0xFFFF)
+			adapter->ets = true;
+		else
+			adapter->ets = false;
+		if (igb_sysfs_init(adapter))
+			dev_err(&pdev->dev,
+							"failed to allocate sysfs resources\n");
+	}
+	else
+	{
+		adapter->ets = false;
+	}
+#endif
+	/* do hw tstamp init after resetting */
+	igb_ptp_init(adapter);
+
+	dev_info(&pdev->dev, "Intel(R) Gigabit Ethernet Network Connection\n");
+	/* print bus type/speed/width info, not applicable to i354 */
+	if (hw->mac.type != e1000_i354)
+	{
+		dev_info(&pdev->dev, "%s: (PCIe:%s:%s) %pM\n",
+						 netdev->name,
+						 ((hw->bus.speed == e1000_bus_speed_2500) ? "2.5Gb/s" : (hw->bus.speed == e1000_bus_speed_5000) ? "5.0Gb/s"
+																																																						: "unknown"),
+						 ((hw->bus.width == e1000_bus_width_pcie_x4) ? "Width x4" : (hw->bus.width == e1000_bus_width_pcie_x2) ? "Width x2"
+																																		: (hw->bus.width == e1000_bus_width_pcie_x1)	 ? "Width x1"
+																																																									 : "unknown"),
+						 netdev->dev_addr);
+	}
+
+	ret_val = igb_read_part_string(hw, part_str, E1000_PBANUM_LENGTH);
+	if (ret_val)
+		strcpy(part_str, "Unknown");
+	dev_info(&pdev->dev, "%s: PBA No: %s\n", netdev->name, part_str);
+	dev_info(&pdev->dev,
+					 "Using %s interrupts. %d rx queue(s), %d tx queue(s)\n",
+					 adapter->msix_entries ? "MSI-X" : (adapter->flags & IGB_FLAG_HAS_MSI) ? "MSI"
+																																								 : "legacy",
+					 adapter->num_rx_queues, adapter->num_tx_queues);
+	switch (hw->mac.type)
+	{
+	case e1000_i350:
+	case e1000_i210:
+	case e1000_i211:
+		igb_set_eee_i350(hw);
+		break;
+	case e1000_i354:
+		if (hw->phy.media_type == e1000_media_type_copper)
+		{
+			if ((rd32(E1000_CTRL_EXT) &
+					 E1000_CTRL_EXT_LINK_MODE_SGMII))
+				igb_set_eee_i354(hw);
+		}
+		break;
+	default:
+		break;
+	}
+
+	pm_runtime_put_noidle(&pdev->dev);
+	return 0;
+
+err_register:
+	igb_release_hw_control(adapter);
+	memset(&adapter->i2c_adap, 0, sizeof(adapter->i2c_adap));
+err_eeprom:
+	if (!igb_check_reset_block(hw))
+		igb_reset_phy(hw);
+
+	if (hw->flash_address)
+		iounmap(hw->flash_address);
+err_sw_init:
+	igb_clear_interrupt_scheme(adapter);
+	iounmap(hw->hw_addr);
+err_ioremap:
+	free_netdev(netdev);
+err_alloc_etherdev:
+	pci_release_selected_regions(pdev,
+															 pci_select_bars(pdev, IORESOURCE_MEM));
+err_pci_reg:
+err_dma:
+	pci_disable_device(pdev);
+	return err;
+}
+// igb网卡驱动程序
+static struct pci_driver igb_driver = {
+		.name = igb_driver_name,
+		.id_table = igb_pci_tbl,
+		.probe = igb_probe, //硬件加载
+		.remove = igb_remove,
+#ifdef CONFIG_PM
+		.driver.pm = &igb_pm_ops,
+#endif
+		.shutdown = igb_shutdown,
+		.sriov_configure = igb_pci_sriov_configure,
+		.err_handler = &igb_err_handler};
+/**
+ *  igb_init_module - Driver Registration Routine
+ *
+ *  igb_init_module is the first routine called when the driver is
+ *  loaded. All it does is register with the PCI subsystem.
+ **/
+//初始化igb网卡模块
+static int __init igb_init_module(void)
+{
+	int ret;
+	pr_info("%s - version %s\n",
+					igb_driver_string, igb_driver_version);
+
+	pr_info("%s\n", igb_copyright);
+
+#ifdef CONFIG_IGB_DCA
+	dca_register_notify(&dca_notifier);
+#endif
+
+	//注册igb网卡驱动程序
+	ret = pci_register_driver(&igb_driver);
+	return ret;
+}
+module_init(igb_init_module);
+
+/**
+ *  igb_alloc_q_vector - Allocate memory for a single interrupt vector
+ *  @adapter: board private structure to initialize
+ *  @v_count: q_vectors allocated on adapter, used for ring interleaving
+ *  @v_idx: index of vector in adapter struct
+ *  @txr_count: total number of Tx rings to allocate
+ *  @txr_idx: index of first Tx ring to allocate
+ *  @rxr_count: total number of Rx rings to allocate
+ *  @rxr_idx: index of first Rx ring to allocate
+ *
+ *  We allocate one q_vector.  If allocation fails we return -ENOMEM.
+ **/
+static int igb_alloc_q_vector(struct igb_adapter *adapter,
+															int v_count, int v_idx,
+															int txr_count, int txr_idx,
+															int rxr_count, int rxr_idx)
+{
+	struct igb_q_vector *q_vector;
+	struct igb_ring *ring;
+	int ring_count, size;
+
+	/* igb only supports 1 Tx and/or 1 Rx queue per vector */
+	if (txr_count > 1 || rxr_count > 1)
+		return -ENOMEM;
+
+	ring_count = txr_count + rxr_count;
+	size = sizeof(struct igb_q_vector) +
+				 (sizeof(struct igb_ring) * ring_count);
+
+	/* allocate q_vector and rings */
+	q_vector = kzalloc(size, GFP_KERNEL);
+	if (!q_vector)
+		return -ENOMEM;
+
+	/* initialize NAPI */
+	//注册NAPI的poll函数igb_poll
+	netif_napi_add(adapter->netdev, &q_vector->napi,
+								 igb_poll, 64);
+
+	/* tie q_vector and adapter together */
+	adapter->q_vector[v_idx] = q_vector;
+	q_vector->adapter = adapter;
+
+	/* initialize work limits */
+	q_vector->tx.work_limit = adapter->tx_work_limit;
+
+	/* initialize ITR configuration */
+	q_vector->itr_register = adapter->hw.hw_addr + E1000_EITR(0);
+	q_vector->itr_val = IGB_START_ITR;
+
+	/* initialize pointer to rings */
+	ring = q_vector->ring;
+
+	/* intialize ITR */
+	if (rxr_count)
+	{
+		/* rx or rx/tx vector */
+		if (!adapter->rx_itr_setting || adapter->rx_itr_setting > 3)
+			q_vector->itr_val = adapter->rx_itr_setting;
+	}
+	else
+	{
+		/* tx only vector */
+		if (!adapter->tx_itr_setting || adapter->tx_itr_setting > 3)
+			q_vector->itr_val = adapter->tx_itr_setting;
+	}
+
+	if (txr_count)
+	{
+		/* assign generic ring traits */
+		ring->dev = &adapter->pdev->dev;
+		ring->netdev = adapter->netdev;
+
+		/* configure backlink on ring */
+		ring->q_vector = q_vector;
+
+		/* update q_vector Tx values */
+		igb_add_ring(ring, &q_vector->tx);
+
+		/* For 82575, context index must be unique per ring. */
+		if (adapter->hw.mac.type == e1000_82575)
+			set_bit(IGB_RING_FLAG_TX_CTX_IDX, &ring->flags);
+
+		/* apply Tx specific ring traits */
+		ring->count = adapter->tx_ring_count;
+		ring->queue_index = txr_idx;
+
+		/* assign ring to adapter */
+		adapter->tx_ring[txr_idx] = ring;
+
+		/* push pointer to next ring */
+		ring++;
+	}
+
+	if (rxr_count)
+	{
+		/* assign generic ring traits */
+		ring->dev = &adapter->pdev->dev;
+		ring->netdev = adapter->netdev;
+
+		/* configure backlink on ring */
+		ring->q_vector = q_vector;
+
+		/* update q_vector Rx values */
+		igb_add_ring(ring, &q_vector->rx);
+
+		/* set flag indicating ring supports SCTP checksum offload */
+		if (adapter->hw.mac.type >= e1000_82576)
+			set_bit(IGB_RING_FLAG_RX_SCTP_CSUM, &ring->flags);
+
+		/*
+		 * On i350, i354, i210, and i211, loopback VLAN packets
+		 * have the tag byte-swapped.
+		 */
+		if (adapter->hw.mac.type >= e1000_i350)
+			set_bit(IGB_RING_FLAG_RX_LB_VLAN_BSWAP, &ring->flags);
+
+		/* apply Rx specific ring traits */
+		ring->count = adapter->rx_ring_count;
+		ring->queue_index = rxr_idx;
+
+		/* assign ring to adapter */
+		adapter->rx_ring[rxr_idx] = ring;
+	}
+
+	return 0;
+}
+/**
+ *  igb_alloc_q_vectors - Allocate memory for interrupt vectors
+ *  @adapter: board private structure to initialize
+ *
+ *  We allocate one q_vector per queue interrupt.  If allocation fails we
+ *  return -ENOMEM.
+ **/
+static int igb_alloc_q_vectors(struct igb_adapter *adapter)
+{
+	int q_vectors = adapter->num_q_vectors;
+	int rxr_remaining = adapter->num_rx_queues;
+	int txr_remaining = adapter->num_tx_queues;
+	int rxr_idx = 0, txr_idx = 0, v_idx = 0;
+	int err;
+
+	if (q_vectors >= (rxr_remaining + txr_remaining))
+	{
+		for (; rxr_remaining; v_idx++)
+		{
+			err = igb_alloc_q_vector(adapter, q_vectors, v_idx,
+															 0, 0, 1, rxr_idx);
+
+			if (err)
+				goto err_out;
+
+			/* update counts and index */
+			rxr_remaining--;
+			rxr_idx++;
+		}
+	}
+
+	for (; v_idx < q_vectors; v_idx++)
+	{
+		int rqpv = DIV_ROUND_UP(rxr_remaining, q_vectors - v_idx);
+		int tqpv = DIV_ROUND_UP(txr_remaining, q_vectors - v_idx);
+		err = igb_alloc_q_vector(adapter, q_vectors, v_idx,
+														 tqpv, txr_idx, rqpv, rxr_idx);
+
+		if (err)
+			goto err_out;
+
+		/* update counts and index */
+		rxr_remaining -= rqpv;
+		txr_remaining -= tqpv;
+		rxr_idx++;
+		txr_idx++;
+	}
+
+	return 0;
+
+err_out:
+	adapter->num_tx_queues = 0;
+	adapter->num_rx_queues = 0;
+	adapter->num_q_vectors = 0;
+
+	while (v_idx--)
+		igb_free_q_vector(adapter, v_idx);
+
+	return -ENOMEM;
+}
+/**
+ *  igb_init_interrupt_scheme - initialize interrupts, allocate queues/vectors
+ *  @adapter: board private structure to initialize
+ *  @msix: boolean value of MSIX capability
+ *
+ *  This function initializes the interrupts and allocates all of the queues.
+ **/
+static int igb_init_interrupt_scheme(struct igb_adapter *adapter, bool msix)
+{
+	struct pci_dev *pdev = adapter->pdev;
+	int err;
+
+	igb_set_interrupt_capability(adapter, msix);
+
+	err = igb_alloc_q_vectors(adapter);
+	if (err)
+	{
+		dev_err(&pdev->dev, "Unable to allocate memory for vectors\n");
+		goto err_alloc_q_vectors;
+	}
+
+	igb_cache_ring_register(adapter);
+
+	return 0;
+
+err_alloc_q_vectors:
+	igb_reset_interrupt_capability(adapter);
+	return err;
+}
+/**
+ *  igb_request_irq - initialize interrupts
+ *  @adapter: board private structure to initialize
+ *
+ *  Attempts to configure interrupts using the best available
+ *  capabilities of the hardware and kernel.
+ **/
+static int igb_request_irq(struct igb_adapter *adapter)
+{
+	struct net_device *netdev = adapter->netdev;
+	struct pci_dev *pdev = adapter->pdev;
+	int err = 0;
+
+	//多队列网卡
+	if (adapter->msix_entries)
+	{
+		err = igb_request_msix(adapter);
+		if (!err)
+			goto request_done;
+		/* fall back to MSI */
+		igb_free_all_tx_resources(adapter);
+		igb_free_all_rx_resources(adapter);
+
+		igb_clear_interrupt_scheme(adapter);
+		err = igb_init_interrupt_scheme(adapter, false);
+		if (err)
+			goto request_done;
+
+		igb_setup_all_tx_resources(adapter);
+		igb_setup_all_rx_resources(adapter);
+		igb_configure(adapter);
+	}
+
+	igb_assign_vector(adapter->q_vector[0], 0);
+
+	if (adapter->flags & IGB_FLAG_HAS_MSI)
+	{
+		err = request_irq(pdev->irq, igb_intr_msi, 0,
+											netdev->name, adapter);
+		if (!err)
+			goto request_done;
+
+		/* fall back to legacy interrupts */
+		igb_reset_interrupt_capability(adapter);
+		adapter->flags &= ~IGB_FLAG_HAS_MSI;
+	}
+
+	err = request_irq(pdev->irq, igb_intr, IRQF_SHARED,
+										netdev->name, adapter);
+
+	if (err)
+		dev_err(&pdev->dev, "Error %d getting interrupt\n",
+						err);
+
+request_done:
+	return err;
+}
+/**
+ *  igb_open - Called when a network interface is made active
+ *  @netdev: network interface device structure
+ *
+ *  Returns 0 on success, negative value on failure
+ *
+ *  The open entry point is called when a network interface is made
+ *  active by the system (IFF_UP).  At this point all resources needed
+ *  for transmit and receive operations are allocated, the interrupt
+ *  handler is registered with the OS, the watchdog timer is started,
+ *  and the stack is notified that the interface is ready.
+ **/
+//启用igb网卡
+static int __igb_open(struct net_device *netdev, bool resuming)
+{
+	struct igb_adapter *adapter = netdev_priv(netdev);
+	struct e1000_hw *hw = &adapter->hw;
+	struct pci_dev *pdev = adapter->pdev;
+	int err;
+	int i;
+
+	/* disallow open during test */
+	if (test_bit(__IGB_TESTING, &adapter->state))
+	{
+		WARN_ON(resuming);
+		return -EBUSY;
+	}
+
+	if (!resuming)
+		pm_runtime_get_sync(&pdev->dev);
+
+	netif_carrier_off(netdev);
+
+	/* allocate transmit descriptors */
+	//分配传输描述符数组
+	err = igb_setup_all_tx_resources(adapter);
+	if (err)
+		goto err_setup_tx;
+
+	/* allocate receive descriptors */
+	//分配接收描述符数组
+	err = igb_setup_all_rx_resources(adapter);
+	if (err)
+		goto err_setup_rx;
+
+	igb_power_up_link(adapter);
+
+	/* before we allocate an interrupt, we must be ready to handle it.
+	 * Setting DEBUG_SHIRQ in the kernel makes it fire an interrupt
+	 * as soon as we call pci_request_irq, so we have to setup our
+	 * clean_rx handler before we do so.
+	 */
+	igb_configure(adapter);
+
+	//注册中断函数
+	err = igb_request_irq(adapter);
+	if (err)
+		goto err_req_irq;
+
+	/* Notify the stack of the actual queue counts. */
+	err = netif_set_real_num_tx_queues(adapter->netdev,
+																		 adapter->num_tx_queues);
+	if (err)
+		goto err_set_queues;
+
+	err = netif_set_real_num_rx_queues(adapter->netdev,
+																		 adapter->num_rx_queues);
+	if (err)
+		goto err_set_queues;
+
+	/* From here on the code is the same as igb_up() */
+	clear_bit(__IGB_DOWN, &adapter->state);
+
+	for (i = 0; i < adapter->num_q_vectors; i++)
+		//启用NAPI
+		napi_enable(&(adapter->q_vector[i]->napi));
+
+	/* Clear any pending interrupts. */
+	rd32(E1000_ICR);
+
+	igb_irq_enable(adapter);
+
+	/* notify VFs that reset has been completed */
+	if (adapter->vfs_allocated_count)
+	{
+		u32 reg_data = rd32(E1000_CTRL_EXT);
+		reg_data |= E1000_CTRL_EXT_PFRSTD;
+		wr32(E1000_CTRL_EXT, reg_data);
+	}
+
+	//开启全部队列
+	netif_tx_start_all_queues(netdev);
+
+	if (!resuming)
+		pm_runtime_put(&pdev->dev);
+
+	/* start the watchdog. */
+	hw->mac.get_link_status = 1;
+	schedule_work(&adapter->watchdog_task);
+
+	return 0;
+
+err_set_queues:
+	igb_free_irq(adapter);
+err_req_irq:
+	igb_release_hw_control(adapter);
+	igb_power_down_link(adapter);
+	igb_free_all_rx_resources(adapter);
+err_setup_rx:
+	igb_free_all_tx_resources(adapter);
+err_setup_tx:
+	igb_reset(adapter);
+	if (!resuming)
+		pm_runtime_put(&pdev->dev);
+
+	return err;
+}
+static int igb_open(struct net_device *netdev)
+{
+	return __igb_open(netdev, false);
+}
 ```
 </details>
 
