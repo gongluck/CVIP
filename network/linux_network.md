@@ -1,14 +1,16 @@
 # Linux网络
 
 - [Linux网络](#linux网络)
-  - [命令配置](#命令配置)
-  - [Linux网络工作图示](#linux网络工作图示)
-    - [TCP状态轮转](#tcp状态轮转)
-    - [网络收包](#网络收包)
-  - [源码](#源码)
-    - [用户层接口](#用户层接口)
-    - [网络模块初始化和启动](#网络模块初始化和启动)
-    - [TCP协议处理函数](#tcp协议处理函数)
+	- [命令配置](#命令配置)
+	- [Linux网络工作图示](#linux网络工作图示)
+		- [TCP状态轮转](#tcp状态轮转)
+		- [网络收包](#网络收包)
+	- [源码](#源码)
+		- [用户层接口](#用户层接口)
+		- [网络模块初始化和启动](#网络模块初始化和启动)
+		- [硬中断处理](#硬中断处理)
+		- [软中断处理](#软中断处理)
+		- [TCP协议处理函数](#tcp协议处理函数)
 
 ## 命令配置
 
@@ -1556,6 +1558,68 @@ err_alloc_q_vectors:
 	return err;
 }
 /**
+ *  igb_request_msix - Initialize MSI-X interrupts
+ *  @adapter: board private structure to initialize
+ *
+ *  igb_request_msix allocates MSI-X vectors and requests interrupts from the
+ *  kernel.
+ **/
+static int igb_request_msix(struct igb_adapter *adapter)
+{
+	struct net_device *netdev = adapter->netdev;
+	struct e1000_hw *hw = &adapter->hw;
+	int i, err = 0, vector = 0, free_vector = 0;
+
+	err = request_irq(adapter->msix_entries[vector].vector,
+										igb_msix_other, 0, netdev->name, adapter);
+	if (err)
+		goto err_out;
+
+	for (i = 0; i < adapter->num_q_vectors; i++)
+	{
+		struct igb_q_vector *q_vector = adapter->q_vector[i];
+
+		vector++;
+
+		q_vector->itr_register = hw->hw_addr + E1000_EITR(vector);
+
+		if (q_vector->rx.ring && q_vector->tx.ring)
+			sprintf(q_vector->name, "%s-TxRx-%u", netdev->name,
+							q_vector->rx.ring->queue_index);
+		else if (q_vector->tx.ring)
+			sprintf(q_vector->name, "%s-tx-%u", netdev->name,
+							q_vector->tx.ring->queue_index);
+		else if (q_vector->rx.ring)
+			sprintf(q_vector->name, "%s-rx-%u", netdev->name,
+							q_vector->rx.ring->queue_index);
+		else
+			sprintf(q_vector->name, "%s-unused", netdev->name);
+
+		//注册中断函数
+		err = request_irq(adapter->msix_entries[vector].vector,
+											igb_msix_ring, 0, q_vector->name,
+											q_vector);
+		if (err)
+			goto err_free;
+	}
+
+	igb_configure_msix(adapter);
+	return 0;
+
+err_free:
+	/* free already assigned IRQs */
+	free_irq(adapter->msix_entries[free_vector++].vector, adapter);
+
+	vector--;
+	for (i = 0; i < vector; i++)
+	{
+		free_irq(adapter->msix_entries[free_vector++].vector,
+						 adapter->q_vector[i]);
+	}
+err_out:
+	return err;
+}
+/**
  *  igb_request_irq - initialize interrupts
  *  @adapter: board private structure to initialize
  *
@@ -1735,6 +1799,671 @@ static int igb_open(struct net_device *netdev)
 }
 ```
 </details>
+
+### 硬中断处理
+
+<details>
+<summary>net/core/dev.c</summary>
+
+```C++
+/**
+ * __napi_schedule - schedule for receive
+ * @n: entry to schedule
+ *
+ * The entry's receive function will be scheduled to run
+ */
+void __napi_schedule(struct napi_struct *n)
+{
+	unsigned long flags;
+
+	local_irq_save(flags);
+	____napi_schedule(&__get_cpu_var(softnet_data), n);
+	local_irq_restore(flags);
+}
+EXPORT_SYMBOL(__napi_schedule);
+
+/* Called with irq disabled */
+static inline void ____napi_schedule(struct softnet_data *sd,
+																		 struct napi_struct *napi)
+{
+	//插入poll回调函数
+	list_add_tail(&napi->poll_list, &sd->poll_list);
+	//设置软中断标记
+	__raise_softirq_irqoff(NET_RX_SOFTIRQ);
+}
+```
+</details>
+
+<details>
+<summary>drivers/net/ethernet/intel/igb/igb_main.c</summary>
+
+```C++
+//网卡数据硬中断处理函数
+static irqreturn_t igb_msix_ring(int irq, void *data)
+{
+	struct igb_q_vector *q_vector = data;
+
+	/* Write the ITR value calculated from the previous interrupt. */
+	igb_write_itr(q_vector);
+
+	// NAPI调度
+	napi_schedule(&q_vector->napi);
+
+	return IRQ_HANDLED;
+}
+```
+</details>
+
+### 软中断处理
+
+<details>
+<summary>kernel/softirq.c</summary>
+
+```C++
+static void run_ksoftirqd(unsigned int cpu)
+{
+	local_irq_disable();
+	if (local_softirq_pending()) //__softirq_pending
+	{
+		//处理软中断
+		__do_softirq();
+		rcu_note_context_switch(cpu);
+		local_irq_enable();
+		cond_resched();
+		return;
+	}
+	local_irq_enable();
+}
+asmlinkage void __do_softirq(void)
+{
+	struct softirq_action *h;
+	__u32 pending;
+	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
+	int cpu;
+	unsigned long old_flags = current->flags;
+	int max_restart = MAX_SOFTIRQ_RESTART;
+
+	/*
+	 * Mask out PF_MEMALLOC s current task context is borrowed for the
+	 * softirq. A softirq handled such as network RX might set PF_MEMALLOC
+	 * again if the socket is related to swap
+	 */
+	current->flags &= ~PF_MEMALLOC;
+
+	pending = local_softirq_pending();
+	account_irq_enter_time(current);
+
+	__local_bh_disable((unsigned long)__builtin_return_address(0),
+										 SOFTIRQ_OFFSET);
+	lockdep_softirq_enter();
+
+	cpu = smp_processor_id();
+restart:
+	/* Reset the pending bitmask before enabling irqs */
+	set_softirq_pending(0);
+
+	local_irq_enable();
+
+	h = softirq_vec;
+
+	do
+	{
+		if (pending & 1)
+		{
+			unsigned int vec_nr = h - softirq_vec;
+			int prev_count = preempt_count();
+
+			kstat_incr_softirqs_this_cpu(vec_nr);
+
+			trace_softirq_entry(vec_nr);
+			//处理数据
+			h->action(h);
+			trace_softirq_exit(vec_nr);
+			if (unlikely(prev_count != preempt_count()))
+			{
+				printk(KERN_ERR "huh, entered softirq %u %s %p"
+												"with preempt_count %08x,"
+												" exited with %08x?\n",
+							 vec_nr,
+							 softirq_to_name[vec_nr], h->action,
+							 prev_count, preempt_count());
+				preempt_count() = prev_count;
+			}
+
+			rcu_bh_qs(cpu);
+		}
+		h++;
+		pending >>= 1;
+	} while (pending);
+
+	local_irq_disable();
+
+	pending = local_softirq_pending();
+	if (pending)
+	{
+		if (time_before(jiffies, end) && !need_resched() &&
+				--max_restart)
+			goto restart;
+
+		wakeup_softirqd();
+	}
+
+	lockdep_softirq_exit();
+
+	account_irq_exit_time(current);
+	__local_bh_enable(SOFTIRQ_OFFSET);
+	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+}
+```
+</details>
+
+<details>
+<summary>net/core/dev.c</summary>
+
+```C++
+//接收数据软中断处理函数
+static void net_rx_action(struct softirq_action *h)
+{
+	struct softnet_data *sd = &__get_cpu_var(softnet_data);
+	unsigned long time_limit = jiffies + 2;
+	int budget = netdev_budget;
+	void *have;
+
+	//关闭硬中断
+	local_irq_disable();
+
+	while (!list_empty(&sd->poll_list))
+	{
+		struct napi_struct *n;
+		int work, weight;
+
+		/* If softirq window is exhuasted then punt.
+		 * Allow this to run for 2 jiffies since which will allow
+		 * an average latency of 1.5/HZ.
+		 */
+		if (unlikely(budget <= 0 || time_after_eq(jiffies, time_limit)))
+			goto softnet_break;
+
+		local_irq_enable();
+
+		/* Even though interrupts have been re-enabled, this
+		 * access is safe because interrupts can only add new
+		 * entries to the tail of this list, and only ->poll()
+		 * calls can remove this head entry from the list.
+		 */
+		n = list_first_entry(&sd->poll_list, struct napi_struct, poll_list);
+
+		have = netpoll_poll_lock(n);
+
+		weight = n->weight;
+
+		/* This NAPI_STATE_SCHED test is for avoiding a race
+		 * with netpoll's poll_napi().  Only the entity which
+		 * obtains the lock and sees NAPI_STATE_SCHED set will
+		 * actually make the ->poll() call.  Therefore we avoid
+		 * accidentally calling ->poll() when NAPI is not scheduled.
+		 */
+		work = 0;
+		if (test_bit(NAPI_STATE_SCHED, &n->state))
+		{
+			//调用poll回调函数(igb_poll)
+			work = n->poll(n, weight);
+			trace_napi_poll(n);
+		}
+
+		WARN_ON_ONCE(work > weight);
+
+		budget -= work;
+
+		local_irq_disable();
+
+		/* Drivers must not modify the NAPI state if they
+		 * consume the entire weight.  In such cases this code
+		 * still "owns" the NAPI instance and therefore can
+		 * move the instance around on the list at-will.
+		 */
+		if (unlikely(work == weight))
+		{
+			if (unlikely(napi_disable_pending(n)))
+			{
+				local_irq_enable();
+				napi_complete(n);
+				local_irq_disable();
+			}
+			else
+			{
+				if (n->gro_list)
+				{
+					/* flush too old packets
+					 * If HZ < 1000, flush all packets.
+					 */
+					local_irq_enable();
+					napi_gro_flush(n, HZ >= 1000);
+					local_irq_disable();
+				}
+				list_move_tail(&n->poll_list, &sd->poll_list);
+			}
+		}
+
+		netpoll_poll_unlock(have);
+	}
+out:
+	net_rps_action_and_irq_enable(sd);
+
+#ifdef CONFIG_NET_DMA
+	/*
+	 * There may not be any more sk_buffs coming right now, so push
+	 * any pending DMA copies to hardware
+	 */
+	dma_issue_pending_all();
+#endif
+
+	return;
+
+softnet_break:
+	sd->time_squeeze++;
+	__raise_softirq_irqoff(NET_RX_SOFTIRQ);
+	goto out;
+}
+
+gro_result_t napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb)
+{
+	skb_gro_reset_offset(skb);
+
+	return napi_skb_finish(dev_gro_receive(napi, skb), skb);
+}
+EXPORT_SYMBOL(napi_gro_receive);
+
+static gro_result_t napi_skb_finish(gro_result_t ret, struct sk_buff *skb)
+{
+	switch (ret)
+	{
+	case GRO_NORMAL:
+		if (netif_receive_skb(skb)) //将数据包送到协议栈
+			ret = GRO_DROP;
+		break;
+
+	case GRO_DROP:
+		kfree_skb(skb);
+		break;
+
+	case GRO_MERGED_FREE:
+		if (NAPI_GRO_CB(skb)->free == NAPI_GRO_FREE_STOLEN_HEAD)
+			kmem_cache_free(skbuff_head_cache, skb);
+		else
+			__kfree_skb(skb);
+		break;
+
+	case GRO_HELD:
+	case GRO_MERGED:
+		break;
+	}
+
+	return ret;
+}
+
+/**
+ *	netif_receive_skb - process receive buffer from network
+ *	@skb: buffer to process
+ *
+ *	netif_receive_skb() is the main receive data processing function.
+ *	It always succeeds. The buffer may be dropped during processing
+ *	for congestion control or by the protocol layers.
+ *
+ *	This function may only be called from softirq context and interrupts
+ *	should be enabled.
+ *
+ *	Return values (usually ignored):
+ *	NET_RX_SUCCESS: no congestion
+ *	NET_RX_DROP: packet was dropped
+ */
+int netif_receive_skb(struct sk_buff *skb)
+{
+	net_timestamp_check(netdev_tstamp_prequeue, skb);
+
+	if (skb_defer_rx_timestamp(skb))
+		return NET_RX_SUCCESS;
+
+#ifdef CONFIG_RPS
+	if (static_key_false(&rps_needed))
+	{
+		struct rps_dev_flow voidflow, *rflow = &voidflow;
+		int cpu, ret;
+
+		rcu_read_lock();
+
+		cpu = get_rps_cpu(skb->dev, skb, &rflow);
+
+		if (cpu >= 0)
+		{
+			ret = enqueue_to_backlog(skb, cpu, &rflow->last_qtail);
+			rcu_read_unlock();
+			return ret;
+		}
+		rcu_read_unlock();
+	}
+#endif
+	return __netif_receive_skb(skb);
+}
+EXPORT_SYMBOL(netif_receive_skb);
+
+static int __netif_receive_skb(struct sk_buff *skb)
+{
+	int ret;
+
+	if (sk_memalloc_socks() && skb_pfmemalloc(skb))
+	{
+		unsigned long pflags = current->flags;
+
+		/*
+		 * PFMEMALLOC skbs are special, they should
+		 * - be delivered to SOCK_MEMALLOC sockets only
+		 * - stay away from userspace
+		 * - have bounded memory usage
+		 *
+		 * Use PF_MEMALLOC as this saves us from propagating the allocation
+		 * context down to all allocation sites.
+		 */
+		current->flags |= PF_MEMALLOC;
+		ret = __netif_receive_skb_core(skb, true);
+		tsk_restore_flags(current, pflags, PF_MEMALLOC);
+	}
+	else
+		ret = __netif_receive_skb_core(skb, false);
+
+	return ret;
+}
+
+static int __netif_receive_skb_core(struct sk_buff *skb, bool pfmemalloc)
+{
+	struct packet_type *ptype, *pt_prev;
+	rx_handler_func_t *rx_handler;
+	struct net_device *orig_dev;
+	struct net_device *null_or_dev;
+	bool deliver_exact = false;
+	int ret = NET_RX_DROP;
+	__be16 type;
+
+	net_timestamp_check(!netdev_tstamp_prequeue, skb);
+
+	trace_netif_receive_skb(skb);
+
+	/* if we've gotten here through NAPI, check netpoll */
+	if (netpoll_receive_skb(skb))
+		goto out;
+
+	orig_dev = skb->dev;
+
+	skb_reset_network_header(skb);
+	if (!skb_transport_header_was_set(skb))
+		skb_reset_transport_header(skb);
+	skb_reset_mac_len(skb);
+
+	pt_prev = NULL;
+
+	rcu_read_lock();
+
+another_round:
+	skb->skb_iif = skb->dev->ifindex;
+
+	__this_cpu_inc(softnet_data.processed);
+
+	if (skb->protocol == cpu_to_be16(ETH_P_8021Q) ||
+			skb->protocol == cpu_to_be16(ETH_P_8021AD))
+	{
+		skb = vlan_untag(skb);
+		if (unlikely(!skb))
+			goto unlock;
+	}
+
+#ifdef CONFIG_NET_CLS_ACT
+	if (skb->tc_verd & TC_NCLS)
+	{
+		skb->tc_verd = CLR_TC_NCLS(skb->tc_verd);
+		goto ncls;
+	}
+#endif
+
+	if (pfmemalloc)
+		goto skip_taps;
+
+	list_for_each_entry_rcu(ptype, &ptype_all, list)
+	{
+		if (!ptype->dev || ptype->dev == skb->dev)
+		{
+			if (pt_prev)
+				ret = deliver_skb(skb, pt_prev, orig_dev);
+			pt_prev = ptype;
+		}
+	}
+
+skip_taps:
+#ifdef CONFIG_NET_CLS_ACT
+	skb = handle_ing(skb, &pt_prev, &ret, orig_dev);
+	if (!skb)
+		goto unlock;
+ncls:
+#endif
+
+	if (pfmemalloc && !skb_pfmemalloc_protocol(skb))
+		goto drop;
+
+	if (vlan_tx_tag_present(skb))
+	{
+		if (pt_prev)
+		{
+			ret = deliver_skb(skb, pt_prev, orig_dev);
+			pt_prev = NULL;
+		}
+		if (vlan_do_receive(&skb))
+			goto another_round;
+		else if (unlikely(!skb))
+			goto unlock;
+	}
+
+	rx_handler = rcu_dereference(skb->dev->rx_handler);
+	if (rx_handler)
+	{
+		if (pt_prev)
+		{
+			ret = deliver_skb(skb, pt_prev, orig_dev);
+			pt_prev = NULL;
+		}
+		switch (rx_handler(&skb))
+		{
+		case RX_HANDLER_CONSUMED:
+			ret = NET_RX_SUCCESS;
+			goto unlock;
+		case RX_HANDLER_ANOTHER:
+			goto another_round;
+		case RX_HANDLER_EXACT:
+			deliver_exact = true;
+		case RX_HANDLER_PASS:
+			break;
+		default:
+			BUG();
+		}
+	}
+
+	if (vlan_tx_nonzero_tag_present(skb))
+		skb->pkt_type = PACKET_OTHERHOST;
+
+	/* deliver only exact match when indicated */
+	null_or_dev = deliver_exact ? skb->dev : NULL;
+
+	type = skb->protocol;
+	list_for_each_entry_rcu(ptype,
+													&ptype_base[ntohs(type) & PTYPE_HASH_MASK], list)
+	{
+		if (ptype->type == type &&
+				(ptype->dev == null_or_dev || ptype->dev == skb->dev ||
+				 ptype->dev == orig_dev))
+		{
+			if (pt_prev)
+				ret = deliver_skb(skb, pt_prev, orig_dev);
+			pt_prev = ptype;
+		}
+	}
+
+	if (pt_prev)
+	{
+		if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
+			goto drop;
+		else
+			ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+	}
+	else
+	{
+	drop:
+		atomic_long_inc(&skb->dev->rx_dropped);
+		kfree_skb(skb);
+		/* Jamal, now you will not able to escape explaining
+		 * me how you were going to use this. :-)
+		 */
+		ret = NET_RX_DROP;
+	}
+
+unlock:
+	rcu_read_unlock();
+out:
+	return ret;
+}
+static inline int deliver_skb(struct sk_buff *skb,
+															struct packet_type *pt_prev,
+															struct net_device *orig_dev)
+{
+	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
+		return -ENOMEM;
+	atomic_inc(&skb->users);
+	//调用注册函数处理协议
+	return pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+}
+```
+</details>
+
+<details>
+<summary>drivers/net/ethernet/intel/igb/igb_main.c</summary>
+
+```C++
+/**
+ *  igb_poll - NAPI Rx polling callback
+ *  @napi: napi polling structure
+ *  @budget: count of how many packets we should handle
+ **/
+// poll回调函数
+static int igb_poll(struct napi_struct *napi, int budget)
+{
+	struct igb_q_vector *q_vector = container_of(napi,
+																							 struct igb_q_vector,
+																							 napi);
+	bool clean_complete = true;
+
+#ifdef CONFIG_IGB_DCA
+	if (q_vector->adapter->flags & IGB_FLAG_DCA_ENABLED)
+		igb_update_dca(q_vector);
+#endif
+	if (q_vector->tx.ring)
+		//处理数据发送中断
+		clean_complete = igb_clean_tx_irq(q_vector);
+
+	if (q_vector->rx.ring)
+		//处理数据接收中断
+		clean_complete &= igb_clean_rx_irq(q_vector, budget);
+
+	/* If all work not completed, return budget and keep polling */
+	if (!clean_complete)
+		return budget;
+
+	/* If not enough Rx work done, exit the polling mode */
+	napi_complete(napi);
+	igb_ring_irq_enable(q_vector);
+
+	return 0;
+}
+static bool igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
+{
+	struct igb_ring *rx_ring = q_vector->rx.ring;
+	struct sk_buff *skb = rx_ring->skb;
+	unsigned int total_bytes = 0, total_packets = 0;
+	u16 cleaned_count = igb_desc_unused(rx_ring);
+
+	do
+	{
+		union e1000_adv_rx_desc *rx_desc;
+
+		/* return some buffers to hardware, one at a time is too slow */
+		if (cleaned_count >= IGB_RX_BUFFER_WRITE)
+		{
+			igb_alloc_rx_buffers(rx_ring, cleaned_count);
+			cleaned_count = 0;
+		}
+
+		rx_desc = IGB_RX_DESC(rx_ring, rx_ring->next_to_clean);
+
+		if (!igb_test_staterr(rx_desc, E1000_RXD_STAT_DD))
+			break;
+
+		/* This memory barrier is needed to keep us from reading
+		 * any other fields out of the rx_desc until we know the
+		 * RXD_STAT_DD bit is set
+		 */
+		rmb();
+
+		//从RingBuffer上取出数据
+		/* retrieve a buffer from the ring */
+		skb = igb_fetch_rx_buffer(rx_ring, rx_desc, skb);
+
+		/* exit if we failed to retrieve a buffer */
+		if (!skb)
+			break;
+
+		cleaned_count++;
+
+		/* fetch next buffer in frame if non-eop */
+		if (igb_is_non_eop(rx_ring, rx_desc))
+			continue;
+
+		/* verify the packet layout is correct */
+		if (igb_cleanup_headers(rx_ring, rx_desc, skb))
+		{
+			skb = NULL;
+			continue;
+		}
+
+		/* probably a little skewed due to removing CRC */
+		total_bytes += skb->len;
+
+		/* populate checksum, timestamp, VLAN, and protocol */
+		igb_process_skb_fields(rx_ring, rx_desc, skb);
+
+		//小包合并
+		napi_gro_receive(&q_vector->napi, skb);
+
+		/* reset skb pointer */
+		skb = NULL;
+
+		/* update budget accounting */
+		total_packets++;
+	} while (likely(total_packets < budget));
+
+	/* place incomplete frames back on ring for completion */
+	rx_ring->skb = skb;
+
+	u64_stats_update_begin(&rx_ring->rx_syncp);
+	rx_ring->rx_stats.packets += total_packets;
+	rx_ring->rx_stats.bytes += total_bytes;
+	u64_stats_update_end(&rx_ring->rx_syncp);
+	q_vector->rx.total_packets += total_packets;
+	q_vector->rx.total_bytes += total_bytes;
+
+	if (cleaned_count)
+		igb_alloc_rx_buffers(rx_ring, cleaned_count);
+
+	return (total_packets < budget);
+}
+```
+</details>
+
 
 ### TCP协议处理函数
 
