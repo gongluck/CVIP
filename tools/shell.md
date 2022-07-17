@@ -7,7 +7,10 @@
   - [pstree](#pstree)
   - [nm](#nm)
   - [df](#df)
-  - [tcpdump](#tcpdump)
+  - [网络](#网络)
+    - [ethtool](#ethtool)
+    - [ifconfig](#ifconfig)
+    - [tcpdump](#tcpdump)
   - [objdump](#objdump)
   - [hexdump](#hexdump)
   - [strace](#strace)
@@ -15,6 +18,14 @@
 ## 特殊文件
 
 - ```/proc/pid/status```保存该```pid```进程的相关信息
+- ```/proc/sys```目录可以查看或修改内核参数
+- ```/proc/cpuinfo```可以查看```CPU```信息
+- ```/proc/meminfo```可以查看内存信息
+- ```/proc/interrupts```统计所有的硬中断
+- ```/proc/softirqs```统计的所有的软中断信息
+- ```/proc/slabinfo```统计了内核数据结构的```slab```内存使用情况
+- ```/proc/net/dev```可以看到一些网卡统计数据
+- ```/sys/class/net/eth0/statistics/```也包含了网卡的统计信息
 
 ## nohup
 
@@ -88,7 +99,37 @@ df --total -h
 df . --total -h
 ```
 
-## tcpdump
+## 网络
+
+### ethtool
+
+<details>
+<summary>ethtool</summary>
+
+```shell
+-i 显示网卡驱动的信息，如驱动的名称、版本等
+-S 查看网卡收发包的统计情况
+-g/-G 查看或者修改RingBuffer的大小
+-l/-L 查看或者修改网卡队列数
+-c/-C 查看或者修改硬中断合并策略
+```
+</details>
+
+### ifconfig
+
+<details>
+<summary>ifconfig</summary>
+
+```shell
+RX packets：接收的总包数
+RX bytes：接收的字节数
+RX errors：表示总的收包的错误数量
+RX dropped：数据包已经进入了Ring Buffer，但是由于其它原因导致的丢包
+RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的丢包
+```
+</details>
+
+### tcpdump
 
 ![tcpdump](https://github.com/gongluck/images/blob/main/tcpdump/tcpdump.png)
 

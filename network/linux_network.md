@@ -1,11 +1,14 @@
 # Linux网络
 
 - [Linux网络](#linux网络)
-	- [命令配置](#命令配置)
-	- [Linux网络工作图示](#linux网络工作图示)
-		- [TCP状态轮转](#tcp状态轮转)
-		- [网络收包](#网络收包)
-		- [网络发包](#网络发包)
+  - [命令配置](#命令配置)
+  - [Linux网络工作图示](#linux网络工作图示)
+    - [TCP状态轮转](#tcp状态轮转)
+    - [套接字结构](#套接字结构)
+    - [网络收包](#网络收包)
+      - [收包流程](#收包流程)
+      - [recvfrom调用](#recvfrom调用)
+    - [网络发包](#网络发包)
 
 ## 命令配置
 
@@ -409,11 +412,23 @@
 
 ![tcp_state](https://github.com/gongluck/images/blob/main/Network/tcp_state.png)
 
+### 套接字结构
+
+![socket_struct](https://github.com/gongluck/images/blob/main/Network/socket_struct.png)
+
 ### 网络收包
+
+#### 收包流程
 
 ![network_recvpack](https://github.com/gongluck/images/blob/main/Network/network_recvpack.png)
 
 ![ksoftirqd_recvpack](https://github.com/gongluck/images/blob/main/Network/ksoftirqd_recvpack.png)
+
+![network_recvpack_source](https://github.com/gongluck/images/blob/main/Network/network_recvpack_source.png)
+
+#### recvfrom调用
+
+![network_recvpack_recvfrom](https://github.com/gongluck/images/blob/main/Network/network_recvpack_recvfrom.png)
 
 ### 网络发包
 
