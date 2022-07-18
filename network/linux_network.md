@@ -9,6 +9,7 @@
       - [收包流程](#收包流程)
       - [recvfrom调用](#recvfrom调用)
     - [网络发包](#网络发包)
+    - [epoll](#epoll)
 
 ## 命令配置
 
@@ -439,3 +440,11 @@
 ![network_sendpack_source](https://github.com/gongluck/images/blob/main/Network/network_sendpack_source.png)
 
 ![network_sendpack_end_source](https://github.com/gongluck/images/blob/main/Network/network_sendpack_end_source.png)
+
+### epoll
+
+![epoll](https://github.com/gongluck/images/blob/main/Network/epoll.png)
+
+![epoll_struct](https://github.com/gongluck/images/blob/main/Network/epoll_struct.png)
+
+![epoll_wait](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
