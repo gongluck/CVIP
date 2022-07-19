@@ -8,7 +8,8 @@
     - [网络收包](#网络收包)
     - [网络发包](#网络发包)
     - [epoll](#epoll)
-    - [golang的网络设计](#golang的网络设计)
+  - [golang网络设计](#golang网络设计)
+  - [nginx网络设计](#nginx网络设计)
 
 ## 命令配置
 
@@ -463,7 +464,7 @@
 
   ![epoll_wait](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
 
-### golang的网络设计
+## golang网络设计
 
 - ```listen```
 
@@ -476,3 +477,9 @@
 - ```read```
 
   ![go_read](https://github.com/gongluck/images/blob/main/Network/go_read.png)
+
+## nginx网络设计
+
+![nginx_master_worker](https://github.com/gongluck/images/blob/main/Network/nginx_master_worker.png)
+
+![nginx_worker](https://github.com/gongluck/images/blob/main/Network/nginx_worker.png)
