@@ -30,6 +30,8 @@
   - [ ] [Linux源码](./linux/linux.md)
 - [ ] 数据结构与算法
 - [ ] [计算机网络](./network)
+  - [x] [计算机网络基础](./network/network.md)
+  - [ ] [Linux网络](./network/linux_network.md)
 - [x] [开发工具](./tools/)
 
 ## 源码和注释

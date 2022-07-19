@@ -6,8 +6,6 @@
     - [TCP状态轮转](#tcp状态轮转)
     - [套接字结构](#套接字结构)
     - [网络收包](#网络收包)
-      - [收包流程](#收包流程)
-      - [recvfrom调用](#recvfrom调用)
     - [网络发包](#网络发包)
     - [epoll](#epoll)
 
@@ -419,32 +417,47 @@
 
 ### 网络收包
 
-#### 收包流程
+- 收包总流程
 
-![network_recvpack](https://github.com/gongluck/images/blob/main/Network/network_recvpack.png)
+  ![recvpack](https://github.com/gongluck/images/blob/main/Network/recvpack.png)
 
-![ksoftirqd_recvpack](https://github.com/gongluck/images/blob/main/Network/ksoftirqd_recvpack.png)
+- 处理软中断
 
-![network_recvpack_source](https://github.com/gongluck/images/blob/main/Network/network_recvpack_source.png)
+  ![ksoftirqd_recvpack](https://github.com/gongluck/images/blob/main/Network/ksoftirqd_recvpack.png)
 
-#### recvfrom调用
+- 收包流程源码
 
-![network_recvpack_recvfrom](https://github.com/gongluck/images/blob/main/Network/network_recvpack_recvfrom.png)
+  ![recvpack_source](https://github.com/gongluck/images/blob/main/Network/recvpack_source.png)
+
+- ```recvfrom```调用
+
+  ![recvpack_recvfrom](https://github.com/gongluck/images/blob/main/Network/recvpack_recvfrom.png)
 
 ### 网络发包
 
-![network_sendpack](https://github.com/gongluck/images/blob/main/Network/network_sendpack.png)
+- 发包主流程
 
-![network_sendpack_all](https://github.com/gongluck/images/blob/main/Network/network_sendpack_all.png)
+  ![sendpack](https://github.com/gongluck/images/blob/main/Network/sendpack.png)
 
-![network_sendpack_source](https://github.com/gongluck/images/blob/main/Network/network_sendpack_source.png)
+- 发包流程源码
 
-![network_sendpack_end_source](https://github.com/gongluck/images/blob/main/Network/network_sendpack_end_source.png)
+  ![sendpack_source](https://github.com/gongluck/images/blob/main/Network/sendpack_source.png)
+
+  ![sendpack_end_source](https://github.com/gongluck/images/blob/main/Network/sendpack_end_source.png)
+
+- ```sendto```调用
+
+  ![sendto](https://github.com/gongluck/images/blob/main/Network/sendto.png)
+
 
 ### epoll
 
-![epoll](https://github.com/gongluck/images/blob/main/Network/epoll.png)
+- ```epoll```结构
 
-![epoll_struct](https://github.com/gongluck/images/blob/main/Network/epoll_struct.png)
+  ![epoll](https://github.com/gongluck/images/blob/main/Network/epoll.png)
 
-![epoll_wait](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
+  ![epoll_struct](https://github.com/gongluck/images/blob/main/Network/epoll_struct.png)
+
+- ```epoll_wait```调用
+
+  ![epoll_wait](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
