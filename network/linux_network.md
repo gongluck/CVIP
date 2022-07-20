@@ -11,6 +11,7 @@
   - [golang网络设计](#golang网络设计)
   - [nginx网络设计](#nginx网络设计)
   - [redis网络设计](#redis网络设计)
+  - [netty网络设计](#netty网络设计)
 
 ## 命令配置
 
@@ -487,4 +488,14 @@
 
 ## redis网络设计
 
-![redis_network](https://github.com/gongluck/images/blob/main/Network/redis_network.png)
+- 单线程版本
+
+  ![redis_network](https://github.com/gongluck/images/blob/main/Network/redis_network.png)
+
+- 多线程版本
+
+  ![redis_multithreads](https://github.com/gongluck/images/blob/main/Network/redis_multithreads.png)
+
+## netty网络设计
+
+![netty](https://github.com/gongluck/images/blob/main/Network/netty.png)
