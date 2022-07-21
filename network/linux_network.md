@@ -8,6 +8,7 @@
     - [网络收包](#网络收包)
     - [网络发包](#网络发包)
     - [epoll](#epoll)
+  - [linux网络特性](#linux网络特性)
   - [golang网络设计](#golang网络设计)
   - [nginx网络设计](#nginx网络设计)
   - [redis网络设计](#redis网络设计)
@@ -465,6 +466,10 @@
 - ```epoll_wait```调用
 
   ![epoll_wait](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
+
+## linux网络特性
+
+[Linux内核中reuseport的演进](https://segmentfault.com/a/1190000020524323)
 
 ## golang网络设计
 
