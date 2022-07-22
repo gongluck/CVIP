@@ -3,8 +3,8 @@
 - [Linux网络](#linux网络)
   - [命令配置](#命令配置)
   - [Linux网络工作图示](#linux网络工作图示)
-    - [TCP状态轮转](#tcp状态轮转)
     - [套接字结构](#套接字结构)
+    - [TCP](#tcp)
     - [网络收包](#网络收包)
     - [网络发包](#网络发包)
     - [epoll](#epoll)
@@ -412,13 +412,19 @@
 
 ## Linux网络工作图示
 
-### TCP状态轮转
-
-![tcp_state](https://github.com/gongluck/images/blob/main/Network/tcp_state.png)
-
 ### 套接字结构
 
 ![socket_struct](https://github.com/gongluck/images/blob/main/Network/socket_struct.png)
+
+### TCP
+
+- ```TCP```状态轮转
+
+  ![tcp_state](https://github.com/gongluck/images/blob/main/Network/tcp_state.png)
+
+- ```TCP```三次握手
+
+  ![tcp_handshake](https://github.com/gongluck/images/blob/main/Network/tcp_handshake.png)
 
 ### 网络收包
 
