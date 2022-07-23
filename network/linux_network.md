@@ -9,6 +9,7 @@
     - [网络发包](#网络发包)
     - [epoll](#epoll)
   - [linux网络特性](#linux网络特性)
+  - [tcpdump](#tcpdump)
   - [golang网络设计](#golang网络设计)
   - [nginx网络设计](#nginx网络设计)
   - [redis网络设计](#redis网络设计)
@@ -324,8 +325,8 @@
       3892967 delayed acks sent
       16827 delayed acks further delayed because of locked socket
       Quick ack mode was activated 15420549 times
-      1307 times the listen queue of a socket overflowed  #全队列溢出 watch 'netstat -s | grep overflowed'
-      1774 SYNs to LISTEN sockets dropped
+      1307 times the listen queue of a socket overflowed  #全连接队列溢出 watch 'netstat -s | grep overflowed'
+      1774 SYNs to LISTEN sockets dropped                 #半连接队列溢出 watch 'netstat -s | grep LISTEN'
       229845 packets directly queued to recvmsg prequeue.
       11114478 bytes directly in process context from backlog
       1904317231 bytes directly received in process context from prequeue
@@ -476,6 +477,15 @@
 ## linux网络特性
 
 [Linux内核中reuseport的演进](https://segmentfault.com/a/1190000020524323)
+
+
+## tcpdump
+
+[tcpdump原理](../code/tcpdump)
+
+![tcpdump捕获接收包](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
+
+![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
 
 ## golang网络设计
 
