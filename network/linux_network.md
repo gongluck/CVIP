@@ -483,9 +483,9 @@
 
 [tcpdump原理](../code/tcpdump)
 
-![tcpdump捕获接收包](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
+![tcpdump捕获接收包](https://github.com/gongluck/images/blob/main/Network/tcpdump_recv.png)
 
-![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
+![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/Network/tcpdump_send.png)
 
 ## golang网络设计
 
