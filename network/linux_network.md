@@ -10,13 +10,19 @@
     - [epoll](#epoll)
     - [虚拟网络](#虚拟网络)
   - [linux网络特性](#linux网络特性)
-  - [tcpdump](#tcpdump)
-  - [golang网络设计](#golang网络设计)
-  - [nginx网络设计](#nginx网络设计)
-  - [redis网络设计](#redis网络设计)
-  - [netty网络设计](#netty网络设计)
+    - [```SO_REUSEADDR```/```SO_REUSEPORT```](#so_reuseaddrso_reuseport)
+    - [```tcpdump```](#tcpdump)
+  - [网络模型](#网络模型)
+    - [golang网络设计](#golang网络设计)
+    - [nginx网络设计](#nginx网络设计)
+    - [redis网络设计](#redis网络设计)
+    - [netty网络设计](#netty网络设计)
 
 ## 命令配置
+
+- [ethtool](../tools/shell.md#ethtool)
+- [特殊文件](../tools/shell.md#特殊文件)
+- 典型应用场景
 
   <details>
   <summary>RingBuffer</summary>
@@ -495,9 +501,11 @@
 
 ## linux网络特性
 
+### ```SO_REUSEADDR```/```SO_REUSEPORT```
+
 [Linux内核中reuseport的演进](https://segmentfault.com/a/1190000020524323)
 
-## tcpdump
+### ```tcpdump```
 
 [tcpdump原理](../code/tcpdump)
 
@@ -505,7 +513,9 @@
 
 ![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/Network/tcpdump_send.png)
 
-## golang网络设计
+## 网络模型
+
+### golang网络设计
 
 - ```listen```
 
@@ -519,13 +529,13 @@
 
   ![go_read](https://github.com/gongluck/images/blob/main/Network/go_read.png)
 
-## nginx网络设计
+### nginx网络设计
 
 ![nginx_master_worker](https://github.com/gongluck/images/blob/main/Network/nginx_master_worker.png)
 
 ![nginx_worker](https://github.com/gongluck/images/blob/main/Network/nginx_worker.png)
 
-## redis网络设计
+### redis网络设计
 
 - 单线程版本
 
@@ -535,6 +545,6 @@
 
   ![redis_multithreads](https://github.com/gongluck/images/blob/main/Network/redis_multithreads.png)
 
-## netty网络设计
+### netty网络设计
 
 ![netty](https://github.com/gongluck/images/blob/main/Network/netty.png)
