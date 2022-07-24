@@ -8,6 +8,7 @@
     - [网络收包](#网络收包)
     - [网络发包](#网络发包)
     - [epoll](#epoll)
+    - [虚拟网络](#虚拟网络)
   - [linux网络特性](#linux网络特性)
   - [tcpdump](#tcpdump)
   - [golang网络设计](#golang网络设计)
@@ -474,10 +475,27 @@
 
   ![epoll_wait](https://github.com/gongluck/images/blob/main/Network/epoll_wait.png)
 
+### 虚拟网络
+
+- ```bridge```
+
+  ![bridge](https://github.com/gongluck/images/blob/main/Network/bridge.png)
+
+- ```net namespace```
+
+  ![net_namespace](https://github.com/gongluck/images/blob/main/Network/net_namespace.png)
+
+- ```iptables```
+
+  ![iptables](https://github.com/gongluck/images/blob/main/Network/iptables.png)
+
+- ```virtual network```
+
+  ![virtual_natwork](https://github.com/gongluck/images/blob/main/Network/virtual_natwork.png)
+
 ## linux网络特性
 
 [Linux内核中reuseport的演进](https://segmentfault.com/a/1190000020524323)
-
 
 ## tcpdump
 
