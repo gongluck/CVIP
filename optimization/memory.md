@@ -9,7 +9,7 @@
 
 ## 内存池
 
-![内存池](https://github.com/gongluck/images/blob/main/memory/内存池.png)
+  ![内存池](https://github.com/gongluck/images/blob/main/memory/内存池.png)
 
 - [C库内存池](../stl/allocator.md#内存分配和释放)工作时，会预分配比你申请的字节数更大的空间作为内存池。
 

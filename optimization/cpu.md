@@ -9,7 +9,7 @@
 
 ## CPU多级缓存
 
-![多级缓存](https://github.com/gongluck/images/blob/main/cpu/多级缓存.png)
+  ![多级缓存](https://github.com/gongluck/images/blob/main/cpu/多级缓存.png)
 
 - 由于CPU缓存由更快的SRAM构成(内存是由DRAM构成的)，而且离CPU核心更近，如果运算时需要的输入数据是从CPU缓存，而不是内存中读取时，运算速度就会快很多。
 - 三级缓存要比一、二级缓存大许多倍，这是因为当下的CPU都是多核心的，每个核心都有自己的一、二级缓存，但三级缓存却是一颗CPU上所有核心共享的。
