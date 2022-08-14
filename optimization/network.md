@@ -194,7 +194,7 @@ propagation time)，就是测量驱动的拥塞控制算法。
 
 #### 密钥交换
 
-  ![TLS密钥交换](https://github.com/gongluck/images/blob/main/Network/TLS/TLS密钥交换.png)
+  ![TLS密钥交换](https://github.com/gongluck/images/blob/main/Network/TLS/密钥交换.png)
 
 - TLS建立会话的第1个步骤是在握手阶段协商出密钥。
 - 当部署TLS证书到服务器上时，证书文件中包含一对非对称加密的公私钥，公钥会在握手阶段传递给客户端。在RSA密钥协商算法中，客户端会生成随机密钥，并使用服务器的公钥加密后再传给服务器。这样服务器解密后，双方就得到了相同的密钥，再用它加密应用消息。
