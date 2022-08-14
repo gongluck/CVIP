@@ -1,21 +1,26 @@
 # Shell命令工具
 
 - [Shell命令工具](#shell命令工具)
-  - [特殊文件](#特殊文件)
-  - [nohup](#nohup)
-  - [ps](#ps)
-  - [pstree](#pstree)
-  - [nm](#nm)
-  - [df](#df)
+  - [文件](#文件)
+    - [特殊文件](#特殊文件)
+    - [nm](#nm)
+    - [df](#df)
+    - [objdump](#objdump)
+    - [hexdump](#hexdump)
+  - [进程](#进程)
+    - [nohup](#nohup)
+    - [ps](#ps)
+    - [pstree](#pstree)
+    - [strace](#strace)
+    - [perf](#perf)
   - [网络](#网络)
     - [ethtool](#ethtool)
     - [ifconfig](#ifconfig)
     - [tcpdump](#tcpdump)
-  - [objdump](#objdump)
-  - [hexdump](#hexdump)
-  - [strace](#strace)
 
-## 特殊文件
+## 文件
+
+### 特殊文件
 
 - ```/proc/pid/status```保存该```pid```进程的相关信息
 - ```/proc/sys```目录可以查看或修改内核参数
@@ -27,7 +32,63 @@
 - ```/proc/net/dev```可以看到一些网卡统计数据
 - ```/sys/class/net/eth0/statistics/```也包含了网卡的统计信息
 
-## nohup
+### nm
+
+```nm```是```names```的缩写，```nm```命令主要是用来列出某些文件中的符号(函数和全局变量等)。
+
+### df
+
+```df```(```disk free```)命令用于显示目前在```Linux```系统上的文件系统磁盘使用情况统计。
+
+```shell
+#常用
+df --total -h
+df . --total -h
+```
+
+### objdump
+
+```objdump```命令是```Linux```下的反汇编目标文件或者可执行文件的命令。
+
+```shell
+#参数
+-d: 反汇编需要执行指令的那些section。
+-D: 反汇编所有section。
+-h: 显示Section Header信息。
+-x: 显示全部Header信息。
+-s: 除了显示全部Header信息，还显示他们对应的十六进制文件代码。
+
+#常用
+objdump -h a.out
+objdump -x a.out
+```
+
+### hexdump
+
+```hexdump```命令一般用来查看文件的十六进制编码，但实际上它能查看任何文件，而不只限于二进制文件。
+
+```shell
+#参数
+-b: 单字节八进制显示
+-c: 单字节字符显示
+-C: 规范化 十六进制+ASCII显示
+-d: 两字节十进制显示
+-o: 两字节八进制显示
+-x: 两字节十六进制显示
+-e: 格式 用于显示数据的格式字符串
+-f: 格式文件 包含格式字符串的文件
+-n: 长度 只解释输入的指定长度个字节
+-s: 偏移 跳过开头指定长度个字节
+-v: 显示时不压缩相似的行
+-V: 显示此帮助并退出
+
+#常用
+hexdump -c -s 0x1000 -n 100 a.out
+```
+
+## 进程
+
+### nohup
 
 ```nohup```(```no hang up```)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫```nohup.out```的文件到当前目录下，如果当前目录的```nohup.out```文件不可写，输出重定向到```$HOME/nohup.out```文件中。
 
@@ -36,7 +97,7 @@
 nohup application [arg …] [2>&1] [&]
 ```
 
-## ps
+### ps
 
 ```Linux ps```(```process status```)命令用于显示当前进程的状态，类似于```windows```的任务管理器。
 
@@ -75,7 +136,7 @@ nohup application [arg …] [2>&1] [&]
 ps -ef | grep test
 ```
 
-## pstree
+### pstree
 
 ```pstree```命令以树状图显示进程间的关系(```display a tree of processes```)。```ps```命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在```Linux```系统中，系统调用```fork```可以创建子进程，通过```shell```也可以创建子进程，```Linux```系统中进程之间的关系天生就是一棵树，树的根就是进程```PID```为```1```的```init```进程。
 
@@ -85,18 +146,43 @@ pstree pid
 pstree -p pid
 ```
 
-## nm
+### strace
 
-```nm```是```names```的缩写，```nm```命令主要是用来列出某些文件中的符号(函数和全局变量等)。
-
-## df
-
-```df```(```disk free```)命令用于显示目前在```Linux```系统上的文件系统磁盘使用情况统计。
+```strace```常用来跟踪进程执行时的系统调用和所接收的信号。
 
 ```shell
+#参数
+-p: 跟踪指定的进程
+-f: 跟踪由fork子进程系统调用
+-F: 尝试跟踪vfork子进程系统调吸入，与-f同时出现时, vfork不被跟踪
+-o filename: 默认strace将结果输出到stdout。通过-o可以将输出写入到filename文件中
+-ff: 常与-o选项一起使用，不同进程(子进程)产生的系统调用输出到filename.PID文件
+-r: 打印每一个系统调用的相对时间
+-t: 在输出中的每一行前加上时间信息。 -tt 时间确定到微秒级。还可以使用-ttt打印相对时间
+-v: 输出所有系统调用。默认情况下，一些频繁调用的系统调用不会输出
+-s: 指定每一行输出字符串的长度,默认是32。文件名一直全部输出
+-c: 统计每种系统调用所执行的时间，调用次数，出错次数。
+-e expr: 输出过滤器，通过表达式，可以过滤出掉你不想要输出
+
 #常用
-df --total -h
-df . --total -h
+strace -p pid
+```
+
+### perf
+
+- Linux性能计数器是一个基于内核的子系统，它提供一个性能分析框架，比如硬件(CPU、PMU(Performance Monitoring Unit))功能和软件(软件计数器、tracepoint)功能。
+- 通过perf，应用程序可以利用PMU、tracepoint和内核中的计数器来进行性能统计。
+- Perf可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是CPU上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道CPU有多少时间在某个进程或某个函数上了。
+
+```shell
+#追踪记录保存到perf.data
+perf record -a --call-graph dwarf -p [pid]
+# -a：表示对所有CPU采样
+# --call-graph dward：表示分析调用栈的关系
+# -p：表示分析指定的进程
+
+#分析
+perf report -i perf.data
 ```
 
 ## 网络
@@ -161,66 +247,4 @@ RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的�
 #常用
 tcpdump -D
 tcpdump -c 10 -i eth0 -nn -XX -vvv
-```
-
-## objdump
-
-```objdump```命令是```Linux```下的反汇编目标文件或者可执行文件的命令。
-
-```shell
-#参数
--d: 反汇编需要执行指令的那些section。
--D: 反汇编所有section。
--h: 显示Section Header信息。
--x: 显示全部Header信息。
--s: 除了显示全部Header信息，还显示他们对应的十六进制文件代码。
-
-#常用
-objdump -h a.out
-objdump -x a.out
-```
-
-## hexdump
-
-```hexdump```命令一般用来查看文件的十六进制编码，但实际上它能查看任何文件，而不只限于二进制文件。
-
-```shell
-#参数
--b: 单字节八进制显示
--c: 单字节字符显示
--C: 规范化 十六进制+ASCII显示
--d: 两字节十进制显示
--o: 两字节八进制显示
--x: 两字节十六进制显示
--e: 格式 用于显示数据的格式字符串
--f: 格式文件 包含格式字符串的文件
--n: 长度 只解释输入的指定长度个字节
--s: 偏移 跳过开头指定长度个字节
--v: 显示时不压缩相似的行
--V: 显示此帮助并退出
-
-#常用
-hexdump -c -s 0x1000 -n 100 a.out
-```
-
-## strace
-
-```strace```常用来跟踪进程执行时的系统调用和所接收的信号。
-
-```shell
-#参数
--p: 跟踪指定的进程
--f: 跟踪由fork子进程系统调用
--F: 尝试跟踪vfork子进程系统调吸入，与-f同时出现时, vfork不被跟踪
--o filename: 默认strace将结果输出到stdout。通过-o可以将输出写入到filename文件中
--ff: 常与-o选项一起使用，不同进程(子进程)产生的系统调用输出到filename.PID文件
--r: 打印每一个系统调用的相对时间
--t: 在输出中的每一行前加上时间信息。 -tt 时间确定到微秒级。还可以使用-ttt打印相对时间
--v: 输出所有系统调用。默认情况下，一些频繁调用的系统调用不会输出
--s: 指定每一行输出字符串的长度,默认是32。文件名一直全部输出
--c: 统计每种系统调用所执行的时间，调用次数，出错次数。
--e expr: 输出过滤器，通过表达式，可以过滤出掉你不想要输出
-
-#常用
-strace -p pid
 ```
