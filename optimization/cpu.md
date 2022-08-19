@@ -5,6 +5,7 @@
   - [提升数据缓存的命中率](#提升数据缓存的命中率)
   - [提升指令缓存的命中率](#提升指令缓存的命中率)
   - [提升多核CPU下的缓存命中率](#提升多核cpu下的缓存命中率)
+  - [火焰图](#火焰图)
 
 ## CPU多级缓存
 
@@ -30,3 +31,30 @@
 
 - 操作系统提供了将进程或者线程绑定到某一颗CPU上运行的能力。
 - 当多线程同时执行密集计算，且CPU缓存命中率很高时，如果将每个线程分别绑定在不同的CPU核心上，性能便会获得非常可观的提升。
+
+## 火焰图
+
+- 环境准备
+  
+  ```shell
+  # 安装perf
+  # 下载开源工具FlameGraph https://github.com/brendangregg/FlameGraph.git
+  ```
+
+- 使用[perf](../tools/shell.md#perf)生成记录
+
+  ```shell
+  # 记录
+  perf record -g --call-graph dwarf -p pid
+  # 转换二进制文件到文本输出
+  perf script > out.perf
+  ```
+
+- 使用FlameGraph生成火焰图
+
+  ```shell
+  # 生成火焰图数据格式
+  FlameGraph/stackcollapse-perf.pl out.perf > out.folded
+  # 生成火焰图图片
+  FlameGraph/flamegraph.pl out.folded > out.svg
+  ```
