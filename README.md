@@ -33,6 +33,14 @@
   - [x] [计算机网络基础](./network/network.md)
   - [x] [Linux网络](./network/linux_network.md)
 - [x] [开发工具](./tools/)
+- [x] [性能优化](./optimization/)
+  - [x] [CPU](./optimization/cpu.md)
+  - [X] [内存](./optimization/memory.md)
+  - [X] [索引](./optimization/index.md)
+  - [X] [磁盘](./optimization/disc.md)
+  - [X] [协程](./optimization/coroutine.md)
+  - [X] [锁](./optimization/lock.md)
+  - [x] [网络](./optimization/network.md)
 
 ## 源码和注释
 

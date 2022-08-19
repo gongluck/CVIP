@@ -176,10 +176,15 @@ strace -p pid
 
 ```shell
 #追踪记录保存到perf.data
-perf record -a --call-graph dwarf -p [pid]
-# -a：表示对所有CPU采样
+perf record -a --call-graph dwarf [-p [pid]] [application]
+# record：表示记录
+# -F n：表示每秒n次
+# -g：表示记录调用栈
 # --call-graph dward：表示分析调用栈的关系
-# -p：表示分析指定的进程
+# sleep n：持续n秒
+# -a：表示对所有CPU采样
+# -p pid：表示分析指定的进程id
+# -o file：指定输出文件
 
 #分析
 perf report -i perf.data
