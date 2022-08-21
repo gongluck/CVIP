@@ -41,7 +41,13 @@
   - [X] [协程](./optimization/coroutine.md)
   - [X] [锁](./optimization/lock.md)
   - [x] [网络](./optimization/network.md)
-- [ ] [分布式](./distribute/)
+- [x] [分布式](./distribute/)
+  - [x] [CAP](./distribute/cap.md)
+  - [x] [AKF](./distribute/akf.md)
+  - [x] [NWR](./distribute/nwr.md)
+  - [x] [负载均衡](./distribute/load-balance.md)
+  - [x] [一致性哈希](./distribute/consistent-hash.md)
+  - [x] [过期缓存](./distribute/expired-cache.md)
 
 ## 源码和注释
 
