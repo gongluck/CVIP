@@ -14,6 +14,7 @@
 
 ## chapters and sections
 
+- [x] [数据结构与算法](./数据结构与算法)
 - [x] [C++](./cpp/)
   - [x] [C++基础](./cpp/base.md)
   - [x] [C++新特性](./cpp/advance.md)
@@ -28,7 +29,6 @@
   - [ ] [Go源码]
   - [ ] [xv6源码](./linux/xv6.md)
   - [ ] [Linux源码](./linux/linux.md)
-- [ ] 数据结构与算法
 - [x] [计算机网络](./network)
   - [x] [计算机网络基础](./network/network.md)
   - [x] [Linux网络](./network/linux_network.md)
