@@ -93,7 +93,7 @@
 
 ### i++与++i
 
-![内建数据类型的自增汇编代码](https，//github.com/gongluck/images/blob/main/cpp/内建数据类型的自增汇编代码.png)
+![内建数据类型的自增汇编代码](https://github.com/gongluck/images/blob/main/cpp/内建数据类型的自增汇编代码.png)
 
 - 内建数据类型的情况，效率没有区别。
 - 自定义数据类型的情况，`++i`效率更高。`++i`可以返回对象的引用，`i++`必须返回对象的值。
@@ -1070,7 +1070,7 @@ int main()
 }
 ```
 
-![C++虚函数表](https，//github.com/gongluck/images/blob/main/cpp/C++虚函数表.png)
+![C++虚函数表](https://github.com/gongluck/images/blob/main/cpp/C++虚函数表.png)
 
 - 如果类中有虚函数，编译器会至少为这个类分配一个成员指针指向一张虚函数表，表中每一项指向一个虚函数地址。
 - **多重继承情况下，为每个含有虚函数的基类分配一个虚表指针**。
