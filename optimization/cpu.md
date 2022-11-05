@@ -6,6 +6,7 @@
   - [提升指令缓存的命中率](#提升指令缓存的命中率)
   - [提升多核CPU下的缓存命中率](#提升多核cpu下的缓存命中率)
   - [火焰图](#火焰图)
+  - [gperftools](#gperftools)
 
 ## CPU多级缓存
 
@@ -58,3 +59,9 @@
   # 生成火焰图图片
   FlameGraph/flamegraph.pl out.folded > out.svg
   ```
+
+## gperftools
+
+- ProfilerStart()，开始性能分析，把数据存入指定的文件里；
+- ProfilerRegisterThread()，允许对线程做性能分析；
+- ProfilerStop()，停止性能分析。

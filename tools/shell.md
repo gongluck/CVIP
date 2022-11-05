@@ -8,6 +8,7 @@
     - [objdump](#objdump)
     - [hexdump](#hexdump)
   - [进程](#进程)
+    - [top](#top)
     - [nohup](#nohup)
     - [ps](#ps)
     - [pstree](#pstree)
@@ -87,6 +88,12 @@ hexdump -c -s 0x1000 -n 100 a.out
 ```
 
 ## 进程
+
+### top
+
+- 按M，看内存占用。
+- 按P，看CPU占用。
+- 按组合键xb，然后用<>手动选择排序的列。
 
 ### nohup
 
