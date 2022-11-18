@@ -9,6 +9,8 @@
     - [hexdump](#hexdump)
   - [进程](#进程)
     - [top](#top)
+    - [iostat](#iostat)
+    - [iotop](#iotop)
     - [nohup](#nohup)
     - [ps](#ps)
     - [pstree](#pstree)
@@ -94,6 +96,15 @@ hexdump -c -s 0x1000 -n 100 a.out
 - 按M，看内存占用。
 - 按P，看CPU占用。
 - 按组合键xb，然后用<>手动选择排序的列。
+- `wa`代表`iowait`，是CPU等待IO完成操作花费的时间占CPU的百分比。
+
+### iostat
+
+- 显示实际硬盘读写情况。
+
+### iotop
+
+- 查看进程实际占用I/O。
 
 ### nohup
 

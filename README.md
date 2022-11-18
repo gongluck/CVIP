@@ -27,7 +27,7 @@
 - [ ] 开源库源码
   - [x] [STL源码](./stl/)
   - [x] [Redis源码](./redis/)
-  - [ ] [Go源码]
+  - [ ] [Go源码]()
   - [ ] [xv6源码](./linux/xv6.md)
   - [ ] [Linux源码](./linux/linux.md)
 - [x] [计算机网络](./network/)

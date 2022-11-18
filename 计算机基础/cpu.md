@@ -64,7 +64,7 @@
 ![CPU高速缓存](https://github.com/gongluck/images/blob/main/计算机基础/CPU高速缓存.png)
 ![CPU缓存行](https://github.com/gongluck/images/blob/main/计算机基础/CPU缓存行.png)
 
-- 为了弥补CPU与内存两者之间的性能差异，能真实地把CPU的性能提升用起来，而不是让它在那儿空转，在现代 CPU 中引入了高速缓存。
+- 为了弥补CPU与内存两者之间的性能差异，能真实地把CPU的性能提升用起来，而不是让它在那儿空转，在现代CPU中引入了高速缓存。
 - 在CPU里，通常会有L1、L2、L3这样三层高速缓存。
 - 每个CPU核心都有一块属于自己的L1高速缓存，通常分成指令缓存和数据缓存，分开存放CPU使用的指令和数据。
 - L2的Cache同样是每个CPU核心都有的，不过往往不在CPU核心的内部。所以L2的访问速度会比L1稍微慢一些。

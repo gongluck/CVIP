@@ -101,7 +101,7 @@
 ### 交换变量之间的值
 
 ```C++
-void swap(int& a， int& b)
+void swap(int& a, int& b)
 {
     //1 可能产生数据溢出
     a = a + b;
@@ -590,7 +590,7 @@ int main()
       int var;          // 8 字节 4 + 4 (int) = 8
       char var1;        // 12 字节 8 + 1 (char) + 3 (填充) = 12
   public:
-      A(int temp) ， c_var(temp) {} // 不影响类的大小
+      A(int temp) : c_var(temp) {} // 不影响类的大小
       ~A() {}                    // 不影响类的大小
   };
   class B
@@ -622,11 +622,11 @@ int main()
       int var;          // 8 字节 4 + 4 (int) = 8
       char var1;        // 12 字节 8 + 1 (char) + 3 (填充) = 12
   public:
-      A(int temp) ， c_var(temp) {} // 不影响类的大小
+      A(int temp) : c_var(temp) {} // 不影响类的大小
       ~A() {}                      // 不影响类的大小
-      virtual void f() { cout << "A，，f" << endl; }
-      virtual void g() { cout << "A，，g" << endl; }
-      virtual void h() { cout << "A，，h" << endl; } // 24 字节 12 + 4 (填充) + 8 (指向虚函数的指针) = 24
+      virtual void f() { cout << "A::f" << endl; }
+      virtual void g() { cout << "A::g" << endl; }
+      virtual void h() { cout << "A::h" << endl; } // 24 字节 12 + 4 (填充) + 8 (指向虚函数的指针) = 24
   };
   int main()
   {
@@ -678,7 +678,7 @@ int main()
     {
         A ex(100);
         char *p = ex.GetPointer();
-        strcpy(p， "Test");
+        strcpy(p, "Test");
         cout << p << endl;
     }
     int main()
@@ -688,87 +688,87 @@ int main()
     }
     ```
 
-    - 但这样做并不是最佳的做法，在类的对象复制时，程序会出现同一块内存空间释放两次的情况。
+  - 但这样做并不是最佳的做法，在类的对象复制时，程序会出现同一块内存空间释放两次的情况。
 
-      ```C++
-      void fun1()
+    ```C++
+    void fun1()
+    {
+      A ex(100);
+      A ex1 = ex; 
+      char *p = ex.GetPointer();
+      strcpy(p, "Test");
+      cout << p << endl;
+    }
+    ```
+
+  - 对于fun1这个函数中定义的两个类的对象而言，在离开该函数的作用域时，会两次调用析构函数来释放空间，但是这两个对象指向的是同一块内存空间，所以导致同一块内存空间被释放两次，可以通过增加计数机制来避免这种情况。
+
+    ```C++
+    #include <iostream>
+    #include <cstring>
+    using namespace std;
+    class A
+    {
+    private:
+      char *p;
+      unsigned int p_size;
+      int *p_count; // 计数变量
+    public:
+      A(unsigned int n = 1) // 在构造函数中申请内存
       {
-          A ex(100);
-          A ex1 = ex; 
-          char *p = ex.GetPointer();
-          strcpy(p， "Test");
-          cout << p << endl;
+        p = new char[n];
+        p_size = n;
+        p_count = new int;
+        *p_count = 1;
+        cout << "count is , " << *p_count << endl;
+      };
+      A(const A &temp)
+      {
+        p = temp.p;
+        p_size = temp.p_size;
+        p_count = temp.p_count;
+        (*p_count)++; // 复制时，计数变量 +1
+        cout << "count is , " << *p_count << endl;
       }
-      ```
-
-    - 对于fun1这个函数中定义的两个类的对象而言，在离开该函数的作用域时，会两次调用析构函数来释放空间，但是这两个对象指向的是同一块内存空间，所以导致同一块内存空间被释放两次，可以通过增加计数机制来避免这种情况。
-
-        ```C++
-        #include <iostream>
-        #include <cstring>
-        using namespace std;
-        class A
+      ~A()
+      {
+        (*p_count)--; // 析构时，计数变量 -1
+        cout << "count is , " << *p_count << endl; 
+        if (*p_count == 0) // 只有当计数变量为 0 的时候才会释放该块内存空间
         {
-        private:
-            char *p;
-            unsigned int p_size;
-            int *p_count; // 计数变量
-        public:
-            A(unsigned int n = 1) // 在构造函数中申请内存
+          cout << "buf is deleted" << endl;
+          if (p != NULL) 
+          {
+            delete[] p; // 删除字符数组
+            p = NULL;   // 防止出现野指针
+            if (p_count != NULL)
             {
-                p = new char[n];
-                p_size = n;
-                p_count = new int;
-                *p_count = 1;
-                cout << "count is ， " << *p_count << endl;
-            };
-            A(const A &temp)
-            {
-                p = temp.p;
-                p_size = temp.p_size;
-                p_count = temp.p_count;
-                (*p_count)++; // 复制时，计数变量 +1
-                cout << "count is ， " << *p_count << endl;
+              delete p_count;
+              p_count = NULL;
             }
-            ~A()
-            {
-                (*p_count)--; // 析构时，计数变量 -1
-                cout << "count is ， " << *p_count << endl; 
-                if (*p_count == 0) // 只有当计数变量为 0 的时候才会释放该块内存空间
-                {
-                    cout << "buf is deleted" << endl;
-                    if (p != NULL) 
-                    {
-                        delete[] p; // 删除字符数组
-                        p = NULL;   // 防止出现野指针
-                        if (p_count != NULL)
-                        {
-                            delete p_count;
-                            p_count = NULL;
-                        }
-                    }
-                }
-            };
-            char *GetPointer()
-            {
-                return p;
-            };
-        };
-        void fun()
-        {
-            A ex(100);
-            char *p = ex.GetPointer();
-            strcpy(p， "Test");
-            cout << p << endl;
-            A ex1 = ex; // 此时计数变量会 +1
-            cout << "ex1.p = " << ex1.GetPointer() << endl;
+          }
         }
-        int main()
-        {
-            fun();
-            return 0;
-        }
-        ```
+      };
+      char *GetPointer()
+      {
+        return p;
+      };
+    };
+    void fun()
+    {
+      A ex(100);
+      char *p = ex.GetPointer();
+      strcpy(p, "Test");
+      cout << p << endl;
+      A ex1 = ex; // 此时计数变量会 +1
+      cout << "ex1.p = " << ex1.GetPointer() << endl;
+    }
+    int main()
+    {
+      fun();
+      return 0;
+    }
+    ```
 
   - [智能指针](./advance.md#智能指针)是C++中已经对内存泄漏封装好了一个工具，可以直接拿来使用。
 
