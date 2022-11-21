@@ -12,13 +12,13 @@
 
 ## 协程
 
-  ![协程](https://github.com/gongluck/images/blob/main/coroutine/coroutine.png)
+![协程](https://github.com/gongluck/images/blob/main/coroutine/coroutine.png)
 
 - 协程参考内核通过CPU寄存器切换线程的方法，在用户态代码中实现了协程的切换，既降低了切换请求的成本，也使得协程中的业务代码不用关注自己何时被挂起，何时被执行。
 - 相比异步编程中要维护一堆数据结构表示中间状态，协程直接用代码表示状态，大大提升了开发效率。
 
-  ![协程切换前](https://github.com/gongluck/images/blob/main/coroutine/协程切换前.png)
-  ![协程切换后](https://github.com/gongluck/images/blob/main/coroutine/协程切换后.png)
+![协程切换前](https://github.com/gongluck/images/blob/main/coroutine/协程切换前.png)
+![协程切换后](https://github.com/gongluck/images/blob/main/coroutine/协程切换后.png)
 
 - 为了保证所有切换都在用户态进行，协程必须重新封装所有的阻塞系统调用，否则，一旦协程触发了线程切换，会导致这个线程进入休眠状态，进而其上的所有协程都得不到执行。
 - 协程的高性能，建立在切换必须由用户态代码完成之上，这要求协程生态是完整的，要尽量覆盖常见的组件。

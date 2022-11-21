@@ -1,6 +1,6 @@
 # CVIP
 
-  ```C++```开发相关技术整理
+  `C++`开发相关技术整理
 
 - [CVIP](#cvip)
   - [Stargazers over time](#stargazers-over-time)

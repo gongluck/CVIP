@@ -29,11 +29,11 @@
 
 ## IP地址
 
-  ![IP地址分类](https://github.com/gongluck/images/blob/main/Network/ipaddress.png)
+![IP地址分类](https://github.com/gongluck/images/blob/main/Network/ipaddress.png)
 
-- 由于IP协议需要跨越多个网络工作，所以IP地址被一分为二，包括前边的网络ID和后边的主机ID
-  - 网络ID用于不同网络间的寻址
-  - 主机ID则用于在本地局域网内通讯
+- 由于IP协议需要跨越多个网络工作，所以IP地址被一分为二，包括前边的网络ID和后边的主机ID。
+  - 网络ID用于不同网络间的寻址。
+  - 主机ID则用于在本地局域网内通讯。
 - CIDR这种新的划分方式，通过子网掩码，可以在任意的位置将IP地址拆分为网络ID和主机ID，扩展了A、B、C三类网络的用法。
 - 掩码前N位为1时，就表示IP地址的前N位是网络ID，而掩码后面剩余的位全是0，表示IP地址对应的位是主机ID。
 
@@ -43,70 +43,70 @@
 
 - 广播对局域网内所有主机发送消息，要改用UDP协议。
 - 虽然IP协议已经具有广播功能，但实际编程中并不会直接使用IP协议发送广播，因为它很难与进程关联起来。
-- 以太网中的数据链路层，通过硬件的MAC地址来传播消息，交换机就通过报文的MAC地址来确定是否需要广播
-  - 当交换机收到目标MAC地址是 **ff:ff:ff:ff:ff:ff** 的报文时，便知道这是一个广播报文，才会将它转发给局域网中的所有主机
-  - 否则只会转发给MAC地址对应端口上的主机
-- 写代码时无法控制底层的MAC地址，只能填写目标IP地址
-  - 如果只是对所在子网进行广播，那么使用受限广播地址 **255.255.255.255** 就可以了
-  - 如果局域网划分了多个子网，主机需要向其他子网广播，则需要正确地设置直接广播地址(路由器需要打开直接广播功能)
+- 以太网中的数据链路层，通过硬件的MAC地址来传播消息，交换机就通过报文的MAC地址来确定是否需要广播。
+  - 当交换机收到目标MAC地址是**ff:ff:ff:ff:ff:ff**的报文时，便知道这是一个广播报文，才会将它转发给局域网中的所有主机。
+  - 否则只会转发给MAC地址对应端口上的主机。
+- 写代码时无法控制底层的MAC地址，只能填写目标IP地址。
+  - 如果只是对所在子网进行广播，那么使用受限广播地址**255.255.255.255**就可以了。
+  - 如果局域网划分了多个子网，主机需要向其他子网广播，则需要正确地设置直接广播地址(路由器需要打开直接广播功能)。
 - 主机ID的比特位全部设为1后就是广播地址。
 - 广播一旦被滥用，很容易产生网络风暴，所以路由器默认是不转发广播报文的。
 
 ### 组播
 
-- 组播是一种“定向广播”，它设定了一个虚拟组，用组播IP来标识。这个虚拟组中可以包含多个主机的IP，当向对应的组播IP发送消息时，仅在这个组内的主机才能收到消息。
+- 组播是一种"定向广播"，它设定了一个虚拟组，用组播IP来标识。这个虚拟组中可以包含多个主机的IP，当向对应的组播IP发送消息时，仅在这个组内的主机才能收到消息。
 - 当设置好组播IP地址后，还要通过管理组播地址的IGMP协议(Internet Group Management Protocol)，将主机IP地址添加进虚拟组中。
 - 当路由器支持IGMP协议时，组播就可以跨越多个网络实现更广泛的一对多通讯。
 
 ## 事件驱动
 
-  ![三次握手事件](https://github.com/gongluck/images/blob/main/Network/三次握手事件.png)
-  ![四次挥手事件](https://github.com/gongluck/images/blob/main/Network/四次挥手事件.png)
+![三次握手事件](https://github.com/gongluck/images/blob/main/Network/三次握手事件.png)
+![四次挥手事件](https://github.com/gongluck/images/blob/main/Network/四次挥手事件.png)
 
-- 事件只有两种类型：读事件与写事件
-  - 读事件表示有到达的消息需要处理
-  - 写事件表示可以发送消息(TCP连接的写缓冲区中有可用空间)
-- epoll对比select降低性能消耗，把获取事件拆分成两步
-  - 需要监控的socket传给内核(epoll_ctl)，它仅在连接建立等有限的时机调用
-  - 收集事件(epoll_wait)不用传递socket了，把socket的重复传递改为了一次传递，降低了性能损耗
+- 事件只有两种类型：读事件与写事件。
+  - 读事件表示有到达的消息需要处理。
+  - 写事件表示可以发送消息(TCP连接的写缓冲区中有可用空间)。
+- epoll对比select降低性能消耗，把获取事件拆分成两步。
+  - 需要监控的socket传给内核(epoll_ctl)，它仅在连接建立等有限的时机调用。
+  - 收集事件(epoll_wait)不用传递socket了，把socket的重复传递改为了一次传递，降低了性能损耗。
 - 网络报文到达后，内核就产生了读、写事件，而epoll函数使得进程可以高效地收集到这些事件。要确保在进程中处理每个事件的时间足够短，才能及时地处理所有请求，这个过程中既要避免阻塞socket的使用，也要把耗时过长的操作拆成多份执行。通过快速、及时、均等地执行所有事件，异步Server实现了高并发。
 
 ## TCP
 
-  ![TCP头](https://github.com/gongluck/images/blob/main/Network/tcp_header.png)
+![TCP头](https://github.com/gongluck/images/blob/main/Network/tcp_header.png)
 
 ### 三次握手优化
 
-  ![三次握手](https://github.com/gongluck/images/blob/main/Network/三次握手.png)
+![三次握手](https://github.com/gongluck/images/blob/main/Network/三次握手.png)
 
-- ```/proc/sys/net/ipv4/tcp_syn_retries```设置客户端重发SYN的次数。
-- ```/proc/sys/net/ipv4/tcp_synack_retries```设置服务端重发SYN+ACK的次数。
-- ```netstat -s | grep "SYNs to LISTEN"```查看半连接队列溢出，```/proc/sys/net/ipv4/tcp_max_syn_backlog```设置半队列长度。
+- `/proc/sys/net/ipv4/tcp_syn_retries`设置客户端重发SYN的次数。
+- `/proc/sys/net/ipv4/tcp_synack_retries`设置服务端重发SYN+ACK的次数。
+- `netstat -s | grep "SYNs to LISTEN"`查看半连接队列溢出，`/proc/sys/net/ipv4/tcp_max_syn_backlog`设置半队列长度。
 
-  ![syncookies](https://github.com/gongluck/images/blob/main/Network/syncookies.png)
+![syncookies](https://github.com/gongluck/images/blob/main/Network/syncookies.png)
 
-- 开启syncookies(```/proc/sys/net/ipv4/tcp_syncookies```)功能可以在不使用SYN队列的情况下成功建立连接
-  - 0表示关闭该功能
-  - 2表示无条件开启功能
-  - 1表示仅当SYN半连接队列放不下时，再启用
-- ```netstat -s | grep "listen queue"```查看全队列溢出，```/proc/sys/net/ipv4/tcp_abort_on_overflow```设置在全队列溢出时向客户端发送RST复位报文，告诉客户端连接已经建立失败
-  - 0表示accept队列满了，那么server扔掉client发过来的ack
-  - 1表示accept队列满了，server发送一个RST包给client，表示废掉这个握手过程和这个连接
+- 开启syncookies(`/proc/sys/net/ipv4/tcp_syncookies`)功能可以在不使用SYN队列的情况下成功建立连接。
+  - 0表示关闭该功能。
+  - 2表示无条件开启功能。
+  - 1表示仅当SYN半连接队列放不下时，再启用。
+- `netstat -s | grep "listen queue"`查看全队列溢出，`/proc/sys/net/ipv4/tcp_abort_on_overflow`设置在全队列溢出时向客户端发送RST复位报文，告诉客户端连接已经建立失败。
+  - 0表示accept队列满了，那么server扔掉client发过来的ack。
+  - 1表示accept队列满了，server发送一个RST包给client，表示废掉这个握手过程和这个连接。
 
-  ![TFO](https://github.com/gongluck/images/blob/main/Network/TFO.png)
+![TFO](https://github.com/gongluck/images/blob/main/Network/TFO.png)
 
-- TFO(TCP Fast Open)(```/proc/sys/net/ipv4/tcp_fastopen```)
-  - 第1个比特位为1时，表示作为客户端时支持TFO
-  - 第2个比特位为1时，表示作为服务器时支持TFO
+- TFO(TCP Fast Open)(`/proc/sys/net/ipv4/tcp_fastopen`)。
+  - 第1个比特位为1时，表示作为客户端时支持TFO。
+  - 第2个比特位为1时，表示作为服务器时支持TFO。
 
 ### 四次挥手优化
 
-  ![四次挥手](https://github.com/gongluck/images/blob/main/Network/四次挥手.png)
+![四次挥手](https://github.com/gongluck/images/blob/main/Network/四次挥手.png)
 
-- 内核定时重发FIN报文次数由```/proc/sys/net/ipv4/tcp_orphan_retries```参数控制，默认值是0，特指8次。
-- ```/proc/sys/net/ipv4/tcp_max_orphans```定义了孤儿连接的最大数量。当进程调用close函数关闭连接后，无论该连接是在FIN_WAIT1状态，还是确实关闭了，它变成了孤儿连接。如果孤儿连接数量大于tcp_max_orphans，新增的孤儿连接将不再走四次挥手，而是直接发送RST复位报文强制关闭。
-- ```/proc/sys/net/ipv4/tcp_fin_timeout```定义了孤儿连接，在N秒后还没有收到FIN报文，连接就会直接关闭。
-- ```/proc/sys/net/ipv4/tcp_max_tw_buckets```设置当TIME_WAIT的连接数量超过该参数时，新关闭的连接就不再经历TIME_WAIT而直接关闭。
+- 内核定时重发FIN报文次数由`/proc/sys/net/ipv4/tcp_orphan_retries`参数控制，默认值是0，特指8次。
+- `/proc/sys/net/ipv4/tcp_max_orphans`定义了孤儿连接的最大数量。当进程调用close函数关闭连接后，无论该连接是在FIN_WAIT1状态，还是确实关闭了，它变成了孤儿连接。如果孤儿连接数量大于tcp_max_orphans，新增的孤儿连接将不再走四次挥手，而是直接发送RST复位报文强制关闭。
+- `/proc/sys/net/ipv4/tcp_fin_timeout`定义了孤儿连接，在N秒后还没有收到FIN报文，连接就会直接关闭。
+- `/proc/sys/net/ipv4/tcp_max_tw_buckets`设置当TIME_WAIT的连接数量超过该参数时，新关闭的连接就不再经历TIME_WAIT而直接关闭。
 - 如果被动方迅速调用close函数，那么被动方的ACK和FIN有可能在一个报文中发送，这样看起来，四次挥手会变成三次挥手，这是一种特殊情况。
 
 ### 窗口大小
@@ -116,27 +116,27 @@
 - 接收方根据它的缓冲区，可以计算出后续能够接收多少字节的报文，这个数字叫做接收窗口。
 - 当内核接收到报文时，必须用缓冲区存放它们，这样剩余缓冲区空间变小，接收窗口也就变小了；当进程调用read函数后，数据被读入了用户空间，内核缓冲区就被清空，这意味着主机可以接收更多的报文，接收窗口就会变大。
 - 窗口字段只有2个字节，因此它最多能表达2^16即65535字节大小的窗口(窗口可以为0，此时叫做窗口关闭，关闭连接时让FIN报文发不出去，以致于服务器的连接都处于FIN_WAIT1状态，就是通过窗口关闭技术实现的)。
-- ```/proc/sys/net/ipv4/tcp_window_scaling```设置扩充窗口，此时窗口的最大值可以达到1GB(2^30)。
+- `/proc/sys/net/ipv4/tcp_window_scaling`设置扩充窗口，此时窗口的最大值可以达到1GB(2^30)。
 - 由于发送缓冲区决定了发送窗口的上限，而发送窗口又决定了已发送但未确认的飞行报文的上限，因此，发送缓冲区不能超过带宽时延积，因为超出的部分没有办法用于有效的网络传输，且飞行字节大于带宽时延积还会导致丢包；而且，缓冲区也不能小于带宽时延积，否则无法发挥出高速网络的价值。
-- ```/proc/sys/net/ipv4/tcp_wmem```设置发送缓冲区的动态范围的下限、初始默认值、上限。
-- ```/proc/sys/net/ipv4/tcp_rmem```设置接收缓冲区的动态范围的下限、初始默认值、上限。
+- `/proc/sys/net/ipv4/tcp_wmem`设置发送缓冲区的动态范围的下限、初始默认值、上限。
+- `/proc/sys/net/ipv4/tcp_rmem`设置接收缓冲区的动态范围的下限、初始默认值、上限。
 - 发送缓冲区自动调节的依据是待发送的数据，接收缓冲区由于只能被动地等待接收数据。
-- 发送缓冲区的调节功能是自动开启的，而接收缓冲区则需要配置```/proc/sys/net/ipv4/tcp_moderate_rcvbuf```开启调节功能。
-- ```/proc/sys/net/ipv4/tcp_mem```控制调整接收缓冲区的时机
-  - 当TCP内存小于第1个值时，不需要进行自动调节
-  - 在第1和第2个值之间时，内核开始调节接收缓冲区的大小
-  - 大于第3个值时，内核不再为TCP分配新内存，此时新连接是无法建立的
+- 发送缓冲区的调节功能是自动开启的，而接收缓冲区则需要配置`/proc/sys/net/ipv4/tcp_moderate_rcvbuf`开启调节功能。
+- `/proc/sys/net/ipv4/tcp_mem`控制调整接收缓冲区的时机。
+  - 当TCP内存小于第1个值时，不需要进行自动调节。
+  - 在第1和第2个值之间时，内核开始调节接收缓冲区的大小。
+  - 大于第3个值时，内核不再为TCP分配新内存，此时新连接是无法建立的。
 - 千万不要在socket上直接设置SO_SNDBUF或者SO_RCVBUF，这样会关闭缓冲区的动态调整功能。
 - 滑动窗口定义了飞行报文的最大字节数，当它超过带宽时延积时，就会发生丢包。
 
 ### 拥塞控制
 
-  ![拥塞控制](https://github.com/gongluck/images/blob/main/Network/拥塞控制.png)
+![拥塞控制](https://github.com/gongluck/images/blob/main/Network/拥塞控制.png)
 
 - 慢启动、拥塞避免、快速重传、快速恢复，共同构成了拥塞控制算法。
 - 传统拥塞控制算法，是以丢包作为判断拥塞的依据。
-- Linux上提供了更改拥塞控制算法的配置，通过```/proc/sys/net/ipv4/tcp_available_congestion_control```配置查看内核支持算法列表。
-- 通过```/proc/sys/net/ipv4/tcp_congestion_control```配置选择一个具体的拥塞控制算法。
+- Linux上提供了更改拥塞控制算法的配置，通过`/proc/sys/net/ipv4/tcp_available_congestion_control`配置查看内核支持算法列表。
+- 通过`/proc/sys/net/ipv4/tcp_congestion_control`配置选择一个具体的拥塞控制算法。
 
 #### 慢启动
 
@@ -144,17 +144,17 @@
 - 让发送速度变慢是通过引入拥塞窗口(congestion window，缩写为cwnd，接收窗口叫做rwnd，发送窗口叫做swnd)，它用于避免网络出现拥塞。如果不考虑网络拥塞，发送窗口就等于对方的接收窗口，而考虑了网络拥塞后，发送窗口则应当是拥塞窗口与对方接收窗口的最小值。
 - 慢启动阶段会以指数级扩大拥塞窗口(发送方每收到一个ACK确认报文，拥塞窗口就增加1个MSS)。
 - 2013年TCP的初始拥塞窗口调整到了10个MSS，1个RTT内就可以传输10KB的请求。然而，如果需要传输的对象体积更大，BDP带宽时延积很大时，完全可以继续提高初始拥塞窗口的大小。
-- ```ss -nli | fgrep cwnd```查看拥塞窗口大小。
-- 修改初始拥塞窗口大小
+- `ss -nli | fgrep cwnd`查看拥塞窗口大小。
+- 修改初始拥塞窗口大小。
   ```shell
   ip route | while read r; do
     ip route change $r initcwnd [N];
   done
   ```
 - 慢启动阶段结束条件
-  - 通过定时器明确探测到了丢包，此时知道了多大的窗口会导致拥塞，因此可以把慢启动阈值设为发生拥塞前的窗口大小
-  - 拥塞窗口的增长到达了慢启动阈值ssthresh(slow start threshold)，也就是之前发现网络拥塞时的窗口大小，接下来发生拥塞的概率很高
-  - 接收到重复的ACK报文，可能存在丢包
+  - 通过定时器明确探测到了丢包，此时知道了多大的窗口会导致拥塞，因此可以把慢启动阈值设为发生拥塞前的窗口大小。
+  - 拥塞窗口的增长到达了慢启动阈值ssthresh(slow start threshold)，也就是之前发现网络拥塞时的窗口大小，接下来发生拥塞的概率很高。
+  - 接收到重复的ACK报文，可能存在丢包。
 
 #### 拥塞避免
 
@@ -190,11 +190,11 @@ propagation time)，就是测量驱动的拥塞控制算法。
 - 主流对称算法会将原始明文分成等长的多组明文，再分别用密钥生成密文，最后把它们拼接在一起形成最终密文。
 - CBC分组模式中，只有第1组明文加密完成后，才能对第2组加密，因为第2组加密时会用到第1组生成的密文。因此，CBC必然无法并行计算。
 - 通常应选择可以并行计算的GCM分组模式，这也是当下互联网中最常见的AES分组算法。
-- ```sort -u /proc/crypto | grep module | grep aes```查看CPU是否支持AES-NI指令集，如果CPU支持AES-NI特性，那么应选择AES算法，否则可以选择CHACHA20对称加密算法，它主要使用ARX操作(add-rotate-xor)，CPU执行起来更快。
+- `sort -u /proc/crypto | grep module | grep aes`查看CPU是否支持AES-NI指令集，如果CPU支持AES-NI特性，那么应选择AES算法，否则可以选择CHACHA20对称加密算法，它主要使用ARX操作(add-rotate-xor)，CPU执行起来更快。
 
 #### 密钥交换
 
-  ![TLS密钥交换](https://github.com/gongluck/images/blob/main/Network/TLS/密钥交换.png)
+![TLS密钥交换](https://github.com/gongluck/images/blob/main/Network/TLS/密钥交换.png)
 
 - TLS建立会话的第1个步骤是在握手阶段协商出密钥。
 - 当部署TLS证书到服务器上时，证书文件中包含一对非对称加密的公私钥，公钥会在握手阶段传递给客户端。在RSA密钥协商算法中，客户端会生成随机密钥，并使用服务器的公钥加密后再传给服务器。这样服务器解密后，双方就得到了相同的密钥，再用它加密应用消息。
@@ -223,13 +223,13 @@ propagation time)，就是测量驱动的拥塞控制算法。
 - HTTP/2将61个高频出现的头部，分别对应1个数字再构造出1张表，并写入HTTP/2客户端与服务器的代码中。由于它不会变化，所以也称为静态表。
 - 如果HTTP/2能在一个连接上传输所有对象，那么只要客户端与服务器按照同样的规则，对首次出现的HTTP头部用一个数字标识，随后再传输它时只传递数字即可，这就可以实现几十倍的压缩率。所有被缓存的头部及其标识数字会构成一张表，它与已经传输过的请求有关，是动态变化的，因此被称为动态表。
 
-  ![Stream](https://github.com/gongluck/images/blob/main/Network/HTTPx/Stream.png)
+![Stream](https://github.com/gongluck/images/blob/main/Network/HTTPx/Stream.png)
 
 - HTTP/2通过Stream这一设计，允许请求并发传输。当Stream作为短连接时，传输完一个请求和响应后就会关闭；当它作为长连接存在时，多个请求之间必须串行传输。在HTTP/2连接上，理论上可以同时运行无数个Stream，这就是HTTP/2的多路复用能力，它通过Stream实现了请求的并发传输。
 - 当HTTP/2实现多个并发Stream时，只经历1次TCP握手、1次TCP慢启动以及1次TLS握手。
 - 所有客户端发起的请求，必须使用单号Stream承载；其次，所有服务器进行的推送，必须使用双号Stream承载；最后，服务器推送消息时，会通过PUSH_PROMISE帧传输HTTP头部，并通过Promised Stream ID告知客户端，接下来会在哪个双号Stream中发送包体。
 
-  ![Stream](https://github.com/gongluck/images/blob/main/Network/HTTPx/HTTP2.png)
+![Stream](https://github.com/gongluck/images/blob/main/Network/HTTPx/HTTP2.png)
 
 - HTTP/2的最大问题来自于它下层的TCP协议。由于TCP是字符流协议，在前1字符未到达时，后接收到的字符只能存放在内核的缓冲区里，即使它们是并发的Stream，应用层的HTTP/2协议也无法收到失序的报文，这就叫做队头阻塞问题。解决方案是放弃TCP协议，转而使用UDP协议作为传输层协议，这就是HTTP/3协议的由来。
 
@@ -247,7 +247,7 @@ propagation time)，就是测量驱动的拥塞控制算法。
 
 ### GRPC
 
-  ![流模式](https://github.com/gongluck/images/blob/main/Network/GRPC/流模式.png)
+![流模式](https://github.com/gongluck/images/blob/main/Network/GRPC/流模式.png)
 
 - gRPC就是一种RPC框架，在定义好消息格式后，针对选择的编程语言，gRPC为客户端生成发起RPC请求的Stub类，以及为服务器生成处理RPC请求的Service类。
 - gRPC支持QUIC、HTTP/1等多种协议，但鉴于HTTP/2协议性能好，应用场景又广泛，因此HTTP/2是gRPC的默认传输协议。
