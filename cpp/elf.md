@@ -18,7 +18,7 @@
     - [.strtab节(字符串表)](#strtab节字符串表)
     - [.dynsym节(动态链接符号表)](#dynsym节动态链接符号表)
     - [.dynstr节(动态链接字符串表)](#dynstr节动态链接字符串表)
-    - [.rel.*节(重定位表)](#rel节重定位表)
+    - [.rel.\*节(重定位表)](#rel节重定位表)
     - [.hash节](#hash节)
     - [.ctors节和.dtors节](#ctors节和dtors节)
   - [符号表节点](#符号表节点)
@@ -31,14 +31,18 @@ ELF文件(`Executable Linkable Format`)是一种文件存储格式。Linux下的
 
 ![编译链接过程](https://github.com/gongluck/images/blob/main/cpp/编译链接过程.png)
 
-- 在经过汇编器后会输出一个`.o`文件，这个叫做可重定位的目标文件。将`main.o`和`sum.o`输入链接器后，链接器输出的`prog`文件叫做可执行目标文件。
+- 在经过汇编器后会输出一个.o文件，这个叫做可重定位的目标文件。
+- 将main.o和sum.o输入链接器后，链接器输出的prog文件叫做可执行目标文件。
 
 ## ELF文件格式
 
 ![ELF文件格式](https://github.com/gongluck/images/blob/main/cpp/ELF文件格式.png)
 ![不同类型的ELF文件](https://github.com/gongluck/images/blob/main/cpp/不同类型的ELF文件.png)
 
-- 段(segment)是程序执行的必要组成，当多个目标文件链接成一个可执行文件时，会将相同权限的节(section)合并到一个段中。相比而言，节的粒度更小。
+- 段(segment)是程序执行的必要组成，当多个目标文件链接成一个可执行文件时，会将相同权限的节(section)合并到一个段中。
+- 相比而言，节的粒度更小。
+- 在全局变量或函数之前加上`__attribute__((section("name")))`属性就可以把相应的变量或函数放到以"name"作为段名的段中。
+- 在全局变量或函数定义时加上`__attribute__("weak")`或声明时加上`__attribute__("weakref")`属性就可以把相应的变量或函数变成弱符号或弱引用。
 
 ## ELF文件类型
 

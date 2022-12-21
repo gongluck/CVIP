@@ -3,8 +3,10 @@
 - [Shell命令工具](#shell命令工具)
   - [文件](#文件)
     - [特殊文件](#特殊文件)
-    - [nm](#nm)
     - [df](#df)
+    - [nm](#nm)
+    - [size](#size)
+    - [readelf](#readelf)
     - [objdump](#objdump)
     - [hexdump](#hexdump)
   - [进程](#进程)
@@ -35,10 +37,6 @@
 - ```/proc/net/dev```可以看到一些网卡统计数据
 - ```/sys/class/net/eth0/statistics/```也包含了网卡的统计信息
 
-### nm
-
-```nm```是```names```的缩写，```nm```命令主要是用来列出某些文件中的符号(函数和全局变量等)。
-
 ### df
 
 ```df```(```disk free```)命令用于显示目前在```Linux```系统上的文件系统磁盘使用情况统计。
@@ -49,22 +47,35 @@ df --total -h
 df . --total -h
 ```
 
+### nm
+
+nm是names的缩写，用来列出某些文件中的符号(函数和全局变量等)。
+
+### size
+
+- 解析ELF文件的各段的大小。
+
+### readelf
+
+- 分析ELF文件。
+
+  ```shell
+  -h 显示elf文件开始的文件头信息。
+  -S 显示段表信息。
+  -s 显示符号表信息。
+  ```
+
 ### objdump
 
-```objdump```命令是```Linux```下的反汇编目标文件或者可执行文件的命令。
+- 反汇编目标文件或者可执行文件。
 
-```shell
-#参数
--d: 反汇编需要执行指令的那些section。
--D: 反汇编所有section。
--h: 显示Section Header信息。
--x: 显示全部Header信息。
--s: 除了显示全部Header信息，还显示他们对应的十六进制文件代码。
-
-#常用
-objdump -h a.out
-objdump -x a.out
-```
+  ```shell
+  -d 反汇编需要执行指令的那些section。
+  -D 反汇编所有section。
+  -h 显示Section Header信息。
+  -x 显示全部Header信息。
+  -s 除了显示全部Header信息，还显示对应的十六进制文件代码。
+  ```
 
 ### hexdump
 
