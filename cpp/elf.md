@@ -42,7 +42,7 @@ ELF文件(`Executable Linkable Format`)是一种文件存储格式。Linux下的
 - 段(segment)是程序执行的必要组成，当多个目标文件链接成一个可执行文件时，会将相同权限的节(section)合并到一个段中。
 - 相比而言，节的粒度更小。
 - 在全局变量或函数之前加上`__attribute__((section("name")))`属性就可以把相应的变量或函数放到以"name"作为段名的段中。
-- 在全局变量或函数定义时加上`__attribute__("weak")`或声明时加上`__attribute__("weakref")`属性就可以把相应的变量或函数变成弱符号或弱引用。
+- 在全局变量或函数定义时加上`__attribute__((weak))`或声明时加上`__attribute__((weakref))`属性就可以把相应的变量或函数变成弱符号或弱引用。
 
 ## ELF文件类型
 

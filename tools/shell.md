@@ -4,11 +4,14 @@
   - [文件](#文件)
     - [特殊文件](#特殊文件)
     - [df](#df)
-    - [nm](#nm)
-    - [size](#size)
-    - [readelf](#readelf)
-    - [objdump](#objdump)
-    - [hexdump](#hexdump)
+    - [二进制分析](#二进制分析)
+      - [nm](#nm)
+      - [size](#size)
+      - [ar](#ar)
+      - [ld](#ld)
+      - [readelf](#readelf)
+      - [objdump](#objdump)
+      - [hexdump](#hexdump)
   - [进程](#进程)
     - [top](#top)
     - [iostat](#iostat)
@@ -47,15 +50,37 @@ df --total -h
 df . --total -h
 ```
 
-### nm
+### 二进制分析
+
+#### nm
 
 nm是names的缩写，用来列出某些文件中的符号(函数和全局变量等)。
 
-### size
+#### size
 
 - 解析ELF文件的各段的大小。
 
-### readelf
+#### ar
+
+- 库相关操作。
+
+  ```shell
+  -t 包含列出所有目标文件。
+  -x 解压出所有目标文件。
+  ```
+
+#### ld
+
+- 连接器。
+
+  ```shell
+  -T 指定链接控制脚本。
+  -static 静态链接。
+  -e main 指定程序入口函数。
+  -s 禁止链接器产生符号表。
+  ```
+
+#### readelf
 
 - 分析ELF文件。
 
@@ -65,7 +90,7 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
   -s 显示符号表信息。
   ```
 
-### objdump
+#### objdump
 
 - 反汇编目标文件或者可执行文件。
 
@@ -75,9 +100,11 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
   -h 显示Section Header信息。
   -x 显示全部Header信息。
   -s 除了显示全部Header信息，还显示对应的十六进制文件代码。
+  -r 查看需要重定位的地方。
+  -t 查看符号。
   ```
 
-### hexdump
+#### hexdump
 
 ```hexdump```命令一般用来查看文件的十六进制编码，但实际上它能查看任何文件，而不只限于二进制文件。
 
