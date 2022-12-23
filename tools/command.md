@@ -1,6 +1,6 @@
-# Shell命令工具
+# 命令工具
 
-- [Shell命令工具](#shell命令工具)
+- [命令工具](#命令工具)
   - [文件](#文件)
     - [特殊文件](#特殊文件)
     - [df](#df)
@@ -12,6 +12,7 @@
       - [readelf](#readelf)
       - [objdump](#objdump)
       - [hexdump](#hexdump)
+      - [dumpbin](#dumpbin)
   - [进程](#进程)
     - [top](#top)
     - [iostat](#iostat)
@@ -126,6 +127,15 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
 #常用
 hexdump -c -s 0x1000 -n 100 a.out
 ```
+
+#### dumpbin
+
+- VC分析目标文件和可执行文件工具。
+
+  ```shell
+  /ALL 打印输出所有信息。
+  /SUMMARY 输出基本信息。
+  ```
 
 ## 进程
 

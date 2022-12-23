@@ -11,5 +11,5 @@
 
 ## 系统工具
 
-- [Shell命令工具](./shell.md)
+- [命令工具](./command.md)
 - [内核调试环境](./kernel.md)
