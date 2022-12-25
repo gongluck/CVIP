@@ -55,39 +55,10 @@ ELF文件(`Executable Linkable Format`)是一种文件存储格式。Linux下的
 - 如果用于编译和链接(可重定位文件)，则编译器和链接器将把ELF文件看作是节头表描述的节的集合，程序头表可选。
 - 如果用于加载执行(可执行文件)，则加载器则将把ELF文件看作是程序头表描述的段的集合，一个段可能包含多个节，节头表可选。
 
-## ELF文件头
+## [ELF文件头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L210)
 
-```Shell
-readelf -h elf-file
-```
-
-<details>
-<summary>ELF文件头</summary>
-
-```C++
-/* The ELF file header.  This appears at the start of every ELF file.  */
-
-#define EI_NIDENT (16)
-
-typedef struct
-{
-  unsigned char e_ident[EI_NIDENT]; /* Magic number and other info */ //文件的标识以及标识描述了elf如何编码等信息
-  Elf32_Half e_type; /* Object file type */                           //文件类型
-  Elf32_Half e_machine; /* Architecture */                            //处理器架构
-  Elf32_Word e_version; /* Object file version */                     //当前文件版本信息
-  Elf32_Addr e_entry; /* Entry point virtual address */               //可执行程序的入口地址
-  Elf32_Off e_phoff; /* Program header table file offset */           //程序表头偏移
-  Elf32_Off e_shoff; /* Section header table file offset */           //节头表偏移
-  Elf32_Word e_flags; /* Processor-specific flags */                  //特定处理器标识
-  Elf32_Half e_ehsize; /* ELF header size in bytes */                 // elf文件头部大小
-  Elf32_Half e_phentsize; /* Program header table entry size */       //程序头部表项大小
-  Elf32_Half e_phnum; /* Program header table entry count */          //程序头表项个数
-  Elf32_Half e_shentsize; /* Section header table entry size */       //节头表项大小
-  Elf32_Half e_shnum; /* Section header table entry count */          //节头表项个数
-  Elf32_Half e_shstrndx; /* Section header string table index */      //字符串节区的索引
-} Elf32_Ehdr;
-```
-</details>
+![ELF文件头](https://github.com/gongluck/images/blob/main/elf/elf_header.png)
+![e_ident](https://github.com/gongluck/images/blob/main/elf/e_ident.png)
 
 ## ELF程序头
 
