@@ -31,15 +31,16 @@
 
 ### 特殊文件
 
-- ```/proc/pid/status```保存该```pid```进程的相关信息
-- ```/proc/sys```目录可以查看或修改内核参数
-- ```/proc/cpuinfo```可以查看```CPU```信息
-- ```/proc/meminfo```可以查看内存信息
-- ```/proc/interrupts```统计所有的硬中断
-- ```/proc/softirqs```统计的所有的软中断信息
-- ```/proc/slabinfo```统计了内核数据结构的```slab```内存使用情况
-- ```/proc/net/dev```可以看到一些网卡统计数据
-- ```/sys/class/net/eth0/statistics/```也包含了网卡的统计信息
+- `/proc/pid/status`保存该`pid`进程的相关信息。
+- `/proc/pid/maps`保存该`pid`进程的虚拟地址空间信息。
+- `/proc/sys`目录可以查看或修改内核参数。
+- `/proc/cpuinfo`可以查看`CPU`信息。
+- `/proc/meminfo`可以查看内存信息。
+- `/proc/interrupts`统计所有的硬中断。
+- `/proc/softirqs`统计的所有的软中断信息。
+- `/proc/slabinfo`统计了内核数据结构的`slab`内存使用情况。
+- `/proc/net/dev`可以看到一些网卡统计数据。
+- `/sys/class/net/eth0/statistics/`也包含了网卡的统计信息。
 
 ### df
 
@@ -87,7 +88,8 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
 
   ```shell
   -h 显示elf文件开始的文件头信息。
-  -S 显示段表信息。
+  -l 显示段(segment)表信息。
+  -S 显示段(section)表信息。
   -s 显示符号表信息。
   ```
 
