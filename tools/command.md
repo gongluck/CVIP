@@ -9,6 +9,7 @@
       - [size](#size)
       - [ar](#ar)
       - [ld](#ld)
+      - [ldd](#ldd)
       - [readelf](#readelf)
       - [objdump](#objdump)
       - [hexdump](#hexdump)
@@ -82,6 +83,10 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
   -s 禁止链接器产生符号表。
   ```
 
+#### ldd
+
+- 查看依赖的动态库。
+
 #### readelf
 
 - 分析ELF文件。
@@ -91,6 +96,8 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
   -l 显示段(segment)表信息。
   -S 显示段(section)表信息。
   -s 显示符号表信息。
+  -D 显示符号表时用动态段信息解析。
+  -d 显示动态段信息。
   ```
 
 #### objdump
