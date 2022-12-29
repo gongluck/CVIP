@@ -9,11 +9,13 @@
       - [size](#size)
       - [ar](#ar)
       - [ld](#ld)
+      - [ldconfig](#ldconfig)
       - [ldd](#ldd)
       - [readelf](#readelf)
       - [objdump](#objdump)
       - [hexdump](#hexdump)
       - [dumpbin](#dumpbin)
+      - [strip](#strip)
   - [进程](#进程)
     - [top](#top)
     - [iostat](#iostat)
@@ -83,6 +85,12 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
   -s 禁止链接器产生符号表。
   ```
 
+#### ldconfig
+
+- 作用主要是在默认搜寻目录/lib和/usr/lib以及动态库配置文件/etc/ld.so.conf内所列的目录下，搜索出可共享的动态链接库,进而创建出动态装入程序(ld.so)所需的连接和缓存文件。
+- 缓存文件默认为/etc/ld.so.cache，此文件保存已排好序的动态链接库名字列表，为了让动态链接库为系统所共享，需运行动态链接库的管理命令ldconfig，此执行程序存放在/sbin目录下。
+- ldconfig通常在系统启动时运行，而当用户安装了一个新的动态链接库时，就需要手工运行这个命令。
+
 #### ldd
 
 - 查看依赖的动态库。
@@ -145,6 +153,12 @@ hexdump -c -s 0x1000 -n 100 a.out
   /ALL 打印输出所有信息。
   /SUMMARY 输出基本信息。
   ```
+
+#### strip
+
+- 去除文件中的符号信息。
+- strip只清除普通符号表，会保留动态符号表，即dynsym、dynstr段，而动态链接依靠的就是动态符号表。
+- `--strip-unneeded`参数确保strip掉的是没有用的符号，保留用于链接的符号，保留了很多有用的信息，确保该链接库是可用的。
 
 ## 进程
 
