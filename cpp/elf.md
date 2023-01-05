@@ -2,19 +2,18 @@
 
 - [ELF](#elf)
   - [编译链接过程](#编译链接过程)
-  - [ELF文件格式](#elf文件格式)
-  - [ELF文件类型](#elf文件类型)
-  - [ELF文件头](#elf文件头)
-  - [ELF程序头](#elf程序头)
-  - [ELF节头](#elf节头)
-  - [ELF节](#elf节)
+  - [ELF 段(segment)和节(section)](#elf段segment和节section)
+  - [ELF 文件头](#elf文件头)
+  - [ELF 程序头](#elf程序头)
+  - [ELF 节头](#elf节头)
+  - [ELF 节](#elf节)
     - [.interp](#interp)
-    - [.text节](#text节)
-    - [.rodata节](#rodata节)
-    - [.data节](#data节)
-    - [.bss节](#bss节)
+    - [.text 节](#text节)
+    - [.rodata 节](#rodata节)
+    - [.data 节](#data节)
+    - [.bss 节](#bss节)
     - [.got/.got.plt](#gotgotplt)
-    - [.shstrtab节头字符串表](#shstrtab节头字符串表)
+    - [.shstrtab 节头字符串表](#shstrtab节头字符串表)
     - [.symtab](#symtab)
     - [.strtab](#strtab)
     - [.dynsym](#dynsym)
@@ -25,45 +24,33 @@
     - [.ctors/.dtors](#ctorsdtors)
     - [.init/.finit](#initfinit)
   - [符号表节点](#符号表节点)
-  - [ELF程序自修改](#elf程序自修改)
+  - [ELF 程序自修改](#elf程序自修改)
     - [修改全局/静态变量初始值](#修改全局静态变量初始值)
 
-ELF文件(`Executable Linkable Format`)是一种文件存储格式。Linux下的目标文件和可执行文件都按照该格式进行存储。
+ELF 文件(`Executable Linkable Format`)是一种文件存储格式。
+Linux 下的目标文件和可执行文件都按照该格式进行存储。
 
 ## 编译链接过程
 
 ![编译链接过程](https://github.com/gongluck/images/blob/main/cpp/编译链接过程.png)
 
-- 在经过汇编器后会输出一个.o文件，这个叫做可重定位的目标文件。
-- 将main.o和sum.o输入链接器后，链接器输出的prog文件叫做可执行目标文件。
-
-## ELF文件格式
+## ELF 段(segment)和节(section)
 
 ![ELF文件格式](https://github.com/gongluck/images/blob/main/cpp/ELF文件格式.png)
 ![不同类型的ELF文件](https://github.com/gongluck/images/blob/main/cpp/不同类型的ELF文件.png)
 
-- 段(segment)是程序执行的必要组成，**当多个目标文件链接成一个可执行文件时，会将相同权限的节(section)合并到一个段中**。
-- 相比而言，节的粒度更小。
+- 段(segment)是程序执行的必要组成，**当多个目标文件链接成一个可执行文件时，会将相同权限的节(section)合并到一个段中。**
 - 在全局变量或函数之前加上`__attribute__((section("name")))`属性就可以把相应的变量或函数放到以"name"作为段名的段中。
 - 在全局变量或函数定义时加上`__attribute__((weak))`或声明时加上`__attribute__((weakref))`属性就可以把相应的变量或函数变成弱符号或弱引用。
+- **如果用于编译和链接(可重定位文件)，则编译器和链接器将把 ELF 文件看作是节头表描述的节的集合，程序头表可选。**
+- **如果用于加载执行(可执行文件)，则加载器则将把 ELF 文件看作是程序头表描述的段的集合，一个段可能包含多个节，节头表可选。**
 
-## ELF文件类型
-
-- 可重定位目标文件(`.o`或`.a`文件)
-  - 包含二进制代码和数据，包含基础代码和数据，但它的代码及数据都没有指定绝对地址，因此它适合于与其他目标文件链接来创建可执行文件或者共享目标文件。
-- 可执行目标文件(`a.out`文件)
-  - 包含二进制代码和数据，其代码和数据都有固定的地址(或相对于基地址的偏移)，系统可根据这些地址信息把程序加载到内存执行。
-- 共享对象文件(`.so`文件)
-  - 包含二进制代码和数据，这些数据是在链接时被链接器(`ld`)和运行时动态链接器(`ld.so.l、libc.so.l、ld-linux.so.l`)使用的。
-- 如果用于编译和链接(可重定位文件)，则编译器和链接器将把ELF文件看作是节头表描述的节的集合，程序头表可选。
-- 如果用于加载执行(可执行文件)，则加载器则将把ELF文件看作是程序头表描述的段的集合，一个段可能包含多个节，节头表可选。
-
-## [ELF文件头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L210)
+## [ELF 文件头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L210)
 
 ![ELF文件头](https://github.com/gongluck/images/blob/main/elf/elf_header.png)
 ![e_ident](https://github.com/gongluck/images/blob/main/elf/e_ident.png)
 
-## ELF程序头
+## ELF 程序头
 
 <details>
 <summary>ELF程序头</summary>
@@ -83,72 +70,47 @@ typedef struct
   Elf32_Word p_align; /* Segment alignment */        //对齐方式
 } Elf32_Phdr;
 ```
+
 </details>
 
-## ELF节头
+## [ELF 节头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L312)
 
-```Shell
-readelf -S elf-file
-```
+- 段名的字符串信息在`.strtab`段，需要从`e_shoff`的地址开始偏移`e_shstrndx`+1 个`e_shentsize`。
 
-- 从`e_shoff`的地址开始偏移`e_shstrndx`+1个`e_shentsize`，得到字符串(`.strtab`)节区。
-
-<details>
-<summary>ELF节头</summary>
-
-```C++
-/* Section header.  */
-
-typedef struct
-{
-  Elf32_Word sh_name; /* Section name (string tbl index) */      //节名字符串在.strtab节(字符串表)中的偏移
-  Elf32_Word sh_type; /* Section type */                         //节类型
-  Elf32_Word sh_flags; /* Section flags */                       //节标记
-  Elf32_Addr sh_addr; /* Section virtual addr at execution */    //加载后程序段的虚拟地址
-  Elf32_Off sh_offset; /* Section file offset */                 //节在文件中的偏移
-  Elf32_Word sh_size; /* Section size in bytes */                //节长度
-  Elf32_Word sh_link; /* Link to another section */              //链接相关标记
-  Elf32_Word sh_info; /* Additional section information */       //其它标记
-  Elf32_Word sh_addralign; /* Section alignment */               //节对齐
-  Elf32_Word sh_entsize; /* Entry size if section holds table */ //每项固定的大小
-} Elf32_Shdr;
-```
-</details>
-
-## ELF节
+## ELF 节
 
 ### .interp
 
 - 保存可执行文件需要的动态链接器的路径。
 
-### .text节
+### .text 节
 
 - `.text`节是保存了程序代码指令的代码节。
-- 一段可执行程序，如果存在`Phdr`，则.text节就会存在于text段中。
-- 由于.text节保存了程序代码，所以节类型为`SHT_PROGBITS`。
+- 一段可执行程序，如果存在`Phdr`，则.text 节就会存在于 text 段中。
+- 由于.text 节保存了程序代码，所以节类型为`SHT_PROGBITS`。
 
-### .rodata节
+### .rodata 节
 
-- `.rodata`节保存了只读的数据，如一行C语言代码中的字符串。
-- 由于.rodata节是只读的，所以只能存在于一个可执行文件的只读段中。只能在text段中找到.rodata节。
-- 由于.rodata节是只读的，所以节类型为`SHT_PROGBITS`。
+- `.rodata`节保存了只读的数据，如一行 C 语言代码中的字符串。
+- 由于.rodata 节是只读的，所以只能存在于一个可执行文件的只读段中。只能在 text 段中找到.rodata 节。
+- 由于.rodata 节是只读的，所以节类型为`SHT_PROGBITS`。
 
-### .data节
+### .data 节
 
-- `.data`节存在于data段中，其保存了初始化的全局变量等数据。
-- 由于.data节保存了程序的变量数据，所以节类型为`SHT_PROGBITS`。
+- `.data`节存在于 data 段中，其保存了初始化的全局变量等数据。
+- 由于.data 节保存了程序的变量数据，所以节类型为`SHT_PROGBITS`。
 
-### .bss节
+### .bss 节
 
-- `.bss`节存在于data段中，占用空间不超过`4`字节，仅表示这个节本生的空间。
-- .bss节保存了未进行初始化的全局数据。程序加载时数据被初始化为`0`，在程序执行期间可以进行赋值。
-- 由于.bss节未保存实际的数据，所以节类型为`SHT_NOBITS`。
+- `.bss`节存在于 data 段中，占用空间不超过`4`字节，仅表示这个节本生的空间。
+- .bss 节保存了未进行初始化的全局数据。程序加载时数据被初始化为`0`，在程序执行期间可以进行赋值。
+- 由于.bss 节未保存实际的数据，所以节类型为`SHT_NOBITS`。
 
 ### .got/.got.plt
 
 - 提供了对导入的共享库函数的访问入口，由动态链接器在运行时进行修改。
 
-### .shstrtab节头字符串表
+### .shstrtab 节头字符串表
 
 - `.shstrtab`节头字符串表，用于保存节头表中用到的字符串，可通过`sh_name`进行索引。
 
@@ -179,18 +141,18 @@ typedef struct
 
 - 也称为`.gnu.hash`，保存了一个用于查找符号的散列表。
 
-### .rel.*
+### .rel.\*
 
-- 保存了重定位相关的信息，描述了如何在链接或运行时，对ELF目标文件的某部分或者进程镜像进行补充或修改。
+- 保存了重定位相关的信息，描述了如何在链接或运行时，对 ELF 目标文件的某部分或者进程镜像进行补充或修改。
 
 ### .ctors/.dtors
 
-- 构造器和析构器分别保存了指向构造函数和析构函数的函数指针，构造函数是在main函数执行之前需要执行的代码；析构函数是在main函数之后需要执行的代码。
+- 构造器和析构器分别保存了指向构造函数和析构函数的函数指针，构造函数是在 main 函数执行之前需要执行的代码；析构函数是在 main 函数之后需要执行的代码。
 
 ### .init/.finit
 
 - 支持全局和静态对象的构造和析构。
-- 若共享对象有.init段或.finit段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
+- 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
 
 ## 符号表节点
 
@@ -214,9 +176,10 @@ typedef struct
   Elf32_Section st_shndx; /* Section index */              //符号所在的节
 } Elf32_Sym;
 ```
+
 </details>
 
-## ELF程序自修改
+## ELF 程序自修改
 
 ### [修改全局/静态变量初始值](../code/elf/global.cpp)
 
@@ -276,4 +239,5 @@ int main(int argc, char *argv[])
   return 0;
 }
 ```
+
 </details>
