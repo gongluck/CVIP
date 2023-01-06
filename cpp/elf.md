@@ -50,6 +50,51 @@ Linux 下的目标文件和可执行文件都按照该格式进行存储。
 ![ELF文件头](https://github.com/gongluck/images/blob/main/elf/elf_header.png)
 ![e_ident](https://github.com/gongluck/images/blob/main/elf/e_ident.png)
 
+<details>
+<summary>ELF文件头</summary>
+
+```C++
+#define EI_NIDENT 16
+
+typedef struct elf32_hdr // elf文件头
+{
+  unsigned char e_ident[EI_NIDENT];     // elf文件标识
+  Elf32_Half e_type;                    // elf文件类型
+  Elf32_Half e_machine;                 // elf文件机器架构
+  Elf32_Word e_version;                 // elf文件版本号
+  Elf32_Addr e_entry; /* Entry point */ // elf执行入口点
+  Elf32_Off e_phoff;                    // program header table的偏移
+  Elf32_Off e_shoff;                    // section header table的偏移
+  Elf32_Word e_flags;                   // 特定于处理器的标志
+  Elf32_Half e_ehsize;                  // ELF文件头的大小，32位ELF是52字节，64位是64字节
+  Elf32_Half e_phentsize;               // program header table中每个入口的大小
+  Elf32_Half e_phnum;                   // program header table的入口个数
+  Elf32_Half e_shentsize;               // section header table中每个入口的大小
+  Elf32_Half e_shnum;                   // section header table的入口个数
+  Elf32_Half e_shstrndx;                // section header table中字符串段(.shstrtab)的索引
+} Elf32_Ehdr;
+
+typedef struct elf64_hdr
+{
+  unsigned char e_ident[EI_NIDENT]; /* ELF "magic number" */
+  Elf64_Half e_type;
+  Elf64_Half e_machine;
+  Elf64_Word e_version;
+  Elf64_Addr e_entry; /* Entry point virtual address */
+  Elf64_Off e_phoff;  /* Program header table file offset */
+  Elf64_Off e_shoff;  /* Section header table file offset */
+  Elf64_Word e_flags;
+  Elf64_Half e_ehsize;
+  Elf64_Half e_phentsize;
+  Elf64_Half e_phnum;
+  Elf64_Half e_shentsize;
+  Elf64_Half e_shnum;
+  Elf64_Half e_shstrndx;
+} Elf64_Ehdr;
+```
+
+</details>
+
 ## ELF 程序头
 
 <details>
@@ -76,6 +121,41 @@ typedef struct
 ## [ELF 节头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L312)
 
 - 段名的字符串信息在`.strtab`段，需要从`e_shoff`的地址开始偏移`e_shstrndx`+1 个`e_shentsize`。
+
+<details>
+<summary>ELF节头</summary>
+
+```C++
+typedef struct elf32_shdr // elf段表描述结构
+{
+  Elf32_Word sh_name;      //.shstrtab中的索引
+  Elf32_Word sh_type;      // 段类型
+  Elf32_Word sh_flags;     // 段标志
+  Elf32_Addr sh_addr;      // 段虚拟地址
+  Elf32_Off sh_offset;     // 段在文件中的偏移
+  Elf32_Word sh_size;      // 段大小
+  Elf32_Word sh_link;      // 段使用的字符串表或符号表在段表中的索引
+  Elf32_Word sh_info;      // 重定位表所作用的段在段表中的索引
+  Elf32_Word sh_addralign; // 段对齐 2的n次幂
+  Elf32_Word sh_entsize;   // 段中每项大小(如果可用)
+} Elf32_Shdr;
+
+typedef struct elf64_shdr
+{
+  Elf64_Word sh_name;       /* Section name, index in string tbl */
+  Elf64_Word sh_type;       /* Type of section */
+  Elf64_Xword sh_flags;     /* Miscellaneous section attributes */
+  Elf64_Addr sh_addr;       /* Section virtual addr at execution */
+  Elf64_Off sh_offset;      /* Section file offset */
+  Elf64_Xword sh_size;      /* Size of section in bytes */
+  Elf64_Word sh_link;       /* Index of another section */
+  Elf64_Word sh_info;       /* Additional section information */
+  Elf64_Xword sh_addralign; /* Section alignment */
+  Elf64_Xword sh_entsize;   /* Entry size if section holds table */
+} Elf64_Shdr;
+```
+
+</details>
 
 ## ELF 节
 
@@ -154,27 +234,31 @@ typedef struct
 - 支持全局和静态对象的构造和析构。
 - 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
 
-## 符号表节点
-
-```Shell
-readelf -s elf-file
-```
+## 符号表段
 
 <details>
-<summary>符号表节点</summary>
+<summary>符号表段</summary>
 
 ```C++
-/* Symbol table entry.  */
-
-typedef struct
+typedef struct elf32_sym // 符号表结构
 {
-  Elf32_Word st_name; /* Symbol name (string tbl index) */ //符号名 该值为该符号名在字符串表中的偏移地址
-  Elf32_Addr st_value; /* Symbol value */                  //符号对应的值 存放符号的值(可能是地址或位置偏移量)
-  Elf32_Word st_size; /* Symbol size */                    //符号的大小
-  unsigned char st_info; /* Symbol type and binding */     //符号类型及绑定属性
-  unsigned char st_other; /* Symbol visibility */          //符号可见性
-  Elf32_Section st_shndx; /* Section index */              //符号所在的节
+  Elf32_Word st_name;     // 字符串表中的索引
+  Elf32_Addr st_value;    // 符号值 绝对值或在段中偏移的地址值
+  Elf32_Word st_size;     // 符号大小
+  unsigned char st_info;  // 低4位标识符号类型 高4位标识绑定信息
+  unsigned char st_other; // 0
+  Elf32_Half st_shndx;    // 符号所在的段
 } Elf32_Sym;
+
+typedef struct elf64_sym
+{
+  Elf64_Word st_name;     /* Symbol name, index in string tbl */
+  unsigned char st_info;  /* Type and binding attributes */
+  unsigned char st_other; /* No defined meaning, 0 */
+  Elf64_Half st_shndx;    /* Associated section index */
+  Elf64_Addr st_value;    /* Value of the symbol */
+  Elf64_Xword st_size;    /* Associated symbol size */
+} Elf64_Sym;
 ```
 
 </details>
@@ -191,7 +275,7 @@ typedef struct
  * @Author: gongluck
  * @Date: 2022-04-14 10:49:56
  * @Last Modified by: gongluck
- * @Last Modified time: 2022-04-14 11:34:55
+ * @Last Modified time: 2023-01-06 17:27:16
  */
 
 // application rewrite it`s global variable via shell tools

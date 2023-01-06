@@ -2,13 +2,15 @@
  * @Author: gongluck
  * @Date: 2023-01-05 10:48:45
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-01-05 11:27:42
+ * @Last Modified time: 2023-01-06 17:25:13
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <elf.h>
 
+// helper
 #define EXIT(code)                            \
   do                                          \
   {                                           \
@@ -16,12 +18,18 @@
     exit(code);                               \
   } while (0)
 
-/// begin elf hdr
+#define PRINT_SYM_ADDR(sym)                                       \
+  do                                                              \
+  {                                                               \
+    printf("%s : 0x%.2llx\n", #sym, (long long unsigned int)sym); \
+  } while (0)
+
+/// begin elf header
 
 /// begin e_indent
 
 // e_ident[EI_CLASS] 4
-#define PRINTIDENTCLASS(class)            \
+#define PRINT_IDENT_CLASS(class)          \
   do                                      \
   {                                       \
     switch (class)                        \
@@ -39,7 +47,7 @@
   } while (0)
 
 // e_ident[EI_DATA] 5
-#define PRINTIDENTDATA(data)            \
+#define PRINT_IDENT_DATA(data)          \
   do                                    \
   {                                     \
     switch (data)                       \
@@ -57,7 +65,7 @@
   } while (0)
 
 // e_ident[EI_VERSION] 6
-#define PRINTIDENTVERSION(version)            \
+#define PRINT_IDENT_VERSION(version)          \
   do                                          \
   {                                           \
     switch (version)                          \
@@ -72,34 +80,34 @@
   } while (0)
 
 // analysis e_ident
-#define PRINTIDENT(ident)                 \
-  do                                      \
-  {                                       \
-    printf("Magic:");                     \
-    for (int i = 0; i < EI_NIDENT; ++i)   \
-    {                                     \
-      printf(" %.2x", ident[i]);          \
-    }                                     \
-    printf("\n");                         \
-                                          \
-    printf("Class: ");                    \
-    PRINTIDENTCLASS(ident[EI_CLASS]);     \
-    printf("\n");                         \
-                                          \
-    printf("Data: ");                     \
-    PRINTIDENTDATA(ident[EI_DATA]);       \
-    printf("\n");                         \
-                                          \
-    printf("Version: ");                  \
-    PRINTIDENTVERSION(ident[EI_VERSION]); \
-    printf("\n");                         \
-                                          \
+#define PRINT_IDENT(ident)                  \
+  do                                        \
+  {                                         \
+    printf("Magic:");                       \
+    for (int i = 0; i < EI_NIDENT; ++i)     \
+    {                                       \
+      printf(" %.2x", ident[i]);            \
+    }                                       \
+    printf("\n");                           \
+                                            \
+    printf("Class: ");                      \
+    PRINT_IDENT_CLASS(ident[EI_CLASS]);     \
+    printf("\n");                           \
+                                            \
+    printf("Data: ");                       \
+    PRINT_IDENT_DATA(ident[EI_DATA]);       \
+    printf("\n");                           \
+                                            \
+    printf("Version: ");                    \
+    PRINT_IDENT_VERSION(ident[EI_VERSION]); \
+    printf("\n");                           \
+                                            \
   } while (0)
 
 /// end e_indent
 
 // e_type
-#define PRINTELFHEADERTYPE(type)        \
+#define PRINT_ELFHEADER_TYPE(type)      \
   do                                    \
   {                                     \
     switch (type)                       \
@@ -123,7 +131,7 @@
   } while (0)
 
 // e_machine
-#define PRINTELFHEADERMACHINE(machine)                                                                       \
+#define PRINT_ELFHEADER_MACHINE(machine)                                                                     \
   do                                                                                                         \
   {                                                                                                          \
     switch (machine)                                                                                         \
@@ -233,30 +241,31 @@
     }                                                                                                        \
   } while (0)
 
-#define PRINTELFHEADER(elfhdr)                                                                      \
-  do                                                                                                \
-  {                                                                                                 \
-    PRINTIDENT(elfhdr.e_ident);                                                                     \
-                                                                                                    \
-    printf("Type: ");                                                                               \
-    PRINTELFHEADERTYPE(elfhdr.e_type);                                                              \
-    printf("\n");                                                                                   \
-                                                                                                    \
-    printf("Machine: ");                                                                            \
-    PRINTELFHEADERMACHINE(elfhdr.e_machine);                                                        \
-    printf("\n");                                                                                   \
-                                                                                                    \
-    printf("Version: 0x%x\n", elfhdr.e_version);                                                    \
-    printf("Entry: 0x%llx\n", (long long unsigned int)elfhdr.e_entry);                              \
-    printf("Program header offset: %lld\n", (long long unsigned int)elfhdr.e_phoff);                \
-    printf("Section header offset: %lld\n", (long long unsigned int)elfhdr.e_shoff);                \
-    printf("Flags: 0x%llx\n", (long long unsigned int)elfhdr.e_flags);                              \
-    printf("Header size: %lld\n", (long long unsigned int)elfhdr.e_ehsize);                         \
-    printf("Program header entry size: %lld\n", (long long unsigned int)elfhdr.e_phentsize);        \
-    printf("Program header entry counts: %lld\n", (long long unsigned int)elfhdr.e_phnum);          \
-    printf("Section header entry size: %lld\n", (long long unsigned int)elfhdr.e_shentsize);        \
-    printf("Section header entry counts: %lld\n", (long long unsigned int)elfhdr.e_shnum);          \
-    printf("Section header string table index: %lld\n", (long long unsigned int)elfhdr.e_shstrndx); \
+// elf header
+#define PRINT_ELFHEADER(elfhdr)                                                                                 \
+  do                                                                                                            \
+  {                                                                                                             \
+    PRINT_IDENT(elfhdr.e_ident);                                                                                \
+                                                                                                                \
+    printf("Type: ");                                                                                           \
+    PRINT_ELFHEADER_TYPE(elfhdr.e_type);                                                                        \
+    printf("\n");                                                                                               \
+                                                                                                                \
+    printf("Machine: ");                                                                                        \
+    PRINT_ELFHEADER_MACHINE(elfhdr.e_machine);                                                                  \
+    printf("\n");                                                                                               \
+                                                                                                                \
+    printf("Version: 0x%.2llx\n", (long long unsigned int)elfhdr.e_version);                                    \
+    printf("Entry: 0x%.2llx\n", (long long unsigned int)elfhdr.e_entry);                                        \
+    printf("Program header offset: %lld\n", (long long unsigned int)elfhdr.e_phoff);                            \
+    printf("Section header offset: %lld\n", (long long unsigned int)elfhdr.e_shoff);                            \
+    printf("Flags: 0x%.2llx\n", (long long unsigned int)elfhdr.e_flags);                                        \
+    printf("Header size: %lld\n", (long long unsigned int)elfhdr.e_ehsize);                                     \
+    printf("Program header entry size: %lld\n", (long long unsigned int)elfhdr.e_phentsize);                    \
+    printf("Program header entry counts: %lld\n", (long long unsigned int)elfhdr.e_phnum);                      \
+    printf("Section header entry size: %lld\n", (long long unsigned int)elfhdr.e_shentsize);                    \
+    printf("Section header entry counts: %lld\n", (long long unsigned int)elfhdr.e_shnum);                      \
+    printf("Section header string table (.shstrtab) index: %lld\n", (long long unsigned int)elfhdr.e_shstrndx); \
   } while (0)
 
 /// end elf hdr
@@ -264,7 +273,7 @@
 /// begin section header
 
 // section header type
-#define PRINTSECTIONHEADERTYPE(type)    \
+#define PRINT_SECTIONHEADER_TYPE(type)  \
   do                                    \
   {                                     \
     switch (type)                       \
@@ -312,95 +321,273 @@
   } while (0)
 
 // section header flags
-#define PRINTSECTIONHEADERFLAGS(flags) \
-  do                                   \
-  {                                    \
-    if (flags & SHF_WRITE)             \
-    {                                  \
-      printf("WRITE ");                \
-    }                                  \
-    if (flags & SHF_ALLOC)             \
-    {                                  \
-      printf("ALLOC ");                \
-    }                                  \
-    if (flags & SHF_EXECINSTR)         \
-    {                                  \
-      printf("EXEC ");                 \
-    }                                  \
+#define PRINT_SECTIONHEADER_FLAGS(flags) \
+  do                                     \
+  {                                      \
+    if (flags & SHF_WRITE)               \
+    {                                    \
+      printf("WRITE ");                  \
+    }                                    \
+    if (flags & SHF_ALLOC)               \
+    {                                    \
+      printf("ALLOC ");                  \
+    }                                    \
+    if (flags & SHF_EXECINSTR)           \
+    {                                    \
+      printf("EXECINSTR ");              \
+    }                                    \
+    if (flags & SHF_MERGE)               \
+    {                                    \
+      printf("MERGE ");                  \
+    }                                    \
+    if (flags & SHF_STRINGS)             \
+    {                                    \
+      printf("STRINGS ");                \
+    }                                    \
+    if (flags & SHF_INFO_LINK)           \
+    {                                    \
+      printf("INFO_LINK ");              \
+    }                                    \
+    if (flags & SHF_LINK_ORDER)          \
+    {                                    \
+      printf("LINK_ORDER ");             \
+    }                                    \
+    if (flags & SHF_OS_NONCONFORMING)    \
+    {                                    \
+      printf("OS_NONCONFORMING ");       \
+    }                                    \
+    if (flags & SHF_GROUP)               \
+    {                                    \
+      printf("GROUP ");                  \
+    }                                    \
+    if (flags & SHF_TLS)                 \
+    {                                    \
+      printf("TLS ");                    \
+    }                                    \
+    if (flags & SHF_COMPRESSED)          \
+    {                                    \
+      printf("COMPRESSED ");             \
+    }                                    \
+    if (flags & SHF_MASKOS)              \
+    {                                    \
+      printf("MASKOS ");                 \
+    }                                    \
+    if (flags & SHF_MASKPROC)            \
+    {                                    \
+      printf("MASKPROC ");               \
+    }                                    \
+    if (flags & SHF_ORDERED)             \
+    {                                    \
+      printf("ORDERED ");                \
+    }                                    \
+    if (flags & SHF_EXCLUDE)             \
+    {                                    \
+      printf("EXCLUDE ");                \
+    }                                    \
   } while (0)
 
-#define PRINTSECTIONHEADER(shdr)                                                   \
+// section header
+#define PRINT_SECTIONHEADER(shdr, BITS)                                            \
   do                                                                               \
   {                                                                                \
     printf("Name index: %lld\n", (unsigned long long)shdr.sh_name);                \
                                                                                    \
     printf("Type: ");                                                              \
-    PRINTSECTIONHEADERTYPE(shdr.sh_type);                                          \
+    PRINT_SECTIONHEADER_TYPE(shdr.sh_type);                                        \
     printf("\n");                                                                  \
                                                                                    \
     printf("Flags: ");                                                             \
-    PRINTSECTIONHEADERFLAGS(shdr.sh_flags);                                        \
+    PRINT_SECTIONHEADER_FLAGS(shdr.sh_flags);                                      \
     printf("\n");                                                                  \
                                                                                    \
-    printf("Addr: 0x%llx\n", (long long unsigned int)shdr.sh_addr);                \
+    printf("Addr: 0x%.2llx\n", (long long unsigned int)shdr.sh_addr);              \
     printf("Section file offset: %lld\n", (long long unsigned int)shdr.sh_offset); \
     printf("Section size: %lld\n", (long long unsigned int)shdr.sh_size);          \
     printf("Link: %lld\n", (long long unsigned int)shdr.sh_link);                  \
     printf("Info: %lld\n", (long long unsigned int)shdr.sh_info);                  \
     printf("Align: %lld\n", (long long unsigned int)shdr.sh_addralign);            \
     printf("Entry size: %lld\n", (long long unsigned int)shdr.sh_entsize);         \
+                                                                                   \
+    if (shdr.sh_type == SHT_SYMTAB && shdr.sh_offset > 0 && shdr.sh_size > 0)      \
+    {                                                                              \
+      Elf##BITS##_Sym *symtbl = malloc(shdr.sh_size);                              \
+      fseek(felf, shdr.sh_offset, SEEK_SET);                                       \
+      fread(symtbl, shdr.sh_size, 1, felf);                                        \
+      int symbolcounts = shdr.sh_size / shdr.sh_entsize;                           \
+      printf("\n+symtbl counts: %d\n\n", symbolcounts);                            \
+      for (int i = 0; i < symbolcounts; ++i)                                       \
+      {                                                                            \
+        printf("Symbol %2d:\n", i);                                                \
+        PRINT_SYM(symtbl[i], BITS);                                                \
+      }                                                                            \
+                                                                                   \
+      free(symtbl);                                                                \
+      symtbl = NULL;                                                               \
+    }                                                                              \
   } while (0)
 
 /// end section header
 
+/// begin symbol table
+
+#define PRINT_SYM_INFOBIND(bind)        \
+  do                                    \
+  {                                     \
+    switch (bind)                       \
+    {                                   \
+    case STB_LOCAL:                     \
+      printf("LOCAL");                  \
+      break;                            \
+    case STB_GLOBAL:                    \
+      printf("GLOBAL");                 \
+      break;                            \
+    case STB_WEAK:                      \
+      printf("WEAK");                   \
+      break;                            \
+    default:                            \
+      printf("unknow bind %.2x", bind); \
+      break;                            \
+    }                                   \
+  } while (0)
+
+#define PRINT_SYM_INFOTYPE(type)        \
+  do                                    \
+  {                                     \
+    switch (type)                       \
+    {                                   \
+    case STT_NOTYPE:                    \
+      printf("NOTYPE");                 \
+      break;                            \
+    case STT_OBJECT:                    \
+      printf("OBJECT");                 \
+      break;                            \
+    case STT_FUNC:                      \
+      printf("FUNC");                   \
+      break;                            \
+    case STT_SECTION:                   \
+      printf("SECTION");                \
+      break;                            \
+    case STT_FILE:                      \
+      printf("FILE");                   \
+      break;                            \
+    case STT_COMMON:                    \
+      printf("COMMON");                 \
+      break;                            \
+    case STT_TLS:                       \
+      printf("TLS");                    \
+      break;                            \
+    default:                            \
+      printf("unknow type %.2x", type); \
+      break;                            \
+    }                                   \
+  } while (0)
+
+#define PRINT_SYM(sym, BITS)                                          \
+  do                                                                  \
+  {                                                                   \
+    printf("\tName index: %lld\n", (unsigned long long)sym.st_name);  \
+    printf("\tValue: 0x%.2llx\n", (unsigned long long)sym.st_value);  \
+    printf("\tSize: %lld\n", (unsigned long long)sym.st_size);        \
+                                                                      \
+    printf("\tInfo bind: ");                                          \
+    PRINT_SYM_INFOBIND(ELF##BITS##_ST_BIND(sym.st_info));             \
+    printf("\n");                                                     \
+                                                                      \
+    printf("\tInfo type: ");                                          \
+    PRINT_SYM_INFOTYPE(ELF##BITS##_ST_TYPE(sym.st_info));             \
+    printf("\n");                                                     \
+                                                                      \
+    printf("\tOthers: %lld\n", (unsigned long long)sym.st_other);     \
+    printf("\tSection index: ");                                      \
+    if (sym.st_shndx == SHN_ABS)                                      \
+    {                                                                 \
+      printf("ABS(0x%.2llx)\n", (unsigned long long)sym.st_shndx);    \
+    }                                                                 \
+    else if (sym.st_shndx == SHN_COMMON)                              \
+    {                                                                 \
+      printf("COMMON(0x%.2llx)\n", (unsigned long long)sym.st_shndx); \
+    }                                                                 \
+    else                                                              \
+    {                                                                 \
+      printf("%lld\n", (unsigned long long)sym.st_shndx);             \
+    }                                                                 \
+    printf("\n");                                                     \
+  } while (0)
+
+/// end symbol table
+
+#define PRINT_SECTIONHEADER_CHECK(elfhdr, felf, BITS)          \
+  do                                                           \
+  {                                                            \
+    if (elfhdr.e_shoff > 0 && elfhdr.e_shnum > 0)              \
+    {                                                          \
+      printf("\nSection headers:\n\n");                        \
+      int size = elfhdr.e_shentsize * elfhdr.e_shnum;          \
+      Elf##BITS##_Shdr *elfshr = malloc(size);                 \
+      fseek(felf, elfhdr.e_shoff, SEEK_SET);                   \
+      fread(elfshr, elfhdr.e_shentsize, elfhdr.e_shnum, felf); \
+      for (int i = 0; i < elfhdr.e_shnum; ++i)                 \
+      {                                                        \
+        printf("Section %2d:\n", i);                           \
+        PRINT_SECTIONHEADER(elfshr[i], BITS);                  \
+        printf("\n");                                          \
+      }                                                        \
+                                                               \
+      free(elfshr);                                            \
+      elfshr = NULL;                                           \
+    }                                                          \
+  } while (0)
+
+#define PRINT_ELFHEADER_CHECK(felf, BITS)          \
+  do                                               \
+  {                                                \
+    Elf##BITS##_Ehdr elfhdr = {0};                 \
+    fread(&elfhdr, sizeof(elfhdr), 1, felf);       \
+    PRINT_ELFHEADER(elfhdr);                       \
+                                                   \
+    PRINT_SECTIONHEADER_CHECK(elfhdr, felf, BITS); \
+  } while (0)
+
+extern char *__executable_start;
+
 int main(int argc, char *argv[])
 {
+  PRINT_SYM_ADDR(__executable_start);
+
   printf("Usage : thisfile elffile\n");
   if (argc < 2)
   {
-    // EXIT(1);
+    EXIT(1);
   }
 
-  FILE *felf = fopen("/mnt/e/code/CVIP/code/elf/SimpleSection.o", "rb");
-  // FILE *felf = fopen(argv[1], "rb");
+  FILE *felf = fopen(argv[1], "rb");
   if (felf == NULL)
   {
     EXIT(1);
   }
   printf("open elffile %s succeed\n", argv[1]);
 
+  // analyse first 16 bytes magic code
   unsigned char e_ident[EI_NIDENT] = {0};
   fread(e_ident, EI_NIDENT, 1, felf);
+  // match first 4 code "\177ELF"
+  if (memcmp(ELFMAG, e_ident, 4) != 0)
+  {
+    EXIT(1);
+  }
+  // reset file point to begin
   fseek(felf, 0, SEEK_SET);
+  // judge class byte
   switch (e_ident[EI_CLASS])
   {
-  case ELFCLASS32:
+  case ELFCLASS32: // 32 bits
   {
-    Elf32_Ehdr elfhdr = {0};
-    fread(&elfhdr, sizeof(elfhdr), 1, felf);
-    PRINTELFHEADER(elfhdr);
+    PRINT_ELFHEADER_CHECK(felf, 32);
   }
   break;
-  case ELFCLASS64:
+  case ELFCLASS64: // 64 bits
   {
-    Elf64_Ehdr elfhdr = {0};
-    fread(&elfhdr, sizeof(elfhdr), 1, felf);
-    PRINTELFHEADER(elfhdr);
-
-    if (elfhdr.e_shoff != 0 && elfhdr.e_shnum != 0)
-    {
-      printf("\nSection headers:\n\n");
-      int offset = elfhdr.e_shoff - sizeof(elfhdr);
-      fseek(felf, offset, SEEK_CUR);
-      int size = elfhdr.e_shentsize * elfhdr.e_shnum;
-      Elf64_Shdr *elfshr = malloc(size);
-      fread(elfshr, elfhdr.e_shentsize, elfhdr.e_shnum, felf);
-      for (int i = 0; i < elfhdr.e_shnum; ++i)
-      {
-        PRINTSECTIONHEADER(elfshr[i]);
-        printf("\n");
-      }
-    }
+    PRINT_ELFHEADER_CHECK(felf, 64);
   }
   break;
   default:
