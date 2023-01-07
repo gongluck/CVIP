@@ -8,12 +8,12 @@
   - [ELF 节头](#elf-节头)
   - [ELF 节](#elf-节)
     - [.interp](#interp)
-    - [.text 节](#text-节)
-    - [.rodata 节](#rodata-节)
-    - [.data 节](#data-节)
-    - [.bss 节](#bss-节)
+    - [.text](#text)
+    - [.rodata](#rodata)
+    - [.data](#data)
+    - [.bss](#bss)
     - [.got/.got.plt](#gotgotplt)
-    - [.shstrtab 节头字符串表](#shstrtab-节头字符串表)
+    - [.shstrtab](#shstrtab)
     - [.symtab](#symtab)
     - [.strtab](#strtab)
     - [.dynsym](#dynsym)
@@ -23,7 +23,6 @@
     - [.rel.\*](#rel)
     - [.ctors/.dtors](#ctorsdtors)
     - [.init/.finit](#initfinit)
-  - [符号表节点](#符号表节点)
   - [ELF 程序自修改](#elf-程序自修改)
     - [修改全局/静态变量初始值](#修改全局静态变量初始值)
 
@@ -97,30 +96,7 @@ typedef struct elf64_hdr
 
 ## ELF 程序头
 
-<details>
-<summary>ELF程序头</summary>
-
-```C++
-/* Program segment header.  */
-
-typedef struct
-{
-  Elf32_Word p_type; /* Segment type */              //段类型
-  Elf32_Off p_offset; /* Segment file offset */      //本段的第一个字节从文件开始位置处的偏移量
-  Elf32_Addr p_vaddr; /* Segment virtual address */  //本段的第一个字节在内存中的虚拟地址
-  Elf32_Addr p_paddr; /* Segment physical address */ //在物理地址是相对寻址的系统上,这个成员保留用作段的物理地址
-  Elf32_Word p_filesz; /* Segment size in file */    //本段在文件镜像中的字节大小
-  Elf32_Word p_memsz; /* Segment size in memory */   //本段在内存镜像中的字节大小
-  Elf32_Word p_flags; /* Segment flags */            //段相关的标记
-  Elf32_Word p_align; /* Segment alignment */        //对齐方式
-} Elf32_Phdr;
-```
-
-</details>
-
 ## [ELF 节头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L312)
-
-- 段名的字符串信息在`.strtab`段，需要从`e_shoff`的地址开始偏移`e_shstrndx`+1 个`e_shentsize`。
 
 <details>
 <summary>ELF节头</summary>
@@ -157,84 +133,40 @@ typedef struct elf64_shdr
 
 </details>
 
+- 段名的字符串信息在`.strtab`段，需要从`e_shoff`的地址开始偏移`e_shstrndx`+1 个`e_shentsize`。
+
 ## ELF 节
 
 ### .interp
 
 - 保存可执行文件需要的动态链接器的路径。
 
-### .text 节
+### .text
 
-- `.text`节是保存了程序代码指令的代码节。
-- 一段可执行程序，如果存在`Phdr`，则.text 节就会存在于 text 段中。
-- 由于.text 节保存了程序代码，所以节类型为`SHT_PROGBITS`。
+- 保存程序代码指令。
 
-### .rodata 节
+### .rodata
 
-- `.rodata`节保存了只读的数据，如一行 C 语言代码中的字符串。
-- 由于.rodata 节是只读的，所以只能存在于一个可执行文件的只读段中。只能在 text 段中找到.rodata 节。
-- 由于.rodata 节是只读的，所以节类型为`SHT_PROGBITS`。
+- 保存只读数据。
 
-### .data 节
+### .data
 
-- `.data`节存在于 data 段中，其保存了初始化的全局变量等数据。
-- 由于.data 节保存了程序的变量数据，所以节类型为`SHT_PROGBITS`。
+- 保存初始化的全局变量等数据。
 
-### .bss 节
+### .bss
 
-- `.bss`节存在于 data 段中，占用空间不超过`4`字节，仅表示这个节本生的空间。
-- .bss 节保存了未进行初始化的全局数据。程序加载时数据被初始化为`0`，在程序执行期间可以进行赋值。
-- 由于.bss 节未保存实际的数据，所以节类型为`SHT_NOBITS`。
+- 存在于`data`段中，占用空间不超过`4`字节，仅表示这个节本生的空间。
+- 保存未进行初始化的全局数据。程序加载时数据被初始化为`0`，在程序执行期间可以进行赋值。
 
 ### .got/.got.plt
 
 - 提供了对导入的共享库函数的访问入口，由动态链接器在运行时进行修改。
 
-### .shstrtab 节头字符串表
+### .shstrtab
 
-- `.shstrtab`节头字符串表，用于保存节头表中用到的字符串，可通过`sh_name`进行索引。
+- 节头字符串表，用于保存节头表中用到的字符串，可通过`sh_name`进行索引。
 
-### .symtab
-
-- 保存了符号信息。
-- 保存了可执行文件的本地符号和从共享库导入的动态符号。
-- 只是用来进行调试和链接的。
-
-### .strtab
-
-- 保存符号字符串表，表中的内容会被`.symtab`的结构引用。
-
-### .dynsym
-
-- 保存了从共享库导入的动态符号表和全局符号，是`.symtab`所保存符合的子集。
-- 保存的符号只能在运行时被解析，是运行时动态链接器所需的唯一符号。对于动态链接可执行文件的执行是必需的。
-
-### .dynstr
-
-- 保存动态链接字符串表，表中存放字符串代表符号名称，以空字符作为终止符。
-
-### .dynamic
-
-- 保存了动态链接所需要的基本信息，依赖于哪些共享对象、动态链接符号表的位置、动态链接重定位表的位置、共享对象初始化代码的地址等。
-
-### .hash
-
-- 也称为`.gnu.hash`，保存了一个用于查找符号的散列表。
-
-### .rel.\*
-
-- 保存了重定位相关的信息，描述了如何在链接或运行时，对 ELF 目标文件的某部分或者进程镜像进行补充或修改。
-
-### .ctors/.dtors
-
-- 构造器和析构器分别保存了指向构造函数和析构函数的函数指针，构造函数是在 main 函数执行之前需要执行的代码；析构函数是在 main 函数之后需要执行的代码。
-
-### .init/.finit
-
-- 支持全局和静态对象的构造和析构。
-- 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
-
-## 符号表段
+### [.symtab](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L190)
 
 <details>
 <summary>符号表段</summary>
@@ -262,6 +194,84 @@ typedef struct elf64_sym
 ```
 
 </details>
+
+- 保存了符号信息。
+- 保存了可执行文件的本地符号和从共享库导入的动态符号。
+- 只是用来进行调试和链接的。
+
+### .strtab
+
+- 保存符号字符串表，表中的内容会被`.symtab`的结构引用。
+
+### .dynsym
+
+- 保存了从共享库导入的动态符号表和全局符号，是`.symtab`所保存符合的子集。
+- 保存的符号只能在运行时被解析，是运行时动态链接器所需的唯一符号。对于动态链接可执行文件的执行是必需的。
+
+### .dynstr
+
+- 保存动态链接字符串表，表中存放字符串代表符号名称，以空字符作为终止符。
+
+### .dynamic
+
+- 保存了动态链接所需要的基本信息，依赖于哪些共享对象、动态链接符号表的位置、动态链接重定位表的位置、共享对象初始化代码的地址等。
+
+### .hash
+
+- 也称为`.gnu.hash`，保存了一个用于查找符号的散列表。
+
+### [.rel.\*](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L157)
+
+<details>
+<summary>重定位表</summary>
+
+```C++
+/* The following are used with relocations */ // 提取符号重定位信息
+#define ELF32_R_SYM(x) ((x) >> 8)             // 提取符号重定位绑定信息
+#define ELF32_R_TYPE(x) ((x)&0xff)            // 提取符号重定位类型
+
+#define ELF64_R_SYM(i) ((i) >> 32)
+#define ELF64_R_TYPE(i) ((i)&0xffffffff)
+
+typedef struct elf32_rel // 重定位表入口结构
+{
+  Elf32_Addr r_offset; // 段偏移或虚拟地址
+  Elf32_Word r_info;   // 低8位标识入口类型 高24位标识入口符号在符号表的下标
+} Elf32_Rel;
+
+typedef struct elf64_rel
+{
+  Elf64_Addr r_offset; /* Location at which to apply the action */
+  Elf64_Xword r_info;  /* index and type of relocation */
+} Elf64_Rel;
+
+typedef struct elf32_rela // 重定位表入口结构
+{
+  Elf32_Addr r_offset;  // 段偏移或虚拟地址
+  Elf32_Word r_info;    // 低8位标识入口类型 高24位标识入口符号在符号表的下标
+  Elf32_Sword r_addend; // 辅助计算修订值 某些指令使用的是下一条指令的地址作为偏移寻址，则可以将这部分的偏移信息放在r_addend里面
+} Elf32_Rela;
+
+typedef struct elf64_rela
+{
+  Elf64_Addr r_offset;   /* Location at which to apply the action */
+  Elf64_Xword r_info;    /* index and type of relocation */
+  Elf64_Sxword r_addend; /* Constant addend used to compute value */
+} Elf64_Rela;
+```
+
+</details>
+
+- 保存了重定位相关的信息，描述了如何在链接或运行时，对 ELF 目标文件的某部分或者进程镜像进行补充或修改。
+
+### .ctors/.dtors
+
+- 构造器和析构器分别保存了指向构造函数和析构函数的函数指针，构造函数是在 main 函数执行之前需要执行的代码；析构函数是在 main 函数之后需要执行的代码。
+
+### .init/.finit
+
+- 支持全局和静态对象的构造和析构。
+- 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
 
 ## ELF 程序自修改
 
