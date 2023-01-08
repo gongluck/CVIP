@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-01-05 10:48:45
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-01-08 16:19:05
+ * @Last Modified time: 2023-01-08 20:44:29
  */
 
 #include <stdio.h>
@@ -347,11 +347,15 @@
   } while (0)
 
 // section header
-#define PRINT_SECTIONHEADER(shdr, BITS)                                          \
+#define PRINT_SECTIONHEADER(shdr, shstrtab, BITS)                                \
   do                                                                             \
   {                                                                              \
     printf("Name index: ");                                                      \
     PRINT_SYM_VALUE(shdr.sh_name);                                               \
+    if (shstrtab != NULL)                                                        \
+    {                                                                            \
+      printf("(%s)", shstrtab + shdr.sh_name);                                   \
+    }                                                                            \
     printf("\nType: ");                                                          \
     PRINT_SECTIONHEADER_TYPE(shdr.sh_type);                                      \
     printf("\nFlags: ");                                                         \
@@ -583,26 +587,31 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define PRINT_SECTIONHEADER_CHECK(elfhdr, felf, BITS)          \
-  do                                                           \
-  {                                                            \
-    if (elfhdr.e_shoff > 0 && elfhdr.e_shnum > 0)              \
-    {                                                          \
-      PRINT_SPLIT();                                           \
-      printf("Section headers:\n\n");                          \
-      int size = elfhdr.e_shentsize * elfhdr.e_shnum;          \
-      Elf##BITS##_Shdr *elfshr = malloc(size);                 \
-      fseek(felf, elfhdr.e_shoff, SEEK_SET);                   \
-      fread(elfshr, elfhdr.e_shentsize, elfhdr.e_shnum, felf); \
-      for (int i = 0; i < elfhdr.e_shnum; ++i)                 \
-      {                                                        \
-        printf("Section %2d:\n", i);                           \
-        PRINT_SECTIONHEADER(elfshr[i], BITS);                  \
-        printf("\n");                                          \
-      }                                                        \
-      free(elfshr);                                            \
-      elfshr = NULL;                                           \
-    }                                                          \
+#define PRINT_SECTIONHEADER_CHECK(elfhdr, felf, BITS)              \
+  do                                                               \
+  {                                                                \
+    if (elfhdr.e_shoff > 0 && elfhdr.e_shnum > 0)                  \
+    {                                                              \
+      PRINT_SPLIT();                                               \
+      printf("Section headers:\n\n");                              \
+      int size = elfhdr.e_shentsize * elfhdr.e_shnum;              \
+      Elf##BITS##_Shdr *elfshr = malloc(size);                     \
+      fseek(felf, elfhdr.e_shoff, SEEK_SET);                       \
+      fread(elfshr, elfhdr.e_shentsize, elfhdr.e_shnum, felf);     \
+      char *shstrtab = malloc(elfshr[elfhdr.e_shstrndx].sh_size);  \
+      fseek(felf, elfshr[elfhdr.e_shstrndx].sh_offset, SEEK_SET);  \
+      fread(shstrtab, elfshr[elfhdr.e_shstrndx].sh_size, 1, felf); \
+      for (int i = 0; i < elfhdr.e_shnum; ++i)                     \
+      {                                                            \
+        printf("Section %2d:\n", i);                               \
+        PRINT_SECTIONHEADER(elfshr[i], shstrtab, BITS);            \
+        printf("\n");                                              \
+      }                                                            \
+      free(shstrtab);                                              \
+      shstrtab = NULL;                                             \
+      free(elfshr);                                                \
+      elfshr = NULL;                                               \
+    }                                                              \
   } while (0)
 
 #define PRINT_ELFHEADER_CHECK(felf, BITS)          \
