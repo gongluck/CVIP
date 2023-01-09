@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-01-05 10:48:45
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-01-08 20:44:29
+ * @Last Modified time: 2023-01-09 15:02:40
  */
 
 #include <stdio.h>
@@ -347,42 +347,43 @@
   } while (0)
 
 // section header
-#define PRINT_SECTIONHEADER(shdr, shstrtab, BITS)                                \
-  do                                                                             \
-  {                                                                              \
-    printf("Name index: ");                                                      \
-    PRINT_SYM_VALUE(shdr.sh_name);                                               \
-    if (shstrtab != NULL)                                                        \
-    {                                                                            \
-      printf("(%s)", shstrtab + shdr.sh_name);                                   \
-    }                                                                            \
-    printf("\nType: ");                                                          \
-    PRINT_SECTIONHEADER_TYPE(shdr.sh_type);                                      \
-    printf("\nFlags: ");                                                         \
-    PRINT_SECTIONHEADER_FLAGS(shdr.sh_flags);                                    \
-    printf("\nAddr: ");                                                          \
-    PRINT_SYM_ADDR(shdr.sh_addr);                                                \
-    printf("\nSection file offset: ");                                           \
-    PRINT_SYM_VALUE(shdr.sh_offset);                                             \
-    printf("\nSection size: ");                                                  \
-    PRINT_SYM_VALUE(shdr.sh_size);                                               \
-    printf("\nLink: ");                                                          \
-    PRINT_SYM_VALUE(shdr.sh_link);                                               \
-    printf("\nInfo: ");                                                          \
-    PRINT_SYM_VALUE(shdr.sh_info);                                               \
-    printf("\nAlign: ");                                                         \
-    PRINT_SYM_VALUE(shdr.sh_addralign);                                          \
-    printf("\nEntry size: ");                                                    \
-    PRINT_SYM_VALUE(shdr.sh_entsize);                                            \
-    printf("\n");                                                                \
-    if (shdr.sh_type == SHT_SYMTAB && shdr.sh_offset > 0 && shdr.sh_size > 0)    \
-    {                                                                            \
-      PRINT_SECTION_ENTRY(felf, shdr, BITS, Sym, PRINT_SYM);                     \
-    }                                                                            \
-    else if (shdr.sh_type == SHT_RELA && shdr.sh_offset > 0 && shdr.sh_size > 0) \
-    {                                                                            \
-      PRINT_SECTION_ENTRY(felf, shdr, BITS, Rela, PRINT_RELA);                   \
-    }                                                                            \
+#define PRINT_SECTIONHEADER(shdrarry, i, shstrtab, BITS)                            \
+  do                                                                                \
+  {                                                                                 \
+    Elf##BITS##_Shdr shdr = shdrarry[i];                                            \
+    printf("Name index: ");                                                         \
+    PRINT_SYM_VALUE(shdr.sh_name);                                                  \
+    if (shstrtab != NULL)                                                           \
+    {                                                                               \
+      printf("(%s)", shstrtab + shdr.sh_name);                                      \
+    }                                                                               \
+    printf("\nType: ");                                                             \
+    PRINT_SECTIONHEADER_TYPE(shdr.sh_type);                                         \
+    printf("\nFlags: ");                                                            \
+    PRINT_SECTIONHEADER_FLAGS(shdr.sh_flags);                                       \
+    printf("\nAddr: ");                                                             \
+    PRINT_SYM_ADDR(shdr.sh_addr);                                                   \
+    printf("\nSection file offset: ");                                              \
+    PRINT_SYM_VALUE(shdr.sh_offset);                                                \
+    printf("\nSection size: ");                                                     \
+    PRINT_SYM_VALUE(shdr.sh_size);                                                  \
+    printf("\nLink: ");                                                             \
+    PRINT_SYM_VALUE(shdr.sh_link);                                                  \
+    printf("\nInfo: ");                                                             \
+    PRINT_SYM_VALUE(shdr.sh_info);                                                  \
+    printf("\nAlign: ");                                                            \
+    PRINT_SYM_VALUE(shdr.sh_addralign);                                             \
+    printf("\nEntry size: ");                                                       \
+    PRINT_SYM_VALUE(shdr.sh_entsize);                                               \
+    printf("\n");                                                                   \
+    if (shdr.sh_type == SHT_SYMTAB && shdr.sh_offset > 0 && shdr.sh_size > 0)       \
+    {                                                                               \
+      PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Sym, PRINT_SYM);   \
+    }                                                                               \
+    else if (shdr.sh_type == SHT_RELA && shdr.sh_offset > 0 && shdr.sh_size > 0)    \
+    {                                                                               \
+      PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Rela, PRINT_RELA); \
+    }                                                                               \
   } while (0)
 
 /// end section header
@@ -462,11 +463,15 @@
   } while (0)
 
 // symbol
-#define PRINT_SYM(sym, BITS)                              \
+#define PRINT_SYM(sym, linkstr, BITS, TYPE)               \
   do                                                      \
   {                                                       \
     printf("\tName index: ");                             \
     PRINT_SYM_VALUE(sym.st_name);                         \
+    if (linkstr != NULL)                                  \
+    {                                                     \
+      printf("(%s)", linkstr + sym.st_name);              \
+    }                                                     \
     printf("\n\tValue: ");                                \
     PRINT_SYM_VALUE_HEX(sym.st_value);                    \
     printf("\n\tSize: ");                                 \
@@ -546,7 +551,7 @@
   } while (0)
 
 // relocation addend
-#define PRINT_RELA(rela, BITS)                           \
+#define PRINT_RELA(rela, linkstr, BITS, TYPE)            \
   do                                                     \
   {                                                      \
     printf("\tOffset: ");                                \
@@ -565,22 +570,35 @@
 /// begin section entries
 
 // section entries
-#define PRINT_SECTION_ENTRY(felf, shdr, BITS, TYPE, WORK) \
-  do                                                      \
-  {                                                       \
-    Elf##BITS##_##TYPE *entries = malloc(shdr.sh_size);   \
-    fseek(felf, shdr.sh_offset, SEEK_SET);                \
-    fread(entries, shdr.sh_size, 1, felf);                \
-    int entrycounts = shdr.sh_size / shdr.sh_entsize;     \
-    printf("\nEntry counts: %d\n", entrycounts);          \
-    PRINT_SPLIT();                                        \
-    for (int i = 0; i < entrycounts; ++i)                 \
-    {                                                     \
-      printf("\nEntry %2d:\n", i);                        \
-      WORK(entries[i], BITS);                             \
-    }                                                     \
-    free(entries);                                        \
-    entries = NULL;                                       \
+#define PRINT_SECTION_ENTRY(felf, shdrarry, i, link, BITS, TYPE, WORK) \
+  do                                                                   \
+  {                                                                    \
+    Elf##BITS##_Shdr shdr = shdrarry[i];                               \
+    Elf##BITS##_##TYPE *entries = malloc(shdr.sh_size);                \
+    fseek(felf, shdr.sh_offset, SEEK_SET);                             \
+    fread(entries, shdr.sh_size, 1, felf);                             \
+    int entrycounts = shdr.sh_size / shdr.sh_entsize;                  \
+    printf("\nEntry counts: %d\n", entrycounts);                       \
+    PRINT_SPLIT();                                                     \
+    char *linkstr = NULL;                                              \
+    printf("link is %d\n", (int)link);                                 \
+    if (link != 0)                                                     \
+    {                                                                  \
+      shdr = shdrarry[link];                                           \
+      linkstr = malloc(shdr.sh_size);                                  \
+      printf("linksize is %d\n", (int)shdr.sh_size);                   \
+      fseek(felf, shdr.sh_offset, SEEK_SET);                           \
+      fread(linkstr, shdr.sh_size, 1, felf);                           \
+    }                                                                  \
+    for (int i = 0; i < entrycounts; ++i)                              \
+    {                                                                  \
+      printf("\nEntry %2d:\n", i);                                     \
+      WORK(entries[i], linkstr, BITS, TYPE);                           \
+    }                                                                  \
+    free(linkstr);                                                     \
+    linkstr = NULL;                                                    \
+    free(entries);                                                     \
+    entries = NULL;                                                    \
   } while (0)
 
 /// end section entries
@@ -604,7 +622,7 @@
       for (int i = 0; i < elfhdr.e_shnum; ++i)                     \
       {                                                            \
         printf("Section %2d:\n", i);                               \
-        PRINT_SECTIONHEADER(elfshr[i], shstrtab, BITS);            \
+        PRINT_SECTIONHEADER(elfshr, i, shstrtab, BITS);            \
         printf("\n");                                              \
       }                                                            \
       free(shstrtab);                                              \
