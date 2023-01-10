@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-01-05 10:48:45
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-01-09 15:02:40
+ * @Last Modified time: 2023-01-10 15:07:25
  */
 
 #include <stdio.h>
@@ -545,6 +545,7 @@
     case R_X86_64_PC8:                   \
       PRINT_SYM_STR(R_X86_64_PC8);       \
       break;                             \
+    default:                             \
       PRINT_VALUE_HEX(type);             \
       break;                             \
     }                                    \
@@ -605,6 +606,107 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// begin program header
+
+// program header type
+#define PRINT_PROGRAMHEADER_TYPE(type) \
+  do                                   \
+  {                                    \
+    switch (type)                      \
+    {                                  \
+    case PT_NULL:                      \
+      PRINT_SYM_STR(PT_NULL);          \
+      break;                           \
+    case PT_LOAD:                      \
+      PRINT_SYM_STR(PT_LOAD);          \
+      break;                           \
+    case PT_DYNAMIC:                   \
+      PRINT_SYM_STR(PT_DYNAMIC);       \
+      break;                           \
+    case PT_INTERP:                    \
+      PRINT_SYM_STR(PT_INTERP);        \
+      break;                           \
+    case PT_NOTE:                      \
+      PRINT_SYM_STR(PT_NOTE);          \
+      break;                           \
+    case PT_SHLIB:                     \
+      PRINT_SYM_STR(PT_SHLIB);         \
+      break;                           \
+    case PT_PHDR:                      \
+      PRINT_SYM_STR(PT_PHDR);          \
+      break;                           \
+    case PT_TLS:                       \
+      PRINT_SYM_STR(PT_TLS);           \
+      break;                           \
+    case PT_LOOS:                      \
+      PRINT_SYM_STR(PT_LOOS);          \
+      break;                           \
+    case PT_HIOS:                      \
+      PRINT_SYM_STR(PT_HIOS);          \
+      break;                           \
+    case PT_LOPROC:                    \
+      PRINT_SYM_STR(PT_LOPROC);        \
+      break;                           \
+    case PT_HIPROC:                    \
+      PRINT_SYM_STR(PT_HIPROC);        \
+      break;                           \
+    case PT_GNU_EH_FRAME:              \
+      PRINT_SYM_STR(PT_GNU_EH_FRAME);  \
+      break;                           \
+    case PT_GNU_STACK:                 \
+      PRINT_SYM_STR(PT_GNU_STACK);     \
+      break;                           \
+    default:                           \
+      PRINT_VALUE_HEX(type);           \
+      break;                           \
+    }                                  \
+  } while (0)
+
+// program header flags
+#define PRINT_PROGRAMHEADER_FLAGS(flags) \
+  do                                     \
+  {                                      \
+    if (flags & PF_X)                    \
+    {                                    \
+      PRINT_SYM_STREND(PF_X, " ");       \
+    }                                    \
+    if (flags & PF_W)                    \
+    {                                    \
+      PRINT_SYM_STREND(PF_W, " ");       \
+    }                                    \
+    if (flags & PF_R)                    \
+    {                                    \
+      PRINT_SYM_STREND(PF_R, " ");       \
+    }                                    \
+  } while (0)
+
+// program header
+#define PRINT_PROGRAMHEADER(elfphr)            \
+  do                                           \
+  {                                            \
+    printf("\tType: ");                        \
+    PRINT_PROGRAMHEADER_TYPE(elfphr.p_type);   \
+    printf("\n\tOffset: ");                    \
+    PRINT_SYM_VALUE(elfphr.p_offset);          \
+    printf("\n\tVirtual Addr: ");              \
+    PRINT_SYM_VALUE_HEX(elfphr.p_vaddr);       \
+    printf("\n\tPhysical Addr: ");             \
+    PRINT_SYM_VALUE_HEX(elfphr.p_paddr);       \
+    printf("\n\tFile Size: ");                 \
+    PRINT_SYM_VALUE(elfphr.p_filesz);          \
+    printf("\n\tMemory Size: ");               \
+    PRINT_SYM_VALUE(elfphr.p_memsz);           \
+    printf("\n\tFlags: ");                     \
+    PRINT_PROGRAMHEADER_FLAGS(elfphr.p_flags); \
+    printf("\n\tAlign: ");                     \
+    PRINT_SYM_VALUE(elfphr.p_align);           \
+    printf("\n");                              \
+  } while (0)
+
+/// end program header
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 #define PRINT_SECTIONHEADER_CHECK(elfhdr, felf, BITS)              \
   do                                                               \
   {                                                                \
@@ -621,9 +723,9 @@
       fread(shstrtab, elfshr[elfhdr.e_shstrndx].sh_size, 1, felf); \
       for (int i = 0; i < elfhdr.e_shnum; ++i)                     \
       {                                                            \
+        printf("\n");                                              \
         printf("Section %2d:\n", i);                               \
         PRINT_SECTIONHEADER(elfshr, i, shstrtab, BITS);            \
-        printf("\n");                                              \
       }                                                            \
       free(shstrtab);                                              \
       shstrtab = NULL;                                             \
@@ -632,12 +734,35 @@
     }                                                              \
   } while (0)
 
+#define PRINT_PROGRAMHEADER_CHECK(elfhdr, felf, BITS)          \
+  do                                                           \
+  {                                                            \
+    if (elfhdr.e_phoff > 0 && elfhdr.e_phnum > 0)              \
+    {                                                          \
+      PRINT_SPLIT();                                           \
+      printf("Program headers:\n\n");                          \
+      int size = elfhdr.e_phentsize * elfhdr.e_phnum;          \
+      Elf##BITS##_Phdr *elfphr = malloc(size);                 \
+      fseek(felf, elfhdr.e_phoff, SEEK_SET);                   \
+      fread(elfphr, elfhdr.e_phentsize, elfhdr.e_phnum, felf); \
+      for (int i = 0; i < elfhdr.e_phnum; ++i)                 \
+      {                                                        \
+        printf("Program %2d:\n", i);                           \
+        PRINT_PROGRAMHEADER(elfphr[i]);                        \
+        printf("\n");                                          \
+      }                                                        \
+      free(elfphr);                                            \
+      elfphr = NULL;                                           \
+    }                                                          \
+  } while (0)
+
 #define PRINT_ELFHEADER_CHECK(felf, BITS)          \
   do                                               \
   {                                                \
     Elf##BITS##_Ehdr elfhdr = {0};                 \
     fread(&elfhdr, sizeof(elfhdr), 1, felf);       \
     PRINT_ELFHEADER(elfhdr);                       \
+    PRINT_PROGRAMHEADER_CHECK(elfhdr, felf, BITS); \
     PRINT_SECTIONHEADER_CHECK(elfhdr, felf, BITS); \
   } while (0)
 

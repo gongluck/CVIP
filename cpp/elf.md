@@ -94,12 +94,50 @@ typedef struct elf64_hdr
 
 </details>
 
-## ELF 程序头
-
-## [ELF 节头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L312)
+## [ELF 程序头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L247)
 
 <details>
-<summary>ELF节头</summary>
+<summary>ELF程序头</summary>
+
+```C++
+// 程序头权限属性
+/* These constants define the permissions on sections in the program
+   header, p_flags. */
+#define PF_R 0x4 // 可读
+#define PF_W 0x2 // 可写
+#define PF_X 0x1 // 可运行
+
+typedef struct elf32_phdr // elf程序头表 segment
+{
+  Elf32_Word p_type;   // 段类型 PT_XXX
+  Elf32_Off p_offset;  // 段在内存映像(虚拟内存基址)的偏移
+  Elf32_Addr p_vaddr;  // 虚拟地址空间
+  Elf32_Addr p_paddr;  // 物理装载地址
+  Elf32_Word p_filesz; // 段文件长度
+  Elf32_Word p_memsz;  // 段虚拟空间长度
+  Elf32_Word p_flags;  // 权限属性
+  Elf32_Word p_align;  // 对齐幂数
+} Elf32_Phdr;
+
+typedef struct elf64_phdr
+{
+  Elf64_Word p_type;
+  Elf64_Word p_flags;
+  Elf64_Off p_offset;   /* Segment file offset */
+  Elf64_Addr p_vaddr;   /* Segment virtual address */
+  Elf64_Addr p_paddr;   /* Segment physical address */
+  Elf64_Xword p_filesz; /* Segment size in file */
+  Elf64_Xword p_memsz;  /* Segment size in memory */
+  Elf64_Xword p_align;  /* Segment alignment, file & memory */
+} Elf64_Phdr;
+```
+
+</details>
+
+## [ELF Section Header](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L312)
+
+<details>
+<summary>ELF Section Header</summary>
 
 ```C++
 typedef struct elf32_shdr // elf段表描述结构
@@ -135,7 +173,7 @@ typedef struct elf64_shdr
 
 - 段名的字符串信息在`.strtab`段，需要从`e_shoff`的地址开始偏移`e_shstrndx`+1 个`e_shentsize`。
 
-## ELF 节
+## ELF Section
 
 ### .interp
 
