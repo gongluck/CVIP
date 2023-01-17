@@ -5,14 +5,14 @@
   - [ELF 段(segment)和节(section)](#elf-段segment和节section)
   - [ELF 文件头](#elf-文件头)
   - [ELF 程序头](#elf-程序头)
-  - [ELF 节头](#elf-节头)
-  - [ELF 节](#elf-节)
+  - [ELF Section Header](#elf-section-header)
+  - [ELF Section](#elf-section)
     - [.interp](#interp)
     - [.text](#text)
     - [.rodata](#rodata)
     - [.data](#data)
     - [.bss](#bss)
-    - [.got/.got.plt](#gotgotplt)
+    - [.got/.plt/.got.plt](#gotpltgotplt)
     - [.shstrtab](#shstrtab)
     - [.symtab](#symtab)
     - [.strtab](#strtab)
@@ -196,9 +196,11 @@ typedef struct elf64_shdr
 - 存在于`data`段中，占用空间不超过`4`字节，仅表示这个节本生的空间。
 - 保存未进行初始化的全局数据。程序加载时数据被初始化为`0`，在程序执行期间可以进行赋值。
 
-### .got/.got.plt
+### .got/.plt/.got.plt
 
-- 提供了对导入的共享库函数的访问入口，由动态链接器在运行时进行修改。
+- GOT(Global Offset Table)全局偏移表。链接器为外部符号填充的实际偏移表。
+- PLT(Procedure Linkage Table)程序链接表。可以在`.got.plt`节中拿到地址，并跳转。当`.got.plt`没有所需地址的时，触发链接器去找到所需地址。
+- .got.plt 中的值是 GOT 的一部分。包含上述 PLT 表所需地址(已经找到的和需要去触发的)。
 
 ### .shstrtab
 
