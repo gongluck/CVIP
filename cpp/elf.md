@@ -252,7 +252,34 @@ typedef struct elf64_sym
 
 - 保存动态链接字符串表，表中存放字符串代表符号名称，以空字符作为终止符。
 
-### .dynamic
+### [.dynamic](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L137)
+
+<details>
+<summary>动态段</summary>
+
+```C++
+typedef struct dynamic // .dynamic段节点结构
+{
+  Elf32_Sword d_tag; // 类型标识 DT_XXX
+  union
+  {
+    Elf32_Sword d_val; // 值
+    Elf32_Addr d_ptr;  // 地址
+  } d_un;
+} Elf32_Dyn;
+
+typedef struct
+{
+  Elf64_Sxword d_tag; /* entry tag value */
+  union
+  {
+    Elf64_Xword d_val;
+    Elf64_Addr d_ptr;
+  } d_un;
+} Elf64_Dyn;
+```
+
+</details>
 
 - 保存了动态链接所需要的基本信息，依赖于哪些共享对象、动态链接符号表的位置、动态链接重定位表的位置、共享对象初始化代码的地址等。
 

@@ -8,38 +8,32 @@
 #include <stdio.h>
 #include <elf.h>
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-  int *p = (int *)argv;
+  long *p = (long *)argv;
   int i;
-  Elf32_auxv_t *aux;
+  Elf64_auxv_t *aux;
 
-  printf("Argument count: %d\n", *(p - 1));
-
-  for (i = 0; i < *(p - 1); i++)
+  printf("Argument count: %ld\n", *(p - 1));
+  for (i = 1; i < *(p - 1); ++i)
   {
-    printf("Argument %d: %s\n", i, *(p + 1));
+    printf("Argument %d : %s\n", i, (char *)*(p + i));
   }
-
   p += i;
-  p++; // skip 0
-
-  printf("Environment: \n");
+  p++;
+  printf("Environment:\n");
   while (*p)
   {
-    printf("%s\n", *p);
-    p++;
+    printf("%s\n", (char *)*p++);
   }
-
-  p++; // skip 0
-
-  printf("Auxiliary Vectors: \n");
-  aux = (Elf32_auxv_t *)p;
+  p++;
+  printf("Auxiliary Vectors:\n");
+  aux = (Elf64_auxv_t *)p;
   while (aux->a_type != AT_NULL)
   {
-    printf("Type: %02d Value: %x\n", aux->a_type, aux->a_un.a_val);
+    printf("Type: %02ld Value: %16lx\n", aux->a_type,
+           aux->a_un.a_val);
     aux++;
   }
-
   return 0;
 }

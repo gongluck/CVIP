@@ -347,43 +347,60 @@
   } while (0)
 
 // section header
-#define PRINT_SECTIONHEADER(shdrarry, i, shstrtab, BITS)                            \
-  do                                                                                \
-  {                                                                                 \
-    Elf##BITS##_Shdr shdr = shdrarry[i];                                            \
-    printf("Name index: ");                                                         \
-    PRINT_SYM_VALUE(shdr.sh_name);                                                  \
-    if (shstrtab != NULL)                                                           \
-    {                                                                               \
-      printf("(%s)", shstrtab + shdr.sh_name);                                      \
-    }                                                                               \
-    printf("\nType: ");                                                             \
-    PRINT_SECTIONHEADER_TYPE(shdr.sh_type);                                         \
-    printf("\nFlags: ");                                                            \
-    PRINT_SECTIONHEADER_FLAGS(shdr.sh_flags);                                       \
-    printf("\nAddr: ");                                                             \
-    PRINT_SYM_ADDR(shdr.sh_addr);                                                   \
-    printf("\nSection file offset: ");                                              \
-    PRINT_SYM_VALUE(shdr.sh_offset);                                                \
-    printf("\nSection size: ");                                                     \
-    PRINT_SYM_VALUE(shdr.sh_size);                                                  \
-    printf("\nLink: ");                                                             \
-    PRINT_SYM_VALUE(shdr.sh_link);                                                  \
-    printf("\nInfo: ");                                                             \
-    PRINT_SYM_VALUE(shdr.sh_info);                                                  \
-    printf("\nAlign: ");                                                            \
-    PRINT_SYM_VALUE(shdr.sh_addralign);                                             \
-    printf("\nEntry size: ");                                                       \
-    PRINT_SYM_VALUE(shdr.sh_entsize);                                               \
-    printf("\n");                                                                   \
-    if (shdr.sh_type == SHT_SYMTAB && shdr.sh_offset > 0 && shdr.sh_size > 0)       \
-    {                                                                               \
-      PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Sym, PRINT_SYM);   \
-    }                                                                               \
-    else if (shdr.sh_type == SHT_RELA && shdr.sh_offset > 0 && shdr.sh_size > 0)    \
-    {                                                                               \
-      PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Rela, PRINT_RELA); \
-    }                                                                               \
+#define PRINT_SECTIONHEADER(felf, shdrarry, i, shstrtab, BITS)                          \
+  do                                                                                    \
+  {                                                                                     \
+    Elf##BITS##_Shdr shdr = shdrarry[i];                                                \
+    printf("Name index: ");                                                             \
+    PRINT_SYM_VALUE(shdr.sh_name);                                                      \
+    const char *shdname = "";                                                           \
+    if (shstrtab != NULL)                                                               \
+    {                                                                                   \
+      shdname = shstrtab + shdr.sh_name;                                                \
+      printf("(%s)", shdname);                                                          \
+    }                                                                                   \
+    printf("\nType: ");                                                                 \
+    PRINT_SECTIONHEADER_TYPE(shdr.sh_type);                                             \
+    printf("\nFlags: ");                                                                \
+    PRINT_SECTIONHEADER_FLAGS(shdr.sh_flags);                                           \
+    printf("\nAddr: ");                                                                 \
+    PRINT_SYM_ADDR(shdr.sh_addr);                                                       \
+    char buf[512] = {0};                                                                \
+    if (strcmp(shdname, ".interp") == 0)                                                \
+    {                                                                                   \
+      fseek(felf, shdr.sh_addr, SEEK_SET);                                              \
+      fread(buf, sizeof(buf), 1, felf);                                                 \
+      printf("(%s)", buf);                                                              \
+    }                                                                                   \
+    printf("\nSection file offset: ");                                                  \
+    PRINT_SYM_VALUE(shdr.sh_offset);                                                    \
+    printf("\nSection size: ");                                                         \
+    PRINT_SYM_VALUE(shdr.sh_size);                                                      \
+    printf("\nLink: ");                                                                 \
+    PRINT_SYM_VALUE(shdr.sh_link);                                                      \
+    printf("\nInfo: ");                                                                 \
+    PRINT_SYM_VALUE(shdr.sh_info);                                                      \
+    printf("\nAlign: ");                                                                \
+    PRINT_SYM_VALUE(shdr.sh_addralign);                                                 \
+    printf("\nEntry size: ");                                                           \
+    PRINT_SYM_VALUE(shdr.sh_entsize);                                                   \
+    printf("\n");                                                                       \
+    if (shdr.sh_offset > 0 && shdr.sh_size > 0)                                         \
+    {                                                                                   \
+      switch (shdr.sh_type)                                                             \
+      {                                                                                 \
+      case SHT_SYMTAB:                                                                  \
+      case SHT_DYNSYM:                                                                  \
+        PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Sym, PRINT_SYM);     \
+        break;                                                                          \
+      case SHT_RELA:                                                                    \
+        PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Rela, PRINT_RELA);   \
+        break;                                                                          \
+      case SHT_DYNAMIC:                                                                 \
+        PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Dyn, PRINT_DYNMAIC); \
+        break;                                                                          \
+      }                                                                                 \
+    }                                                                                   \
   } while (0)
 
 /// end section header
@@ -463,7 +480,7 @@
   } while (0)
 
 // symbol
-#define PRINT_SYM(sym, linkstr, BITS, TYPE)               \
+#define PRINT_SYM(felf, sym, linkstr, BITS, TYPE)         \
   do                                                      \
   {                                                       \
     printf("\tName index: ");                             \
@@ -552,7 +569,7 @@
   } while (0)
 
 // relocation addend
-#define PRINT_RELA(rela, linkstr, BITS, TYPE)            \
+#define PRINT_RELA(felf, rela, linkstr, BITS, TYPE)      \
   do                                                     \
   {                                                      \
     printf("\tOffset: ");                                \
@@ -567,6 +584,156 @@
   } while (0)
 
 /// end relocation addend
+
+/// begin dynmaic
+
+// dynmaic type flag
+#define PRINT_DYNMAIC_TYPE(type)         \
+  do                                     \
+  {                                      \
+    switch (type)                        \
+    {                                    \
+    case DT_NULL:                        \
+      PRINT_SYM_STR(DT_NULL);            \
+      break;                             \
+    case DT_NEEDED:                      \
+      PRINT_SYM_STR(DT_NEEDED);          \
+      break;                             \
+    case DT_PLTRELSZ:                    \
+      PRINT_SYM_STR(DT_PLTRELSZ);        \
+      break;                             \
+    case DT_PLTGOT:                      \
+      PRINT_SYM_STR(DT_PLTGOT);          \
+      break;                             \
+    case DT_HASH:                        \
+      PRINT_SYM_STR(DT_HASH);            \
+      break;                             \
+    case DT_STRTAB:                      \
+      PRINT_SYM_STR(DT_STRTAB);          \
+      break;                             \
+    case DT_SYMTAB:                      \
+      PRINT_SYM_STR(DT_SYMTAB);          \
+      break;                             \
+    case DT_RELA:                        \
+      PRINT_SYM_STR(DT_RELA);            \
+      break;                             \
+    case DT_RELASZ:                      \
+      PRINT_SYM_STR(DT_RELASZ);          \
+      break;                             \
+    case DT_RELAENT:                     \
+      PRINT_SYM_STR(DT_RELAENT);         \
+      break;                             \
+    case DT_STRSZ:                       \
+      PRINT_SYM_STR(DT_STRSZ);           \
+      break;                             \
+    case DT_SYMENT:                      \
+      PRINT_SYM_STR(DT_SYMENT);          \
+      break;                             \
+    case DT_INIT:                        \
+      PRINT_SYM_STR(DT_INIT);            \
+      break;                             \
+    case DT_FINI:                        \
+      PRINT_SYM_STR(DT_FINI);            \
+      break;                             \
+    case DT_SONAME:                      \
+      PRINT_SYM_STR(DT_SONAME);          \
+      break;                             \
+    case DT_RPATH:                       \
+      PRINT_SYM_STR(DT_RPATH);           \
+      break;                             \
+    case DT_SYMBOLIC:                    \
+      PRINT_SYM_STR(DT_SYMBOLIC);        \
+      break;                             \
+    case DT_REL:                         \
+      PRINT_SYM_STR(DT_REL);             \
+      break;                             \
+    case DT_RELSZ:                       \
+      PRINT_SYM_STR(DT_RELSZ);           \
+      break;                             \
+    case DT_RELENT:                      \
+      PRINT_SYM_STR(DT_RELENT);          \
+      break;                             \
+    case DT_PLTREL:                      \
+      PRINT_SYM_STR(DT_PLTREL);          \
+      break;                             \
+    case DT_DEBUG:                       \
+      PRINT_SYM_STR(DT_DEBUG);           \
+      break;                             \
+    case DT_TEXTREL:                     \
+      PRINT_SYM_STR(DT_TEXTREL);         \
+      break;                             \
+    case DT_JMPREL:                      \
+      PRINT_SYM_STR(DT_JMPREL);          \
+      break;                             \
+    case DT_BIND_NOW:                    \
+      PRINT_SYM_STR(DT_BIND_NOW);        \
+      break;                             \
+    case DT_INIT_ARRAY:                  \
+      PRINT_SYM_STR(DT_INIT_ARRAY);      \
+      break;                             \
+    case DT_FINI_ARRAY:                  \
+      PRINT_SYM_STR(DT_FINI_ARRAY);      \
+      break;                             \
+    case DT_INIT_ARRAYSZ:                \
+      PRINT_SYM_STR(DT_INIT_ARRAYSZ);    \
+      break;                             \
+    case DT_FINI_ARRAYSZ:                \
+      PRINT_SYM_STR(DT_FINI_ARRAYSZ);    \
+      break;                             \
+    case DT_RUNPATH:                     \
+      PRINT_SYM_STR(DT_RUNPATH);         \
+      break;                             \
+    case DT_FLAGS:                       \
+      PRINT_SYM_STR(DT_FLAGS);           \
+      break;                             \
+    /*case DT_ENCODING:                  \
+      PRINT_SYM_STR(DT_ENCODING);        \
+      break;*/                           \
+    case DT_PREINIT_ARRAY:               \
+      PRINT_SYM_STR(DT_PREINIT_ARRAY);   \
+      break;                             \
+    case DT_PREINIT_ARRAYSZ:             \
+      PRINT_SYM_STR(DT_PREINIT_ARRAYSZ); \
+      break;                             \
+    case DT_SYMTAB_SHNDX:                \
+      PRINT_SYM_STR(DT_SYMTAB_SHNDX);    \
+      break;                             \
+    default:                             \
+      PRINT_VALUE_HEX(type);             \
+      break;                             \
+    }                                    \
+  } while (0)
+
+// dynmaic value
+#define PRINT_DYNMAIC_VALUE(dyn)     \
+  do                                 \
+  {                                  \
+    PRINT_VALUE(dyn.d_un.d_val);     \
+    printf(" : ");                   \
+    PRINT_VALUE_HEX(dyn.d_un.d_ptr); \
+  } while (0)
+
+// dynmaic entry
+#define PRINT_DYNMAIC(felf, dyn, linkstr, BITS, TYPE) \
+  do                                                  \
+  {                                                   \
+    printf("\tType: ");                               \
+    PRINT_DYNMAIC_TYPE(dyn.d_tag);                    \
+    printf("\n");                                     \
+    printf("\tValue: ");                              \
+    PRINT_DYNMAIC_VALUE(dyn);                         \
+    switch (dyn.d_tag)                                \
+    {                                                 \
+    case DT_NEEDED:                                   \
+    case DT_SONAME:                                   \
+    case DT_RPATH:                                    \
+      printf("(%s)", linkstr + dyn.d_un.d_ptr);       \
+      break;                                          \
+    }                                                 \
+    printf("\n");                                     \
+  } while (0)
+
+/// end dynmaic
 
 /// begin section entries
 
@@ -594,7 +761,7 @@
     for (int i = 0; i < entrycounts; ++i)                              \
     {                                                                  \
       printf("\nEntry %2d:\n", i);                                     \
-      WORK(entries[i], linkstr, BITS, TYPE);                           \
+      WORK(felf, entries[i], linkstr, BITS, TYPE);                     \
     }                                                                  \
     free(linkstr);                                                     \
     linkstr = NULL;                                                    \
@@ -713,7 +880,7 @@
     if (elfhdr.e_shoff > 0 && elfhdr.e_shnum > 0)                  \
     {                                                              \
       PRINT_SPLIT();                                               \
-      printf("Section headers:\n\n");                              \
+      printf("Section headers:\n");                                \
       int size = elfhdr.e_shentsize * elfhdr.e_shnum;              \
       Elf##BITS##_Shdr *elfshr = malloc(size);                     \
       fseek(felf, elfhdr.e_shoff, SEEK_SET);                       \
@@ -725,7 +892,7 @@
       {                                                            \
         printf("\n");                                              \
         printf("Section %2d:\n", i);                               \
-        PRINT_SECTIONHEADER(elfshr, i, shstrtab, BITS);            \
+        PRINT_SECTIONHEADER(felf, elfshr, i, shstrtab, BITS);      \
       }                                                            \
       free(shstrtab);                                              \
       shstrtab = NULL;                                             \
