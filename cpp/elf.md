@@ -3,8 +3,8 @@
 - [ELF](#elf)
   - [编译链接过程](#编译链接过程)
   - [ELF 段(segment)和节(section)](#elf-段segment和节section)
-  - [ELF 文件头](#elf-文件头)
-  - [ELF 程序头](#elf-程序头)
+  - [ELF File Header](#elf-file-header)
+  - [ELF Program Header](#elf-program-header)
   - [ELF Section Header](#elf-section-header)
   - [ELF Section](#elf-section)
     - [.interp](#interp)
@@ -44,13 +44,13 @@ Linux 下的目标文件和可执行文件都按照该格式进行存储。
 - **如果用于编译和链接(可重定位文件)，则编译器和链接器将把 ELF 文件看作是节头表描述的节的集合，程序头表可选。**
 - **如果用于加载执行(可执行文件)，则加载器则将把 ELF 文件看作是程序头表描述的段的集合，一个段可能包含多个节，节头表可选。**
 
-## [ELF 文件头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L210)
+## [ELF File Header](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L210)
 
 ![ELF文件头](https://github.com/gongluck/images/blob/main/elf/elf_header.png)
 ![e_ident](https://github.com/gongluck/images/blob/main/elf/e_ident.png)
 
 <details>
-<summary>ELF文件头</summary>
+<summary>ELF File Header</summary>
 
 ```C++
 #define EI_NIDENT 16
@@ -94,10 +94,10 @@ typedef struct elf64_hdr
 
 </details>
 
-## [ELF 程序头](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L247)
+## [ELF Program Header](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L247)
 
 <details>
-<summary>ELF程序头</summary>
+<summary>ELF Program Header</summary>
 
 ```C++
 // 程序头权限属性
