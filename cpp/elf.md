@@ -334,6 +334,7 @@ typedef struct elf64_rela
 ### .ctors/.dtors
 
 - 构造器和析构器分别保存了指向构造函数和析构函数的函数指针，构造函数是在 main 函数执行之前需要执行的代码；析构函数是在 main 函数之后需要执行的代码。
+- `__attribute__((constructor))`/`__attribute__((destructor))`声明会将函数名地址加入到`.ctors/.dtors` 指示的可变长数组。
 
 ### .init/.finit
 

@@ -11,6 +11,9 @@
 
 #include <stdio.h>
 
+__attribute__((constructor)) hello() { printf("%s\n", __FUNCTION__); }
+__attribute__((destructor)) unhello() { printf("%s\n", __FUNCTION__); }
+
 int main()
 {
   printf("Hello World\n");
