@@ -400,6 +400,10 @@
         PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Dyn, PRINT_DYNMAIC); \
         break;                                                                          \
       }                                                                                 \
+      if (shdr.sh_flags & SHF_STRINGS)                                                  \
+      {                                                                                 \
+        PRINT_SECTION_STRINGS(felf, shdrarry, i, BITS);                                 \
+      }                                                                                 \
     }                                                                                   \
   } while (0)
 
@@ -770,6 +774,18 @@
   } while (0)
 
 /// end section entries
+
+#define PRINT_SECTION_STRINGS(felf, shdrarry, i, BITS) \
+  do                                                   \
+  {                                                    \
+    Elf##BITS##_Shdr shdr = shdrarry[i];               \
+    char *strs = malloc(shdr.sh_size);                 \
+    fseek(felf, shdr.sh_offset, SEEK_SET);             \
+    fread(strs, shdr.sh_size, 1, felf);                \
+    printf("\tStrings: %s\n", strs);                   \
+    free(strs);                                        \
+    strs = NULL;                                       \
+  } while (0)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
