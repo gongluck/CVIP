@@ -73,62 +73,58 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// begin elf header
-
-/// begin e_indent
-
 // e_ident[EI_CLASS] 4
-#define PRINT_IDENT_CLASS(class) \
-  do                             \
-  {                              \
-    switch (class)               \
-    {                            \
-    case ELFCLASS32:             \
-      PRINT_SYM_STR(ELFCLASS32); \
-      break;                     \
-    case ELFCLASS64:             \
-      PRINT_SYM_STR(ELFCLASS64); \
-      break;                     \
-    default:                     \
-      PRINT_VALUE_HEX(class);    \
-      break;                     \
-    }                            \
+#define PRINT_IDENT_CLASS(class)        \
+  do                                    \
+  {                                     \
+    switch (class)                      \
+    {                                   \
+    case ELFCLASS32: /*32-bit objects*/ \
+      PRINT_SYM_STR(ELFCLASS32);        \
+      break;                            \
+    case ELFCLASS64: /*64-bit objects*/ \
+      PRINT_SYM_STR(ELFCLASS64);        \
+      break;                            \
+    default:                            \
+      PRINT_VALUE_HEX(class);           \
+      break;                            \
+    }                                   \
   } while (0)
 
 // e_ident[EI_DATA] 5
-#define PRINT_IDENT_DATA(data)    \
-  do                              \
-  {                               \
-    switch (data)                 \
-    {                             \
-    case ELFDATA2LSB:             \
-      PRINT_SYM_STR(ELFDATA2LSB); \
-      break;                      \
-    case ELFDATA2MSB:             \
-      PRINT_SYM_STR(ELFDATA2MSB); \
-      break;                      \
-    default:                      \
-      PRINT_VALUE_HEX(data);      \
-      break;                      \
-    }                             \
+#define PRINT_IDENT_DATA(data)          \
+  do                                    \
+  {                                     \
+    switch (data)                       \
+    {                                   \
+    case ELFDATA2LSB: /*little endian*/ \
+      PRINT_SYM_STR(ELFDATA2LSB);       \
+      break;                            \
+    case ELFDATA2MSB: /*big endian*/    \
+      PRINT_SYM_STR(ELFDATA2MSB);       \
+      break;                            \
+    default:                            \
+      PRINT_VALUE_HEX(data);            \
+      break;                            \
+    }                                   \
   } while (0)
 
 // e_ident[EI_VERSION] 6
-#define PRINT_IDENT_VERSION(version) \
-  do                                 \
-  {                                  \
-    switch (version)                 \
-    {                                \
-    case EV_CURRENT:                 \
-      PRINT_SYM_STR(EV_CURRENT);     \
-      break;                         \
-    default:                         \
-      PRINT_VALUE_HEX(version);      \
-      break;                         \
-    }                                \
+#define PRINT_IDENT_VERSION(version)     \
+  do                                     \
+  {                                      \
+    switch (version)                     \
+    {                                    \
+    case EV_CURRENT: /*Current version*/ \
+      PRINT_SYM_STR(EV_CURRENT);         \
+      break;                             \
+    default:                             \
+      PRINT_VALUE_HEX(version);          \
+      break;                             \
+    }                                    \
   } while (0)
 
-// analysis e_ident
+// e_ident
 #define PRINT_IDENT(ident)                  \
   do                                        \
   {                                         \
@@ -146,54 +142,49 @@
     printf("\n");                           \
   } while (0)
 
-/// end e_indent
-
 // e_type
-#define PRINT_ELFHEADER_TYPE(type) \
-  do                               \
-  {                                \
-    switch (type)                  \
-    {                              \
-    case ET_REL:                   \
-      PRINT_SYM_STR(ET_REL);       \
-      break;                       \
-    case ET_EXEC:                  \
-      PRINT_SYM_STR(ET_EXEC);      \
-      break;                       \
-    case ET_DYN:                   \
-      PRINT_SYM_STR(ET_DYN);       \
-      break;                       \
-    case ET_CORE:                  \
-      PRINT_SYM_STR(ET_CORE);      \
-      break;                       \
-    default:                       \
-      PRINT_VALUE_HEX(type);       \
-      break;                       \
-    }                              \
+#define PRINT_ELFHEADER_TYPE(type)      \
+  do                                    \
+  {                                     \
+    switch (type)                       \
+    {                                   \
+    case ET_REL: /*Relocatable file*/   \
+      PRINT_SYM_STR(ET_REL);            \
+      break;                            \
+    case ET_EXEC: /*Executable file*/   \
+      PRINT_SYM_STR(ET_EXEC);           \
+      break;                            \
+    case ET_DYN: /*Shared object file*/ \
+      PRINT_SYM_STR(ET_DYN);            \
+      break;                            \
+    case ET_CORE: /*Core file*/         \
+      PRINT_SYM_STR(ET_CORE);           \
+      break;                            \
+    default:                            \
+      PRINT_VALUE_HEX(type);            \
+      break;                            \
+    }                                   \
   } while (0)
 
 // e_machine
-#define PRINT_ELFHEADER_MACHINE(machine) \
-  do                                     \
-  {                                      \
-    switch (machine)                     \
-    {                                    \
-    case EM_NONE:                        \
-      PRINT_SYM_STR(EM_NONE);            \
-      break;                             \
-    case EM_386:                         \
-      PRINT_SYM_STR(EM_386);             \
-      break;                             \
-    case EM_X86_64:                      \
-      PRINT_SYM_STR(EM_X86_64);          \
-      break;                             \
-    default:                             \
-      PRINT_VALUE_HEX(machine);          \
-      break;                             \
-    }                                    \
+#define PRINT_ELFHEADER_MACHINE(machine)                    \
+  do                                                        \
+  {                                                         \
+    switch (machine)                                        \
+    {                                                       \
+    case EM_386:                                            \
+      PRINT_SYM_STR(EM_386); /*Intel 80386*/                \
+      break;                                                \
+    case EM_X86_64:                                         \
+      PRINT_SYM_STR(EM_X86_64); /*AMD x86-64 architecture*/ \
+      break;                                                \
+    default:                                                \
+      PRINT_VALUE_HEX(machine);                             \
+      break;                                                \
+    }                                                       \
   } while (0)
 
-// elf header
+// ~elf header
 #define PRINT_ELFHEADER(elfhdr)                                  \
   do                                                             \
   {                                                              \
@@ -228,9 +219,7 @@
     printf("\n\n");                                              \
   } while (0)
 
-/// end elf hdr
-
-/// begin section header
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // section header type
 #define PRINT_SECTIONHEADER_TYPE(type) \
@@ -406,8 +395,6 @@
       }                                                                                 \
     }                                                                                   \
   } while (0)
-
-/// end section header
 
 /// begin symbol table
 

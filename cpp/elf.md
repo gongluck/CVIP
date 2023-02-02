@@ -351,6 +351,8 @@ typedef struct elf64_rela
 - 支持全局和静态对象的构造和析构。
 - 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
 
+## [ELF 分析程序](../code/elf/analyse.c)
+
 ## ELF 程序自修改
 
 ### [修改全局/静态变量初始值](../code/elf/global.cpp)
