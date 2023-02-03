@@ -184,7 +184,7 @@
     }                                                       \
   } while (0)
 
-// ~elf header
+// ~elf header https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#elf-file-header
 #define PRINT_ELFHEADER(elfhdr)                                  \
   do                                                             \
   {                                                              \
@@ -199,9 +199,15 @@
     printf("\nEntry: ");                                         \
     PRINT_SYM_ADDR(elfhdr.e_entry);                              \
     printf("\nProgram header offset: ");                         \
+    PRINT_SYM_VALUE_HEX(elfhdr.e_phoff);                         \
+    printf("(");                                                 \
     PRINT_SYM_VALUE(elfhdr.e_phoff);                             \
+    printf(")");                                                 \
     printf("\nSection header offset: ");                         \
+    PRINT_SYM_VALUE_HEX(elfhdr.e_shoff);                         \
+    printf("(");                                                 \
     PRINT_SYM_VALUE(elfhdr.e_shoff);                             \
+    printf(")");                                                 \
     printf("\nFlags: ");                                         \
     PRINT_SYM_ADDR(elfhdr.e_flags);                              \
     printf("\nHeader size: ");                                   \
@@ -221,121 +227,200 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifndef PT_GNU_PROPERTY
+#define PT_GNU_PROPERTY (PT_LOOS + 0x474e553) /*GNU property*/
+#endif
+
+// program header type
+#define PRINT_PROGRAMHEADER_TYPE(type)                   \
+  do                                                     \
+  {                                                      \
+    switch (type)                                        \
+    {                                                    \
+    case PT_LOAD: /*Loadable program segment*/           \
+      PRINT_SYM_STR(PT_LOAD);                            \
+      break;                                             \
+    case PT_DYNAMIC: /*Dynamic linking information*/     \
+      PRINT_SYM_STR(PT_DYNAMIC);                         \
+      break;                                             \
+    case PT_INTERP: /*Program interpreter*/              \
+      PRINT_SYM_STR(PT_INTERP);                          \
+      break;                                             \
+    case PT_NOTE: /*Auxiliary information*/              \
+      PRINT_SYM_STR(PT_NOTE);                            \
+      break;                                             \
+    case PT_SHLIB: /*Reserved*/                          \
+      PRINT_SYM_STR(PT_SHLIB);                           \
+      break;                                             \
+    case PT_PHDR: /*Entry for header table itself*/      \
+      PRINT_SYM_STR(PT_PHDR);                            \
+      break;                                             \
+    case PT_TLS: /*Thread-local storage segment*/        \
+      PRINT_SYM_STR(PT_TLS);                             \
+      break;                                             \
+    case PT_GNU_EH_FRAME: /*GCC .eh_frame_hdr segment*/  \
+      PRINT_SYM_STR(PT_GNU_EH_FRAME);                    \
+      break;                                             \
+    case PT_GNU_STACK: /*Indicates stack executability*/ \
+      PRINT_SYM_STR(PT_GNU_STACK);                       \
+      break;                                             \
+    case PT_GNU_RELRO: /*Read-only after relocation*/    \
+      PRINT_SYM_STR(PT_GNU_RELRO);                       \
+      break;                                             \
+    case PT_GNU_PROPERTY: /*GNU property*/               \
+      PRINT_SYM_STR(PT_GNU_PROPERTY);                    \
+      break;                                             \
+    default:                                             \
+      PRINT_VALUE_HEX(type);                             \
+      break;                                             \
+    }                                                    \
+  } while (0)
+
+// program header flags
+#define PRINT_PROGRAMHEADER_FLAGS(flags)        \
+  do                                            \
+  {                                             \
+    if (flags & PF_X) /*Segment is executable*/ \
+    {                                           \
+      PRINT_SYM_STREND(PF_X, " ");              \
+    }                                           \
+    if (flags & PF_W) /*Segment is writable*/   \
+    {                                           \
+      PRINT_SYM_STREND(PF_W, " ");              \
+    }                                           \
+    if (flags & PF_R) /*Segment is readable*/   \
+    {                                           \
+      PRINT_SYM_STREND(PF_R, " ");              \
+    }                                           \
+  } while (0)
+
+// ~program header https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#elf-program-header
+#define PRINT_PROGRAMHEADER(elfphr)            \
+  do                                           \
+  {                                            \
+    printf("\tType: ");                        \
+    PRINT_PROGRAMHEADER_TYPE(elfphr.p_type);   \
+    printf("\n\tOffset: ");                    \
+    PRINT_SYM_VALUE_HEX(elfphr.p_offset);      \
+    printf("(");                               \
+    PRINT_SYM_VALUE(elfphr.p_offset);          \
+    printf(")");                               \
+    printf("\n\tVirtual Addr: ");              \
+    PRINT_SYM_VALUE_HEX(elfphr.p_vaddr);       \
+    printf("\n\tPhysical Addr: ");             \
+    PRINT_SYM_VALUE_HEX(elfphr.p_paddr);       \
+    printf("\n\tFile Size: ");                 \
+    PRINT_SYM_VALUE(elfphr.p_filesz);          \
+    printf("\n\tMemory Size: ");               \
+    PRINT_SYM_VALUE(elfphr.p_memsz);           \
+    printf("\n\tFlags: ");                     \
+    PRINT_PROGRAMHEADER_FLAGS(elfphr.p_flags); \
+    printf("\n\tAlign: ");                     \
+    PRINT_SYM_VALUE(elfphr.p_align);           \
+    printf("\n");                              \
+  } while (0)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 // section header type
-#define PRINT_SECTIONHEADER_TYPE(type) \
-  do                                   \
-  {                                    \
-    switch (type)                      \
-    {                                  \
-    case SHT_NULL:                     \
-      PRINT_SYM_STR(SHT_NULL);         \
-      break;                           \
-    case SHT_PROGBITS:                 \
-      PRINT_SYM_STR(SHT_PROGBITS);     \
-      break;                           \
-    case SHT_SYMTAB:                   \
-      PRINT_SYM_STR(SHT_SYMTAB);       \
-      break;                           \
-    case SHT_STRTAB:                   \
-      PRINT_SYM_STR(SHT_STRTAB);       \
-      break;                           \
-    case SHT_RELA:                     \
-      PRINT_SYM_STR(SHT_RELA);         \
-      break;                           \
-    case SHT_HASH:                     \
-      PRINT_SYM_STR(SHT_HASH);         \
-      break;                           \
-    case SHT_DYNAMIC:                  \
-      PRINT_SYM_STR(SHT_DYNAMIC);      \
-      break;                           \
-    case SHT_NOTE:                     \
-      PRINT_SYM_STR(SHT_NOTE);         \
-      break;                           \
-    case SHT_NOBITS:                   \
-      PRINT_SYM_STR(SHT_NOBITS);       \
-      break;                           \
-    case SHT_REL:                      \
-      PRINT_SYM_STR(SHT_REL);          \
-      break;                           \
-    case SHT_SHLIB:                    \
-      PRINT_SYM_STR(SHT_SHLIB);        \
-      break;                           \
-    case SHT_DYNSYM:                   \
-      PRINT_SYM_STR(SHT_DYNSYM);       \
-      break;                           \
-    default:                           \
-      PRINT_VALUE_HEX(type);           \
-      break;                           \
-    }                                  \
+#define PRINT_SECTIONHEADER_TYPE(type)                    \
+  do                                                      \
+  {                                                       \
+    switch (type)                                         \
+    {                                                     \
+    case SHT_PROGBITS: /*Program data*/                   \
+      PRINT_SYM_STR(SHT_PROGBITS);                        \
+      break;                                              \
+    case SHT_SYMTAB: /*Symbol table*/                     \
+      PRINT_SYM_STR(SHT_SYMTAB);                          \
+      break;                                              \
+    case SHT_STRTAB: /*String table*/                     \
+      PRINT_SYM_STR(SHT_STRTAB);                          \
+      break;                                              \
+    case SHT_RELA: /*Relocation entries with addends*/    \
+      PRINT_SYM_STR(SHT_RELA);                            \
+      break;                                              \
+    case SHT_HASH: /*Symbol hash table*/                  \
+      PRINT_SYM_STR(SHT_HASH);                            \
+      break;                                              \
+    case SHT_DYNAMIC: /*Dynamic linking information*/     \
+      PRINT_SYM_STR(SHT_DYNAMIC);                         \
+      break;                                              \
+    case SHT_NOTE: /*Notes*/                              \
+      PRINT_SYM_STR(SHT_NOTE);                            \
+      break;                                              \
+    case SHT_NOBITS: /*Program space with no data (bss)*/ \
+      PRINT_SYM_STR(SHT_NOBITS);                          \
+      break;                                              \
+    case SHT_REL: /*Relocation entries, no addends*/      \
+      PRINT_SYM_STR(SHT_REL);                             \
+      break;                                              \
+    case SHT_SHLIB: /*SHT_SHLIB*/                         \
+      PRINT_SYM_STR(SHT_SHLIB);                           \
+      break;                                              \
+    case SHT_DYNSYM: /*Dynamic linker symbol table*/      \
+      PRINT_SYM_STR(SHT_DYNSYM);                          \
+      break;                                              \
+    case SHT_GNU_HASH: /*GNU-style hash table.*/          \
+      PRINT_SYM_STR(SHT_GNU_HASH);                        \
+      break;                                              \
+    default:                                              \
+      PRINT_VALUE_HEX(type);                              \
+      break;                                              \
+    }                                                     \
   } while (0)
 
 // section header flags
-#define PRINT_SECTIONHEADER_FLAGS(flags)           \
-  do                                               \
-  {                                                \
-    if (flags & SHF_WRITE)                         \
-    {                                              \
-      PRINT_SYM_STREND(SHF_WRITE, " ");            \
-    }                                              \
-    if (flags & SHF_ALLOC)                         \
-    {                                              \
-      PRINT_SYM_STREND(SHF_ALLOC, " ");            \
-    }                                              \
-    if (flags & SHF_EXECINSTR)                     \
-    {                                              \
-      PRINT_SYM_STREND(SHF_EXECINSTR, " ");        \
-    }                                              \
-    if (flags & SHF_MERGE)                         \
-    {                                              \
-      PRINT_SYM_STREND(SHF_MERGE, " ");            \
-    }                                              \
-    if (flags & SHF_STRINGS)                       \
-    {                                              \
-      PRINT_SYM_STREND(SHF_STRINGS, " ");          \
-    }                                              \
-    if (flags & SHF_INFO_LINK)                     \
-    {                                              \
-      PRINT_SYM_STREND(SHF_INFO_LINK, " ");        \
-    }                                              \
-    if (flags & SHF_LINK_ORDER)                    \
-    {                                              \
-      PRINT_SYM_STREND(SHF_LINK_ORDER, " ");       \
-    }                                              \
-    if (flags & SHF_OS_NONCONFORMING)              \
-    {                                              \
-      PRINT_SYM_STREND(SHF_OS_NONCONFORMING, " "); \
-    }                                              \
-    if (flags & SHF_GROUP)                         \
-    {                                              \
-      PRINT_SYM_STREND(SHF_GROUP, " ");            \
-    }                                              \
-    if (flags & SHF_TLS)                           \
-    {                                              \
-      PRINT_SYM_STREND(SHF_TLS, " ");              \
-    }                                              \
-    if (flags & SHF_COMPRESSED)                    \
-    {                                              \
-      PRINT_SYM_STREND(SHF_COMPRESSED, " ");       \
-    }                                              \
-    if (flags & SHF_MASKOS)                        \
-    {                                              \
-      PRINT_SYM_STREND(SHF_MASKOS, " ");           \
-    }                                              \
-    if (flags & SHF_MASKPROC)                      \
-    {                                              \
-      PRINT_SYM_STREND(SHF_MASKPROC, " ");         \
-    }                                              \
-    if (flags & SHF_ORDERED)                       \
-    {                                              \
-      PRINT_SYM_STREND(SHF_ORDERED, " ");          \
-    }                                              \
-    if (flags & SHF_EXCLUDE)                       \
-    {                                              \
-      PRINT_SYM_STREND(SHF_EXCLUDE, " ");          \
-    }                                              \
+#define PRINT_SECTIONHEADER_FLAGS(flags)                                             \
+  do                                                                                 \
+  {                                                                                  \
+    if (flags & SHF_WRITE) /*Writable*/                                              \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_WRITE, " ");                                              \
+    }                                                                                \
+    if (flags & SHF_ALLOC) /*Occupies memory during execution*/                      \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_ALLOC, " ");                                              \
+    }                                                                                \
+    if (flags & SHF_EXECINSTR) /*Executable*/                                        \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_EXECINSTR, " ");                                          \
+    }                                                                                \
+    if (flags & SHF_MERGE) /*Might be merged*/                                       \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_MERGE, " ");                                              \
+    }                                                                                \
+    if (flags & SHF_STRINGS) /*Contains nul-terminated strings*/                     \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_STRINGS, " ");                                            \
+    }                                                                                \
+    if (flags & SHF_INFO_LINK) /*`sh_info' contains SHT index*/                      \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_INFO_LINK, " ");                                          \
+    }                                                                                \
+    if (flags & SHF_LINK_ORDER) /*Preserve order after combining*/                   \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_LINK_ORDER, " ");                                         \
+    }                                                                                \
+    if (flags & SHF_OS_NONCONFORMING) /*Non-standard OS specific handling required*/ \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_OS_NONCONFORMING, " ");                                   \
+    }                                                                                \
+    if (flags & SHF_GROUP) /*Section is member of a group.*/                         \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_GROUP, " ");                                              \
+    }                                                                                \
+    if (flags & SHF_TLS) /*Section hold thread-local data.*/                         \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_TLS, " ");                                                \
+    }                                                                                \
+    if (flags & SHF_COMPRESSED) /*Section with compressed data.*/                    \
+    {                                                                                \
+      PRINT_SYM_STREND(SHF_COMPRESSED, " ");                                         \
+    }                                                                                \
   } while (0)
 
-// section header
+// ~section header https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#elf-section-header
 #define PRINT_SECTIONHEADER(felf, shdrarry, i, shstrtab, BITS)                          \
   do                                                                                    \
   {                                                                                     \
@@ -354,15 +439,20 @@
     PRINT_SECTIONHEADER_FLAGS(shdr.sh_flags);                                           \
     printf("\nAddr: ");                                                                 \
     PRINT_SYM_ADDR(shdr.sh_addr);                                                       \
-    char buf[512] = {0};                                                                \
     if (strcmp(shdname, ".interp") == 0)                                                \
     {                                                                                   \
+      char *interpstr = malloc(shdr.sh_size);                                           \
       fseek(felf, shdr.sh_addr, SEEK_SET);                                              \
-      fread(buf, sizeof(buf), 1, felf);                                                 \
-      printf("(%s)", buf);                                                              \
+      fread(interpstr, shdr.sh_size, 1, felf);                                          \
+      printf("(%s)", interpstr);                                                        \
+      free(interpstr);                                                                  \
+      interpstr = NULL;                                                                 \
     }                                                                                   \
     printf("\nSection file offset: ");                                                  \
+    PRINT_SYM_VALUE_HEX(shdr.sh_offset);                                                \
+    printf("(");                                                                        \
     PRINT_SYM_VALUE(shdr.sh_offset);                                                    \
+    printf(")");                                                                        \
     printf("\nSection size: ");                                                         \
     PRINT_SYM_VALUE(shdr.sh_size);                                                      \
     printf("\nLink: ");                                                                 \
@@ -395,6 +485,8 @@
       }                                                                                 \
     }                                                                                   \
   } while (0)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// begin symbol table
 
@@ -775,105 +867,6 @@
   } while (0)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// begin program header
-
-// program header type
-#define PRINT_PROGRAMHEADER_TYPE(type) \
-  do                                   \
-  {                                    \
-    switch (type)                      \
-    {                                  \
-    case PT_NULL:                      \
-      PRINT_SYM_STR(PT_NULL);          \
-      break;                           \
-    case PT_LOAD:                      \
-      PRINT_SYM_STR(PT_LOAD);          \
-      break;                           \
-    case PT_DYNAMIC:                   \
-      PRINT_SYM_STR(PT_DYNAMIC);       \
-      break;                           \
-    case PT_INTERP:                    \
-      PRINT_SYM_STR(PT_INTERP);        \
-      break;                           \
-    case PT_NOTE:                      \
-      PRINT_SYM_STR(PT_NOTE);          \
-      break;                           \
-    case PT_SHLIB:                     \
-      PRINT_SYM_STR(PT_SHLIB);         \
-      break;                           \
-    case PT_PHDR:                      \
-      PRINT_SYM_STR(PT_PHDR);          \
-      break;                           \
-    case PT_TLS:                       \
-      PRINT_SYM_STR(PT_TLS);           \
-      break;                           \
-    case PT_LOOS:                      \
-      PRINT_SYM_STR(PT_LOOS);          \
-      break;                           \
-    case PT_HIOS:                      \
-      PRINT_SYM_STR(PT_HIOS);          \
-      break;                           \
-    case PT_LOPROC:                    \
-      PRINT_SYM_STR(PT_LOPROC);        \
-      break;                           \
-    case PT_HIPROC:                    \
-      PRINT_SYM_STR(PT_HIPROC);        \
-      break;                           \
-    case PT_GNU_EH_FRAME:              \
-      PRINT_SYM_STR(PT_GNU_EH_FRAME);  \
-      break;                           \
-    case PT_GNU_STACK:                 \
-      PRINT_SYM_STR(PT_GNU_STACK);     \
-      break;                           \
-    default:                           \
-      PRINT_VALUE_HEX(type);           \
-      break;                           \
-    }                                  \
-  } while (0)
-
-// program header flags
-#define PRINT_PROGRAMHEADER_FLAGS(flags) \
-  do                                     \
-  {                                      \
-    if (flags & PF_X)                    \
-    {                                    \
-      PRINT_SYM_STREND(PF_X, " ");       \
-    }                                    \
-    if (flags & PF_W)                    \
-    {                                    \
-      PRINT_SYM_STREND(PF_W, " ");       \
-    }                                    \
-    if (flags & PF_R)                    \
-    {                                    \
-      PRINT_SYM_STREND(PF_R, " ");       \
-    }                                    \
-  } while (0)
-
-// program header
-#define PRINT_PROGRAMHEADER(elfphr)            \
-  do                                           \
-  {                                            \
-    printf("\tType: ");                        \
-    PRINT_PROGRAMHEADER_TYPE(elfphr.p_type);   \
-    printf("\n\tOffset: ");                    \
-    PRINT_SYM_VALUE(elfphr.p_offset);          \
-    printf("\n\tVirtual Addr: ");              \
-    PRINT_SYM_VALUE_HEX(elfphr.p_vaddr);       \
-    printf("\n\tPhysical Addr: ");             \
-    PRINT_SYM_VALUE_HEX(elfphr.p_paddr);       \
-    printf("\n\tFile Size: ");                 \
-    PRINT_SYM_VALUE(elfphr.p_filesz);          \
-    printf("\n\tMemory Size: ");               \
-    PRINT_SYM_VALUE(elfphr.p_memsz);           \
-    printf("\n\tFlags: ");                     \
-    PRINT_PROGRAMHEADER_FLAGS(elfphr.p_flags); \
-    printf("\n\tAlign: ");                     \
-    PRINT_SYM_VALUE(elfphr.p_align);           \
-    printf("\n");                              \
-  } while (0)
-
-/// end program header
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 

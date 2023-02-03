@@ -11,6 +11,8 @@
 
 int globa1_init_var = 84;
 int global_uninit_var;
+__thread int thread_var = 5;
+const int const_var = 12;
 
 void func1(int i)
 {
