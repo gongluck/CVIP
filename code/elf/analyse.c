@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-01-05 10:48:45
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-02-07 17:04:14
+ * @Last Modified time: 2023-02-07 23:21:12
  */
 
 #include <stdio.h>
@@ -606,7 +606,7 @@
     }                                                                          \
   } while (0)
 
-// ~dynmaic entry https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L137
+// ~dynmaic entry https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#dynamic
 #define PRINT_DYNMAIC(felf, dyn, linkstr, BITS, TYPE) \
   do                                                  \
   {                                                   \
