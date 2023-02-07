@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-01-05 10:48:45
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-01-10 15:07:25
+ * @Last Modified time: 2023-02-07 17:04:14
  */
 
 #include <stdio.h>
@@ -58,10 +58,10 @@
     printf("0x%.2llx", (long long unsigned int)sym); \
   } while (0)
 
-#define PRINT_SYM_STR(sym) \
-  do                       \
-  {                        \
-    printf(#sym);          \
+#define PRINT_STR(str) \
+  do                   \
+  {                    \
+    printf(str);       \
   } while (0)
 
 #define PRINT_SYM_STREND(sym, end) \
@@ -71,57 +71,51 @@
     printf(end);                   \
   } while (0)
 
+#define PRINT_SYM_STR_BREAK(sym) \
+  case sym:                      \
+    PRINT_STR(#sym);             \
+    break;
+
+#define PRINT_SYM_STR_DEFAULT(sym) \
+  default:                         \
+    PRINT_VALUE_HEX(sym);          \
+    break;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // e_ident[EI_CLASS] 4
-#define PRINT_IDENT_CLASS(class)        \
-  do                                    \
-  {                                     \
-    switch (class)                      \
-    {                                   \
-    case ELFCLASS32: /*32-bit objects*/ \
-      PRINT_SYM_STR(ELFCLASS32);        \
-      break;                            \
-    case ELFCLASS64: /*64-bit objects*/ \
-      PRINT_SYM_STR(ELFCLASS64);        \
-      break;                            \
-    default:                            \
-      PRINT_VALUE_HEX(class);           \
-      break;                            \
-    }                                   \
+#define PRINT_IDENT_CLASS(class)                          \
+  do                                                      \
+  {                                                       \
+    switch (class)                                        \
+    {                                                     \
+      PRINT_SYM_STR_BREAK(ELFCLASS32); /*32-bit objects*/ \
+      PRINT_SYM_STR_BREAK(ELFCLASS64); /*64-bit objects*/ \
+      PRINT_SYM_STR_DEFAULT(class);                       \
+    }                                                     \
   } while (0)
 
 // e_ident[EI_DATA] 5
-#define PRINT_IDENT_DATA(data)          \
-  do                                    \
-  {                                     \
-    switch (data)                       \
-    {                                   \
-    case ELFDATA2LSB: /*little endian*/ \
-      PRINT_SYM_STR(ELFDATA2LSB);       \
-      break;                            \
-    case ELFDATA2MSB: /*big endian*/    \
-      PRINT_SYM_STR(ELFDATA2MSB);       \
-      break;                            \
-    default:                            \
-      PRINT_VALUE_HEX(data);            \
-      break;                            \
-    }                                   \
+#define PRINT_IDENT_DATA(data)                            \
+  do                                                      \
+  {                                                       \
+    switch (data)                                         \
+    {                                                     \
+      PRINT_SYM_STR_BREAK(ELFDATA2LSB); /*little endian*/ \
+      PRINT_SYM_STR_BREAK(ELFDATA2MSB); /*big endian*/    \
+      PRINT_SYM_STR_DEFAULT(data);                        \
+    }                                                     \
   } while (0)
 
 // e_ident[EI_VERSION] 6
-#define PRINT_IDENT_VERSION(version)     \
-  do                                     \
-  {                                      \
-    switch (version)                     \
-    {                                    \
-    case EV_CURRENT: /*Current version*/ \
-      PRINT_SYM_STR(EV_CURRENT);         \
-      break;                             \
-    default:                             \
-      PRINT_VALUE_HEX(version);          \
-      break;                             \
-    }                                    \
+#define PRINT_IDENT_VERSION(version)                       \
+  do                                                       \
+  {                                                        \
+    switch (version)                                       \
+    {                                                      \
+      PRINT_SYM_STR_BREAK(EV_CURRENT); /*Current version*/ \
+      PRINT_SYM_STR_DEFAULT(version);                      \
+    }                                                      \
   } while (0)
 
 // e_ident
@@ -143,45 +137,29 @@
   } while (0)
 
 // e_type
-#define PRINT_ELFHEADER_TYPE(type)      \
-  do                                    \
-  {                                     \
-    switch (type)                       \
-    {                                   \
-    case ET_REL: /*Relocatable file*/   \
-      PRINT_SYM_STR(ET_REL);            \
-      break;                            \
-    case ET_EXEC: /*Executable file*/   \
-      PRINT_SYM_STR(ET_EXEC);           \
-      break;                            \
-    case ET_DYN: /*Shared object file*/ \
-      PRINT_SYM_STR(ET_DYN);            \
-      break;                            \
-    case ET_CORE: /*Core file*/         \
-      PRINT_SYM_STR(ET_CORE);           \
-      break;                            \
-    default:                            \
-      PRINT_VALUE_HEX(type);            \
-      break;                            \
-    }                                   \
+#define PRINT_ELFHEADER_TYPE(type)                         \
+  do                                                       \
+  {                                                        \
+    switch (type)                                          \
+    {                                                      \
+      PRINT_SYM_STR_BREAK(ET_REL);  /*Relocatable file*/   \
+      PRINT_SYM_STR_BREAK(ET_EXEC); /*Executable file*/    \
+      PRINT_SYM_STR_BREAK(ET_DYN);  /*Shared object file*/ \
+      PRINT_SYM_STR_BREAK(ET_CORE); /*Core file*/          \
+      PRINT_SYM_STR_DEFAULT(type);                         \
+    }                                                      \
   } while (0)
 
 // e_machine
-#define PRINT_ELFHEADER_MACHINE(machine)                    \
-  do                                                        \
-  {                                                         \
-    switch (machine)                                        \
-    {                                                       \
-    case EM_386:                                            \
-      PRINT_SYM_STR(EM_386); /*Intel 80386*/                \
-      break;                                                \
-    case EM_X86_64:                                         \
-      PRINT_SYM_STR(EM_X86_64); /*AMD x86-64 architecture*/ \
-      break;                                                \
-    default:                                                \
-      PRINT_VALUE_HEX(machine);                             \
-      break;                                                \
-    }                                                       \
+#define PRINT_ELFHEADER_MACHINE(machine)                          \
+  do                                                              \
+  {                                                               \
+    switch (machine)                                              \
+    {                                                             \
+      PRINT_SYM_STR_BREAK(EM_386);    /*Intel 80386*/             \
+      PRINT_SYM_STR_BREAK(EM_X86_64); /*AMD x86-64 architecture*/ \
+      PRINT_SYM_STR_DEFAULT(machine);                             \
+    }                                                             \
   } while (0)
 
 // ~elf header https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#elf-file-header
@@ -232,48 +210,24 @@
 #endif
 
 // program header type
-#define PRINT_PROGRAMHEADER_TYPE(type)                   \
-  do                                                     \
-  {                                                      \
-    switch (type)                                        \
-    {                                                    \
-    case PT_LOAD: /*Loadable program segment*/           \
-      PRINT_SYM_STR(PT_LOAD);                            \
-      break;                                             \
-    case PT_DYNAMIC: /*Dynamic linking information*/     \
-      PRINT_SYM_STR(PT_DYNAMIC);                         \
-      break;                                             \
-    case PT_INTERP: /*Program interpreter*/              \
-      PRINT_SYM_STR(PT_INTERP);                          \
-      break;                                             \
-    case PT_NOTE: /*Auxiliary information*/              \
-      PRINT_SYM_STR(PT_NOTE);                            \
-      break;                                             \
-    case PT_SHLIB: /*Reserved*/                          \
-      PRINT_SYM_STR(PT_SHLIB);                           \
-      break;                                             \
-    case PT_PHDR: /*Entry for header table itself*/      \
-      PRINT_SYM_STR(PT_PHDR);                            \
-      break;                                             \
-    case PT_TLS: /*Thread-local storage segment*/        \
-      PRINT_SYM_STR(PT_TLS);                             \
-      break;                                             \
-    case PT_GNU_EH_FRAME: /*GCC .eh_frame_hdr segment*/  \
-      PRINT_SYM_STR(PT_GNU_EH_FRAME);                    \
-      break;                                             \
-    case PT_GNU_STACK: /*Indicates stack executability*/ \
-      PRINT_SYM_STR(PT_GNU_STACK);                       \
-      break;                                             \
-    case PT_GNU_RELRO: /*Read-only after relocation*/    \
-      PRINT_SYM_STR(PT_GNU_RELRO);                       \
-      break;                                             \
-    case PT_GNU_PROPERTY: /*GNU property*/               \
-      PRINT_SYM_STR(PT_GNU_PROPERTY);                    \
-      break;                                             \
-    default:                                             \
-      PRINT_VALUE_HEX(type);                             \
-      break;                                             \
-    }                                                    \
+#define PRINT_PROGRAMHEADER_TYPE(type)                                        \
+  do                                                                          \
+  {                                                                           \
+    switch (type)                                                             \
+    {                                                                         \
+      PRINT_SYM_STR_BREAK(PT_LOAD);         /*Loadable program segment*/      \
+      PRINT_SYM_STR_BREAK(PT_DYNAMIC);      /*Dynamic linking information*/   \
+      PRINT_SYM_STR_BREAK(PT_INTERP);       /*Program interpreter*/           \
+      PRINT_SYM_STR_BREAK(PT_NOTE);         /*Auxiliary information*/         \
+      PRINT_SYM_STR_BREAK(PT_SHLIB);        /*Reserved*/                      \
+      PRINT_SYM_STR_BREAK(PT_PHDR);         /*Entry for header table itself*/ \
+      PRINT_SYM_STR_BREAK(PT_TLS);          /*Thread-local storage segment*/  \
+      PRINT_SYM_STR_BREAK(PT_GNU_EH_FRAME); /*GCC .eh_frame_hdr segment*/     \
+      PRINT_SYM_STR_BREAK(PT_GNU_STACK);    /*Indicates stack executability*/ \
+      PRINT_SYM_STR_BREAK(PT_GNU_RELRO);    /*Read-only after relocation*/    \
+      PRINT_SYM_STR_BREAK(PT_GNU_PROPERTY); /*GNU property*/                  \
+      PRINT_SYM_STR_DEFAULT(type);                                            \
+    }                                                                         \
   } while (0)
 
 // program header flags
@@ -323,51 +277,30 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // section header type
-#define PRINT_SECTIONHEADER_TYPE(type)                    \
-  do                                                      \
-  {                                                       \
-    switch (type)                                         \
-    {                                                     \
-    case SHT_PROGBITS: /*Program data*/                   \
-      PRINT_SYM_STR(SHT_PROGBITS);                        \
-      break;                                              \
-    case SHT_SYMTAB: /*Symbol table*/                     \
-      PRINT_SYM_STR(SHT_SYMTAB);                          \
-      break;                                              \
-    case SHT_STRTAB: /*String table*/                     \
-      PRINT_SYM_STR(SHT_STRTAB);                          \
-      break;                                              \
-    case SHT_RELA: /*Relocation entries with addends*/    \
-      PRINT_SYM_STR(SHT_RELA);                            \
-      break;                                              \
-    case SHT_HASH: /*Symbol hash table*/                  \
-      PRINT_SYM_STR(SHT_HASH);                            \
-      break;                                              \
-    case SHT_DYNAMIC: /*Dynamic linking information*/     \
-      PRINT_SYM_STR(SHT_DYNAMIC);                         \
-      break;                                              \
-    case SHT_NOTE: /*Notes*/                              \
-      PRINT_SYM_STR(SHT_NOTE);                            \
-      break;                                              \
-    case SHT_NOBITS: /*Program space with no data (bss)*/ \
-      PRINT_SYM_STR(SHT_NOBITS);                          \
-      break;                                              \
-    case SHT_REL: /*Relocation entries, no addends*/      \
-      PRINT_SYM_STR(SHT_REL);                             \
-      break;                                              \
-    case SHT_SHLIB: /*SHT_SHLIB*/                         \
-      PRINT_SYM_STR(SHT_SHLIB);                           \
-      break;                                              \
-    case SHT_DYNSYM: /*Dynamic linker symbol table*/      \
-      PRINT_SYM_STR(SHT_DYNSYM);                          \
-      break;                                              \
-    case SHT_GNU_HASH: /*GNU-style hash table.*/          \
-      PRINT_SYM_STR(SHT_GNU_HASH);                        \
-      break;                                              \
-    default:                                              \
-      PRINT_VALUE_HEX(type);                              \
-      break;                                              \
-    }                                                     \
+#define PRINT_SECTIONHEADER_TYPE(type)                                             \
+  do                                                                               \
+  {                                                                                \
+    switch (type)                                                                  \
+    {                                                                              \
+      PRINT_SYM_STR_BREAK(SHT_PROGBITS);      /*Program data*/                     \
+      PRINT_SYM_STR_BREAK(SHT_SYMTAB);        /*Symbol table*/                     \
+      PRINT_SYM_STR_BREAK(SHT_STRTAB);        /*String table*/                     \
+      PRINT_SYM_STR_BREAK(SHT_RELA);          /*Relocation entries with addends*/  \
+      PRINT_SYM_STR_BREAK(SHT_HASH);          /*Symbol hash table*/                \
+      PRINT_SYM_STR_BREAK(SHT_DYNAMIC);       /*Dynamic linking information*/      \
+      PRINT_SYM_STR_BREAK(SHT_NOTE);          /*Notes*/                            \
+      PRINT_SYM_STR_BREAK(SHT_NOBITS);        /*Program space with no data (bss)*/ \
+      PRINT_SYM_STR_BREAK(SHT_REL);           /*Relocation entries, no addends*/   \
+      PRINT_SYM_STR_BREAK(SHT_SHLIB);         /*SHT_SHLIB*/                        \
+      PRINT_SYM_STR_BREAK(SHT_DYNSYM);        /*Dynamic linker symbol table*/      \
+      PRINT_SYM_STR_BREAK(SHT_INIT_ARRAY);    /*Array of constructors*/            \
+      PRINT_SYM_STR_BREAK(SHT_FINI_ARRAY);    /*Array of destructors*/             \
+      PRINT_SYM_STR_BREAK(SHT_PREINIT_ARRAY); /*Array of pre-constructors*/        \
+      PRINT_SYM_STR_BREAK(SHT_GNU_HASH);      /*GNU-style hash table.*/            \
+      PRINT_SYM_STR_BREAK(SHT_GNU_versym);    /*SHT_GNU_versym*/                   \
+      PRINT_SYM_STR_BREAK(SHT_GNU_verneed);   /*Version needs section.*/           \
+      PRINT_SYM_STR_DEFAULT(type);                                                 \
+    }                                                                              \
   } while (0)
 
 // section header flags
@@ -478,6 +411,9 @@
       case SHT_DYNAMIC:                                                                 \
         PRINT_SECTION_ENTRY(felf, shdrarry, i, shdr.sh_link, BITS, Dyn, PRINT_DYNMAIC); \
         break;                                                                          \
+      case SHT_STRTAB:                                                                  \
+        PRINT_SECTION_STRINGS(felf, shdrarry, i, BITS);                                 \
+        break;                                                                          \
       }                                                                                 \
       if (shdr.sh_flags & SHF_STRINGS)                                                  \
       {                                                                                 \
@@ -488,81 +424,49 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// begin symbol table
-
 // symbol info bind
-#define PRINT_SYM_INFOBIND(bind) \
-  do                             \
-  {                              \
-    switch (bind)                \
-    {                            \
-    case STB_LOCAL:              \
-      PRINT_SYM_STR(STB_LOCAL);  \
-      break;                     \
-    case STB_GLOBAL:             \
-      PRINT_SYM_STR(STB_GLOBAL); \
-      break;                     \
-    case STB_WEAK:               \
-      PRINT_SYM_STR(STB_WEAK);   \
-      break;                     \
-    default:                     \
-      PRINT_VALUE_HEX(bind);     \
-      break;                     \
-    }                            \
+#define PRINT_SYM_INFOBIND(bind)                         \
+  do                                                     \
+  {                                                      \
+    switch (bind)                                        \
+    {                                                    \
+      PRINT_SYM_STR_BREAK(STB_LOCAL);  /*Local symbol*/  \
+      PRINT_SYM_STR_BREAK(STB_GLOBAL); /*Global symbol*/ \
+      PRINT_SYM_STR_BREAK(STB_WEAK);   /*STB_WEAK*/      \
+      PRINT_SYM_STR_DEFAULT(bind);                       \
+    }                                                    \
   } while (0)
 
 // symbol info type
-#define PRINT_SYM_INFOTYPE(type)  \
-  do                              \
-  {                               \
-    switch (type)                 \
-    {                             \
-    case STT_NOTYPE:              \
-      PRINT_SYM_STR(STT_NOTYPE);  \
-      break;                      \
-    case STT_OBJECT:              \
-      PRINT_SYM_STR(STT_OBJECT);  \
-      break;                      \
-    case STT_FUNC:                \
-      PRINT_SYM_STR(STT_FUNC);    \
-      break;                      \
-    case STT_SECTION:             \
-      PRINT_SYM_STR(STT_SECTION); \
-      break;                      \
-    case STT_FILE:                \
-      PRINT_SYM_STR(STT_FILE);    \
-      break;                      \
-    case STT_COMMON:              \
-      PRINT_SYM_STR(STT_COMMON);  \
-      break;                      \
-    case STT_TLS:                 \
-      PRINT_SYM_STR(STT_TLS);     \
-      break;                      \
-    default:                      \
-      PRINT_VALUE_HEX(type);      \
-      break;                      \
-    }                             \
+#define PRINT_SYM_INFOTYPE(type)                                               \
+  do                                                                           \
+  {                                                                            \
+    switch (type)                                                              \
+    {                                                                          \
+      PRINT_SYM_STR_BREAK(STT_NOTYPE);  /*Symbol type is unspecified*/         \
+      PRINT_SYM_STR_BREAK(STT_OBJECT);  /*Symbol is a data object*/            \
+      PRINT_SYM_STR_BREAK(STT_FUNC);    /*Symbol is a code object*/            \
+      PRINT_SYM_STR_BREAK(STT_SECTION); /*Symbol associated with a section*/   \
+      PRINT_SYM_STR_BREAK(STT_FILE);    /*Symbol's name is file name*/         \
+      PRINT_SYM_STR_BREAK(STT_COMMON);  /*Symbol is a common data object*/     \
+      PRINT_SYM_STR_BREAK(STT_TLS);     /*Symbol is thread-local data object*/ \
+      PRINT_SYM_STR_DEFAULT(type);                                             \
+    }                                                                          \
   } while (0)
 
 // symbol section index
-#define PRINT_SYM_INDEX(sindex)  \
-  do                             \
-  {                              \
-    switch (sindex)              \
-    {                            \
-    case SHN_ABS:                \
-      PRINT_SYM_STR(SHN_ABS);    \
-      break;                     \
-    case SHN_COMMON:             \
-      PRINT_SYM_STR(SHN_COMMON); \
-      break;                     \
-    default:                     \
-      PRINT_VALUE(sindex);       \
-      break;                     \
-    }                            \
+#define PRINT_SYM_INDEX(sindex)                                          \
+  do                                                                     \
+  {                                                                      \
+    switch (sindex)                                                      \
+    {                                                                    \
+      PRINT_SYM_STR_BREAK(SHN_ABS);    /*Associated symbol is absolute*/ \
+      PRINT_SYM_STR_BREAK(SHN_COMMON); /*Associated symbol is common*/   \
+      PRINT_SYM_STR_DEFAULT(sindex);                                     \
+    }                                                                    \
   } while (0)
 
-// symbol
+// ~symbol https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#symtab
 #define PRINT_SYM(felf, sym, linkstr, BITS, TYPE)         \
   do                                                      \
   {                                                       \
@@ -584,207 +488,98 @@
     PRINT_SYM_VALUE(sym.st_other);                        \
     printf("\n\tSection index: ");                        \
     PRINT_SYM_INDEX(sym.st_shndx);                        \
+    printf("(");                                          \
+    PRINT_VALUE(sym.st_shndx);                            \
+    printf(")");                                          \
     printf("\n");                                         \
   } while (0)
 
-/// end symbol table
-
-/// begin relocation addend
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // relocation type in x86_64
-#define PRINT_RELA_INFOTYPE(type)        \
-  do                                     \
-  {                                      \
-    switch (type)                        \
-    {                                    \
-    case R_X86_64_NONE:                  \
-      PRINT_SYM_STR(R_X86_64_NONE);      \
-      break;                             \
-    case R_X86_64_64:                    \
-      PRINT_SYM_STR(R_X86_64_64);        \
-      break;                             \
-    case R_X86_64_PC32:                  \
-      PRINT_SYM_STR(R_X86_64_PC32);      \
-      break;                             \
-    case R_X86_64_GOT32:                 \
-      PRINT_SYM_STR(R_X86_64_GOT32);     \
-      break;                             \
-    case R_X86_64_PLT32:                 \
-      PRINT_SYM_STR(R_X86_64_PLT32);     \
-      break;                             \
-    case R_X86_64_COPY:                  \
-      PRINT_SYM_STR(R_X86_64_COPY);      \
-      break;                             \
-    case R_X86_64_GLOB_DAT:              \
-      PRINT_SYM_STR(R_X86_64_GLOB_DAT);  \
-      break;                             \
-    case R_X86_64_JUMP_SLOT:             \
-      PRINT_SYM_STR(R_X86_64_JUMP_SLOT); \
-      break;                             \
-    case R_X86_64_RELATIVE:              \
-      PRINT_SYM_STR(R_X86_64_RELATIVE);  \
-      break;                             \
-    case R_X86_64_GOTPCREL:              \
-      PRINT_SYM_STR(R_X86_64_GOTPCREL);  \
-      break;                             \
-    case R_X86_64_32:                    \
-      PRINT_SYM_STR(R_X86_64_32);        \
-      break;                             \
-    case R_X86_64_32S:                   \
-      PRINT_SYM_STR(R_X86_64_32S);       \
-      break;                             \
-    case R_X86_64_16:                    \
-      PRINT_SYM_STR(R_X86_64_16);        \
-      break;                             \
-    case R_X86_64_PC16:                  \
-      PRINT_SYM_STR(R_X86_64_PC16);      \
-      break;                             \
-    case R_X86_64_8:                     \
-      PRINT_SYM_STR(R_X86_64_8);         \
-      break;                             \
-    case R_X86_64_PC8:                   \
-      PRINT_SYM_STR(R_X86_64_PC8);       \
-      break;                             \
-    default:                             \
-      PRINT_VALUE_HEX(type);             \
-      break;                             \
-    }                                    \
+#define PRINT_RELA_INFOTYPE(type)                                         \
+  do                                                                      \
+  {                                                                       \
+    switch (type)                                                         \
+    {                                                                     \
+      PRINT_SYM_STR_BREAK(R_X86_64_GLOB_DAT);  /*Create GOT entry*/       \
+      PRINT_SYM_STR_BREAK(R_X86_64_JUMP_SLOT); /*Create PLT entry*/       \
+      PRINT_SYM_STR_BREAK(R_X86_64_RELATIVE);  /*Adjust by program base*/ \
+      PRINT_SYM_STR_DEFAULT(type);                                        \
+    }                                                                     \
   } while (0)
 
-// relocation addend
-#define PRINT_RELA(felf, rela, linkstr, BITS, TYPE)      \
-  do                                                     \
-  {                                                      \
-    printf("\tOffset: ");                                \
-    PRINT_SYM_VALUE(rela.r_offset);                      \
-    printf("\n\tInfo type: ");                           \
-    PRINT_RELA_INFOTYPE(ELF##BITS##_R_SYM(rela.r_info)); \
-    printf("\n\tInfo index: ");                          \
-    PRINT_SYM_VALUE(ELF##BITS##_R_SYM(rela.r_info));     \
-    printf("\n\tAddend: ");                              \
-    PRINT_SYM_VALUE(rela.r_addend);                      \
-    printf("\n");                                        \
+// ~relocation addend https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#rel
+#define PRINT_RELA(felf, rela, linkstr, BITS, TYPE)       \
+  do                                                      \
+  {                                                       \
+    printf("\tOffset: ");                                 \
+    PRINT_SYM_VALUE_HEX(rela.r_offset);                   \
+    printf("(");                                          \
+    PRINT_SYM_VALUE(rela.r_offset);                       \
+    printf(")");                                          \
+    printf("\n\tInfo type: ");                            \
+    PRINT_RELA_INFOTYPE(ELF##BITS##_R_TYPE(rela.r_info)); \
+    printf("\n\tInfo index: ");                           \
+    PRINT_SYM_VALUE(ELF##BITS##_R_SYM(rela.r_info));      \
+    printf("\n\tAddend: ");                               \
+    PRINT_SYM_VALUE_HEX(rela.r_addend);                   \
+    printf("(");                                          \
+    PRINT_SYM_VALUE(rela.r_addend);                       \
+    printf(")");                                          \
+    printf("\n");                                         \
   } while (0)
 
-/// end relocation addend
-
-/// begin dynmaic
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // dynmaic type flag
-#define PRINT_DYNMAIC_TYPE(type)         \
-  do                                     \
-  {                                      \
-    switch (type)                        \
-    {                                    \
-    case DT_NULL:                        \
-      PRINT_SYM_STR(DT_NULL);            \
-      break;                             \
-    case DT_NEEDED:                      \
-      PRINT_SYM_STR(DT_NEEDED);          \
-      break;                             \
-    case DT_PLTRELSZ:                    \
-      PRINT_SYM_STR(DT_PLTRELSZ);        \
-      break;                             \
-    case DT_PLTGOT:                      \
-      PRINT_SYM_STR(DT_PLTGOT);          \
-      break;                             \
-    case DT_HASH:                        \
-      PRINT_SYM_STR(DT_HASH);            \
-      break;                             \
-    case DT_STRTAB:                      \
-      PRINT_SYM_STR(DT_STRTAB);          \
-      break;                             \
-    case DT_SYMTAB:                      \
-      PRINT_SYM_STR(DT_SYMTAB);          \
-      break;                             \
-    case DT_RELA:                        \
-      PRINT_SYM_STR(DT_RELA);            \
-      break;                             \
-    case DT_RELASZ:                      \
-      PRINT_SYM_STR(DT_RELASZ);          \
-      break;                             \
-    case DT_RELAENT:                     \
-      PRINT_SYM_STR(DT_RELAENT);         \
-      break;                             \
-    case DT_STRSZ:                       \
-      PRINT_SYM_STR(DT_STRSZ);           \
-      break;                             \
-    case DT_SYMENT:                      \
-      PRINT_SYM_STR(DT_SYMENT);          \
-      break;                             \
-    case DT_INIT:                        \
-      PRINT_SYM_STR(DT_INIT);            \
-      break;                             \
-    case DT_FINI:                        \
-      PRINT_SYM_STR(DT_FINI);            \
-      break;                             \
-    case DT_SONAME:                      \
-      PRINT_SYM_STR(DT_SONAME);          \
-      break;                             \
-    case DT_RPATH:                       \
-      PRINT_SYM_STR(DT_RPATH);           \
-      break;                             \
-    case DT_SYMBOLIC:                    \
-      PRINT_SYM_STR(DT_SYMBOLIC);        \
-      break;                             \
-    case DT_REL:                         \
-      PRINT_SYM_STR(DT_REL);             \
-      break;                             \
-    case DT_RELSZ:                       \
-      PRINT_SYM_STR(DT_RELSZ);           \
-      break;                             \
-    case DT_RELENT:                      \
-      PRINT_SYM_STR(DT_RELENT);          \
-      break;                             \
-    case DT_PLTREL:                      \
-      PRINT_SYM_STR(DT_PLTREL);          \
-      break;                             \
-    case DT_DEBUG:                       \
-      PRINT_SYM_STR(DT_DEBUG);           \
-      break;                             \
-    case DT_TEXTREL:                     \
-      PRINT_SYM_STR(DT_TEXTREL);         \
-      break;                             \
-    case DT_JMPREL:                      \
-      PRINT_SYM_STR(DT_JMPREL);          \
-      break;                             \
-    case DT_BIND_NOW:                    \
-      PRINT_SYM_STR(DT_BIND_NOW);        \
-      break;                             \
-    case DT_INIT_ARRAY:                  \
-      PRINT_SYM_STR(DT_INIT_ARRAY);      \
-      break;                             \
-    case DT_FINI_ARRAY:                  \
-      PRINT_SYM_STR(DT_FINI_ARRAY);      \
-      break;                             \
-    case DT_INIT_ARRAYSZ:                \
-      PRINT_SYM_STR(DT_INIT_ARRAYSZ);    \
-      break;                             \
-    case DT_FINI_ARRAYSZ:                \
-      PRINT_SYM_STR(DT_FINI_ARRAYSZ);    \
-      break;                             \
-    case DT_RUNPATH:                     \
-      PRINT_SYM_STR(DT_RUNPATH);         \
-      break;                             \
-    case DT_FLAGS:                       \
-      PRINT_SYM_STR(DT_FLAGS);           \
-      break;                             \
-    /*case DT_ENCODING:                  \
-      PRINT_SYM_STR(DT_ENCODING);        \
-      break;*/                           \
-    case DT_PREINIT_ARRAY:               \
-      PRINT_SYM_STR(DT_PREINIT_ARRAY);   \
-      break;                             \
-    case DT_PREINIT_ARRAYSZ:             \
-      PRINT_SYM_STR(DT_PREINIT_ARRAYSZ); \
-      break;                             \
-    case DT_SYMTAB_SHNDX:                \
-      PRINT_SYM_STR(DT_SYMTAB_SHNDX);    \
-      break;                             \
-    default:                             \
-      PRINT_VALUE_HEX(type);             \
-      break;                             \
-    }                                    \
+#define PRINT_DYNMAIC_TYPE(type)                                                                                                   \
+  do                                                                                                                               \
+  {                                                                                                                                \
+    switch (type)                                                                                                                  \
+    {                                                                                                                              \
+      PRINT_SYM_STR_BREAK(DT_NULL);            /*Marks end of dynamic section*/                                                    \
+      PRINT_SYM_STR_BREAK(DT_NEEDED);          /*Name of needed library*/                                                          \
+      PRINT_SYM_STR_BREAK(DT_PLTRELSZ);        /*Size in bytes of PLT relocs*/                                                     \
+      PRINT_SYM_STR_BREAK(DT_PLTGOT);          /*Processor defined value*/                                                         \
+      PRINT_SYM_STR_BREAK(DT_HASH);            /*Address of symbol hash table*/                                                    \
+      PRINT_SYM_STR_BREAK(DT_STRTAB);          /*Address of string table*/                                                         \
+      PRINT_SYM_STR_BREAK(DT_SYMTAB);          /*Address of symbol table*/                                                         \
+      PRINT_SYM_STR_BREAK(DT_RELA);            /*Address of Rela relocs*/                                                          \
+      PRINT_SYM_STR_BREAK(DT_RELASZ);          /*Total size of Rela relocs*/                                                       \
+      PRINT_SYM_STR_BREAK(DT_RELAENT);         /*Size of one Rela reloc*/                                                          \
+      PRINT_SYM_STR_BREAK(DT_STRSZ);           /*Size of string table*/                                                            \
+      PRINT_SYM_STR_BREAK(DT_SYMENT);          /*Size of one symbol table entry*/                                                  \
+      PRINT_SYM_STR_BREAK(DT_INIT);            /*Address of init function*/                                                        \
+      PRINT_SYM_STR_BREAK(DT_FINI);            /*Address of termination function*/                                                 \
+      PRINT_SYM_STR_BREAK(DT_SONAME);          /*Name of shared object*/                                                           \
+      PRINT_SYM_STR_BREAK(DT_RPATH);           /*Library search path (deprecated)*/                                                \
+      PRINT_SYM_STR_BREAK(DT_SYMBOLIC);        /*Start symbol search here*/                                                        \
+      PRINT_SYM_STR_BREAK(DT_REL);             /*Address of Rel relocs*/                                                           \
+      PRINT_SYM_STR_BREAK(DT_RELSZ);           /*Total size of Rel relocs*/                                                        \
+      PRINT_SYM_STR_BREAK(DT_RELENT);          /*Size of one Rel reloc*/                                                           \
+      PRINT_SYM_STR_BREAK(DT_PLTREL);          /*Type of reloc in PLT*/                                                            \
+      PRINT_SYM_STR_BREAK(DT_DEBUG);           /*For debugging; unspecified*/                                                      \
+      PRINT_SYM_STR_BREAK(DT_TEXTREL);         /*Reloc might modify .text*/                                                        \
+      PRINT_SYM_STR_BREAK(DT_JMPREL);          /*Address of PLT relocs*/                                                           \
+      PRINT_SYM_STR_BREAK(DT_BIND_NOW);        /*Process relocations of object*/                                                   \
+      PRINT_SYM_STR_BREAK(DT_INIT_ARRAY);      /*Array with addresses of init fct*/                                                \
+      PRINT_SYM_STR_BREAK(DT_FINI_ARRAY);      /*Array with addresses of fini fct*/                                                \
+      PRINT_SYM_STR_BREAK(DT_INIT_ARRAYSZ);    /*Size in bytes of DT_INIT_ARRAY*/                                                  \
+      PRINT_SYM_STR_BREAK(DT_FINI_ARRAYSZ);    /*Size in bytes of DT_FINI_ARRAY*/                                                  \
+      PRINT_SYM_STR_BREAK(DT_RUNPATH);         /*Library search path*/                                                             \
+      PRINT_SYM_STR_BREAK(DT_FLAGS);           /*Flags for the object being loaded*/                                               \
+      PRINT_SYM_STR_BREAK(DT_PREINIT_ARRAY);   /*Array with addresses of preinit fct*/                                             \
+      PRINT_SYM_STR_BREAK(DT_PREINIT_ARRAYSZ); /*size in bytes of DT_PREINIT_ARRAY*/                                               \
+      PRINT_SYM_STR_BREAK(DT_SYMTAB_SHNDX);    /*Address of SYMTAB_SHNDX section*/                                                 \
+      PRINT_SYM_STR_BREAK(DT_VERSYM);          /*The versioning entry types.  The next are defined as part of the GNU extension.*/ \
+      PRINT_SYM_STR_BREAK(DT_GNU_HASH);        /*GNU-style hash table.*/                                                           \
+      PRINT_SYM_STR_BREAK(DT_RELACOUNT);                                                                                           \
+      PRINT_SYM_STR_BREAK(SHT_SUNW_COMDAT);                                                                                        \
+      PRINT_SYM_STR_BREAK(SHT_GNU_verneed); /*Version needs section.*/                                                             \
+      PRINT_SYM_STR_BREAK(SHT_GNU_versym);  /*Version symbol table.*/                                                              \
+      PRINT_SYM_STR_DEFAULT(type);                                                                                                 \
+    }                                                                                                                              \
   } while (0)
 
 // dynmaic value
@@ -796,7 +591,22 @@
     PRINT_VALUE_HEX(dyn.d_un.d_ptr); \
   } while (0)
 
-// dynmaic entry
+// dynmaic flag type
+#define PRINT_FLAG_TYPE(type)                                                  \
+  do                                                                           \
+  {                                                                            \
+    switch (type)                                                              \
+    {                                                                          \
+      PRINT_SYM_STR_BREAK(DF_ORIGIN);     /*Object may use DF_ORIGIN*/         \
+      PRINT_SYM_STR_BREAK(DF_SYMBOLIC);   /*Symbol resolutions starts here*/   \
+      PRINT_SYM_STR_BREAK(DF_TEXTREL);    /*Object contains text relocations*/ \
+      PRINT_SYM_STR_BREAK(DF_BIND_NOW);   /*No lazy binding for this object*/  \
+      PRINT_SYM_STR_BREAK(DF_STATIC_TLS); /*Module uses the static TLS model*/ \
+      PRINT_SYM_STR_DEFAULT(type);                                             \
+    }                                                                          \
+  } while (0)
+
+// ~dynmaic entry https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L137
 #define PRINT_DYNMAIC(felf, dyn, linkstr, BITS, TYPE) \
   do                                                  \
   {                                                   \
@@ -805,6 +615,12 @@
     printf("\n");                                     \
     printf("\tValue: ");                              \
     PRINT_DYNMAIC_VALUE(dyn);                         \
+    if (dyn.d_tag == DT_FLAGS)                        \
+    {                                                 \
+      printf("(");                                    \
+      PRINT_FLAG_TYPE(dyn.d_un.d_val);                \
+      printf(")");                                    \
+    }                                                 \
     switch (dyn.d_tag)                                \
     {                                                 \
     case DT_NEEDED:                                   \
@@ -816,11 +632,9 @@
     printf("\n");                                     \
   } while (0)
 
-/// end dynmaic
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// begin section entries
-
-// section entries
+// ~section entries
 #define PRINT_SECTION_ENTRY(felf, shdrarry, i, link, BITS, TYPE, WORK) \
   do                                                                   \
   {                                                                    \
@@ -852,8 +666,7 @@
     entries = NULL;                                                    \
   } while (0)
 
-/// end section entries
-
+// string table
 #define PRINT_SECTION_STRINGS(felf, shdrarry, i, BITS) \
   do                                                   \
   {                                                    \
@@ -861,12 +674,21 @@
     char *strs = malloc(shdr.sh_size);                 \
     fseek(felf, shdr.sh_offset, SEEK_SET);             \
     fread(strs, shdr.sh_size, 1, felf);                \
-    printf("\tStrings: %s\n", strs);                   \
+    printf("\tStrings:\t\t");                          \
+    for (int pos = 0; pos < shdr.sh_size; ++pos)       \
+    {                                                  \
+      if (strs[pos] == '\0')                           \
+      {                                                \
+        printf("\n\t\t");                              \
+      }                                                \
+      else                                             \
+      {                                                \
+        putchar(strs[pos]);                            \
+      }                                                \
+    }                                                  \
     free(strs);                                        \
     strs = NULL;                                       \
   } while (0)
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
