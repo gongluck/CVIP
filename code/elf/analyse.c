@@ -497,16 +497,17 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // relocation type in x86_64
-#define PRINT_RELA_INFOTYPE(type)                                         \
-  do                                                                      \
-  {                                                                       \
-    switch (type)                                                         \
-    {                                                                     \
-      PRINT_SYM_STR_BREAK(R_X86_64_GLOB_DAT);  /*Create GOT entry*/       \
-      PRINT_SYM_STR_BREAK(R_X86_64_JUMP_SLOT); /*Create PLT entry*/       \
-      PRINT_SYM_STR_BREAK(R_X86_64_RELATIVE);  /*Adjust by program base*/ \
-      PRINT_SYM_STR_DEFAULT(type);                                        \
-    }                                                                     \
+#define PRINT_RELA_INFOTYPE(type)                                                    \
+  do                                                                                 \
+  {                                                                                  \
+    switch (type)                                                                    \
+    {                                                                                \
+      PRINT_SYM_STR_BREAK(R_X86_64_GLOB_DAT);  /*Create GOT entry*/                  \
+      PRINT_SYM_STR_BREAK(R_X86_64_JUMP_SLOT); /*Create PLT entry*/                  \
+      PRINT_SYM_STR_BREAK(R_X86_64_RELATIVE);  /*Adjust by program base*/            \
+      PRINT_SYM_STR_BREAK(R_X86_64_IRELATIVE); /*Adjust indirectly by program base*/ \
+      PRINT_SYM_STR_DEFAULT(type);                                                   \
+    }                                                                                \
   } while (0)
 
 // ~relocation addend https://github.com/gongluck/CVIP/blob/master/cpp/elf.md#rel

@@ -25,8 +25,7 @@
     - [.rel.\*](#rel)
     - [.ctors/.dtors](#ctorsdtors)
     - [.init/.finit](#initfinit)
-  - [ELF 程序自修改](#elf-程序自修改)
-    - [修改全局/静态变量初始值](#修改全局静态变量初始值)
+  - [ELF 分析程序](#elf-分析程序)
 
 ELF 文件(`Executable Linkable Format`)是一种文件存储格式。
 Linux 下的目标文件和可执行文件都按照该格式进行存储。
@@ -352,66 +351,3 @@ typedef struct elf64_rela
 - 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
 
 ## [ELF 分析程序](../code/elf/analyse.c)
-
-## ELF 程序自修改
-
-### [修改全局/静态变量初始值](../code/elf/global.cpp)
-
-<details>
-<summary>修改全局/静态变量初始值</summary>
-
-```C++
-/*
- * @Author: gongluck
- * @Date: 2022-04-14 10:49:56
- * @Last Modified by: gongluck
- * @Last Modified time: 2023-01-06 17:27:16
- */
-
-// application rewrite it`s global variable via shell tools
-#include <stdio.h>
-#include <stdlib.h>
-#define NAME2STR(name) (#name)
-int GGG = 1;
-int test()
-{
-  static int SSS = 100;
-  printf("%d\n", SSS);
-  return SSS;
-}
-int main(int argc, char *argv[])
-{
-  if (argc == 3)
-  {
-    int n = atoi(argv[2]);
-    FILE *fp = fopen(argv[0], "r+b");
-    fseek(fp, atoi(argv[1]), SEEK_SET);
-    fwrite(&n, 4, 1, fp);
-    fclose(fp);
-  }
-  else
-  {
-    printf("%s\n", argv[0]);
-    printf("%d\n", GGG);
-    test();
-    srand(GGG);
-    GGG = rand();
-    char buf[1024] = {0};
-    // readelf -s a.out | grep GGG
-    // readelf -S a.out
-    // hexdump a.out -C -s 0x3014 -n 4
-    sprintf(buf, "%s $(expr `printf %%d 0x$(readelf -s %s | grep %s | awk '{print $2}')` - `printf %%d 0x$(readelf -S %s | grep \" .data \" | awk '{print $4}')` + `printf %%d 0x$(readelf -S %s | grep \" .data \" | awk '{print $5}')`) %d",
-            argv[0], argv[0], NAME2STR(GGG), argv[0], argv[0], GGG);
-    system(buf);
-    srand(GGG);
-    GGG = rand();
-    // rewrite static variable
-    sprintf(buf, "%s $(expr `printf %%d 0x$(readelf -s %s | grep %s | awk '{print $2}')` - `printf %%d 0x$(readelf -S %s | grep \" .data \" | awk '{print $4}')` + `printf %%d 0x$(readelf -S %s | grep \" .data \" | awk '{print $5}')`) %d",
-            argv[0], argv[0], NAME2STR(SSS), argv[0], argv[0], GGG);
-    system(buf);
-  }
-  return 0;
-}
-```
-
-</details>
