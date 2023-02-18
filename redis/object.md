@@ -10,7 +10,7 @@
 
 ## Redis对象基础结构
 
-  [redis.h](https://github.com/gongluck/sourcecode/blob/main/redis/src/redis.h)
+  [redis.h](https://github.com/gongluck/sourcecode/blob/main/redis/src/redis.h#L413)
 
   <details>
   <summary>Redis对象</summary>
@@ -64,9 +64,9 @@
 
   ![字符串对象](https://github.com/gongluck/images/blob/main/redis/字符串对象.png)
 
-  使用```REDIS_ENCODING_RAW```、```REDIS_ENCODING_INT```或```REDIS_ENCODING_EMBSTR```编码类型
+  使用`REDIS_ENCODING_RAW`、`REDIS_ENCODING_INT`或`REDIS_ENCODING_EMBSTR`编码类型
 
-  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c#L39)
 
   <details>
   <summary>字符串对象</summary>
@@ -259,9 +259,9 @@
 
   ![列表对象](https://github.com/gongluck/images/blob/main/redis/列表对象.png)
 
-  使用```REDIS_ENCODING_ZIPLIST```或```REDIS_ENCODING_LINKEDLIST```编码类型
+  使用`REDIS_ENCODING_ZIPLIST`或`REDIS_ENCODING_LINKEDLIST`编码类型
 
-  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c#L220)
 
   <details>
   <summary>列表对象</summary>
@@ -292,9 +292,9 @@
 
   ![集合对象](https://github.com/gongluck/images/blob/main/redis/集合对象.png)
 
-  使用```REDIS_ENCODING_INTSET```或```REDIS_ENCODING_HT```编码类型
+  使用`REDIS_ENCODING_INTSET`或`REDIS_ENCODING_HT`编码类型
 
-  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c#L239)
 
   <details>
   <summary>集合对象</summary>
@@ -324,9 +324,9 @@
 
   ![哈希对象](https://github.com/gongluck/images/blob/main/redis/哈希对象.png)
 
-  使用```REDIS_ENCODING_ZIPLIST```或```REDIS_ENCODING_HT```编码类型
+  使用`REDIS_ENCODING_ZIPLIST`或`REDIS_ENCODING_HT`编码类型
 
-  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c#L257)
 
   <details>
   <summary>哈希对象</summary>
@@ -347,9 +347,9 @@
 
   ![哈希对象](https://github.com/gongluck/images/blob/main/redis/有序集合对象.png)
 
-  使用```REDIS_ENCODING_ZIPLIST```或```REDIS_ENCODING_SKIPLIST```编码类型
+  使用`REDIS_ENCODING_ZIPLIST`或`REDIS_ENCODING_SKIPLIST`编码类型
 
-  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c)
+  [object.c](https://github.com/gongluck/sourcecode/blob/main/redis/src/object.c#L266)
 
   <details>
   <summary>有序集合对象</summary>

@@ -6,7 +6,5 @@
   - [Redis数据库](#redis数据库)
 
 ## [Redis数据结构](./struct.md)
-
 ## [Redis对象](./object.md)
-
 ## [Redis数据库](./database.md)
