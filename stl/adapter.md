@@ -4,7 +4,7 @@
   - [容器适配器](#容器适配器)
     - [容器适配器stack](#容器适配器stack)
     - [容器适配器queue](#容器适配器queue)
-    - [容器适配器priority_queue](#容器适配器priority_queue)
+    - [容器适配器priority\_queue](#容器适配器priority_queue)
   - [迭代器适配器](#迭代器适配器)
     - [插入迭代器insert iterator](#插入迭代器insert-iterator)
     - [反向迭代器reverse iterator](#反向迭代器reverse-iterator)
@@ -15,9 +15,9 @@
 
 ### 容器适配器stack
 
-  栈```stack```只在尾部对元素做增删操作，满足的底层容器有```vector```、```deque```和```list```。
+  栈`stack`只在尾部对元素做增删操作，满足的底层容器有`vector`、`deque`和`list`。
 
-  [stl_stack.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_stack.h)
+  [stl_stack.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_stack.h#L36)
 
   <details>
   <summary>stack</summary>
@@ -68,9 +68,9 @@
 
 ### 容器适配器queue
 
-  队列```queue```只在尾部对元素做增操作和头部做删除，满足的底层容器有```deque```和```list```。(```vector```没有```pop_front```，即使有也会相当低效！)
+  队列`queue`只在尾部对元素做增操作和头部做删除，满足的底层容器有`deque`和`list`。(`vector`没有`pop_front`，即使有也会相当低效！)
 
-  [stl_queue.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_queue.h)
+  [stl_queue.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_queue.h#L36)
 
   <details>
   <summary>queue</summary>
@@ -119,9 +119,9 @@
 
 ### 容器适配器priority_queue
 
-  优先队列```priority_queue```底层依赖```堆```实现。
+  优先队列`priority_queue`底层依赖`堆`实现。
 
-  [stl_queue.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_queue.h)
+  [stl_queue.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_queue.h#L79)
 
   <details>
   <summary>priority_queue</summary>
@@ -191,7 +191,7 @@
 
 ### 插入迭代器insert iterator
 
-  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
+  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h#L381)
 
   <details>
   <summary>insert iterator</summary>
@@ -310,7 +310,7 @@
 
 ### 反向迭代器reverse iterator
 
-  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
+  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h#L526)
 
   <details>
   <summary>reverse iterator</summary>
@@ -522,7 +522,7 @@
 
 ### 流迭代器steam iterator
 
-  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h)
+  [stl_iterator.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_iterator.h#L914)
 
   <details>
   <summary>steam iterator</summary>
@@ -624,7 +624,7 @@
 
 ## 函数适配器
 
-  [stl_function.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_function.h)
+  [stl_function.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_function.h#L166)
 
   <details>
   <summary>function adapter</summary>

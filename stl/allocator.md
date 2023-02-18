@@ -9,11 +9,11 @@
 
 ## 标准分配器
 
-  包装```::operator new```和```::operator delete```。
+  包装`::operator new`和`::operator delete`。
 
   ![标准分配器](https://github.com/gongluck/images/blob/main/stl/标准分配器.png)
 
-  [defalloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/defalloc.h)
+  [defalloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/defalloc.h#L35)
 
   <details>
   <summary>标准分配器</summary>
@@ -59,10 +59,10 @@
 
 ### 构造和析构工具
 
-  ```construct```利用```placement new```实现。
-  ```destroy```调用析构函数或者利用```萃取特性```进而调用遍历析构或者特化的版本。
+  `construct`利用`placement new`实现。
+  `destroy`调用析构函数或者利用`萃取特性`进而调用遍历析构或者特化的版本。
 
-  [stl_construct.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_construct.h)
+  [stl_construct.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_construct.h#L38)
 
   <details>
   <summary>构造和析构工具</summary>
@@ -120,10 +120,10 @@
 
   ![内存池分配器](https://github.com/gongluck/images/blob/main/stl/内存池分配器.png)
 
-  [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h)
+  [stl_alloc.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_alloc.h#L143)
 
-  ```SGI```设计了双层策略。
-  第一级配置器```__malloc_alloc_template```简单包装了```malloc```和```free```，并在内存分配失败时调用失败处理函数。
+  `SGI`设计了双层策略。
+  第一级配置器`__malloc_alloc_template`简单包装了`malloc`和`free`，并在内存分配失败时调用失败处理函数。
 
   <details>
   <summary>第一级配置器</summary>
@@ -150,7 +150,7 @@
   ```
   </details>
 
-  第二级配置器```__default_alloc_template```使用了```内存池```策略，使用```free list```实现。第二级配置器的内存池实现是```双缓冲```，内存池不足时先从侯备缓存中分配，当侯备缓存也不能分配才从系统中申请。
+  第二级配置器`__default_alloc_template`使用了`内存池`策略，使用`free list`实现。第二级配置器的内存池实现是`双缓冲`，内存池不足时先从侯备缓存中分配，当侯备缓存也不能分配才从系统中申请。
 
   <details>
   <summary>第二级配置器</summary>
@@ -271,9 +271,9 @@
 
 ## 内存基本处理工具
 
-  ```uninitialized_copy```、```uninitialized_fill```在目标内存调用拷贝构造函数或者内存拷贝函数。
+  `uninitialized_copy`、`uninitialized_fill`在目标内存调用拷贝构造函数或者内存拷贝函数。
 
-  [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h)
+  [stl_uninitialized.h](https://github.com/gongluck/sourcecode/blob/main/stl/stl_uninitialized.h#L36)
 
   <details>
   <summary>uninitialized_copy</summary>
