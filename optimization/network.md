@@ -106,7 +106,7 @@
 - 内核定时重发FIN报文次数由`/proc/sys/net/ipv4/tcp_orphan_retries`参数控制，默认值是0，特指8次。
 - `/proc/sys/net/ipv4/tcp_max_orphans`定义了孤儿连接的最大数量。当进程调用close函数关闭连接后，无论该连接是在FIN_WAIT1状态，还是确实关闭了，它变成了孤儿连接。如果孤儿连接数量大于tcp_max_orphans，新增的孤儿连接将不再走四次挥手，而是直接发送RST复位报文强制关闭。
 - `/proc/sys/net/ipv4/tcp_fin_timeout`定义了孤儿连接，在N秒后还没有收到FIN报文，连接就会直接关闭。
-- `/proc/sys/net/ipv4/tcp_max_tw_buckets`设置当TIME_WAIT的连接数量超过该参数时，新关闭的连接就不再经历TIME_WAIT而直接关闭。
+- `/proc/sys/net/ipv4/tcp_max_tw_buckets`设置当TIME_WAIT的连接数量超过该参数时，新关闭的连接就不再经历TIME_WAIT而直接关闭。只有发起连接终止的一方会进入 `TIME_WAIT` 状态。
 - 如果被动方迅速调用close函数，那么被动方的ACK和FIN有可能在一个报文中发送，这样看起来，四次挥手会变成三次挥手，这是一种特殊情况。
 
 ### 窗口大小
