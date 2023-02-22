@@ -73,7 +73,7 @@
 
 ### 统一资源定位符（URL）
 
-![URL](https://github.com/gongluck/images/blob/main/web/url.png)
+![URL](https://github.com/gongluck/images/blob/main/network/web/url.png)
 
 - Scheme 部分代表协议，不只有 https，还有 ftp、ssh 等。不同协议代表着不同类型的应用在提供资源。
 - Host 部分代表站点，DNS 主要作用就是根据 Host 查找 IP 地址。
