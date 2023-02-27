@@ -47,7 +47,7 @@
 
 ### df
 
-```df```(```disk free```)命令用于显示目前在```Linux```系统上的文件系统磁盘使用情况统计。
+`df`(`disk free`)命令用于显示目前在`Linux`系统上的文件系统磁盘使用情况统计。
 
 ```shell
 #常用
@@ -59,11 +59,11 @@ df . --total -h
 
 #### nm
 
-nm是names的缩写，用来列出某些文件中的符号(函数和全局变量等)。
+nm 是 names 的缩写，用来列出某些文件中的符号(函数和全局变量等)。
 
 #### size
 
-- 解析ELF文件的各段的大小。
+- 解析 ELF 文件的各段的大小。
 
 #### ar
 
@@ -87,9 +87,9 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
 
 #### ldconfig
 
-- 作用主要是在默认搜寻目录/lib和/usr/lib以及动态库配置文件/etc/ld.so.conf内所列的目录下，搜索出可共享的动态链接库,进而创建出动态装入程序(ld.so)所需的连接和缓存文件。
-- 缓存文件默认为/etc/ld.so.cache，此文件保存已排好序的动态链接库名字列表，为了让动态链接库为系统所共享，需运行动态链接库的管理命令ldconfig，此执行程序存放在/sbin目录下。
-- ldconfig通常在系统启动时运行，而当用户安装了一个新的动态链接库时，就需要手工运行这个命令。
+- 作用主要是在默认搜寻目录/lib 和/usr/lib 以及动态库配置文件/etc/ld.so.conf 内所列的目录下，搜索出可共享的动态链接库,进而创建出动态装入程序(ld.so)所需的连接和缓存文件。
+- 缓存文件默认为/etc/ld.so.cache，此文件保存已排好序的动态链接库名字列表，为了让动态链接库为系统所共享，需运行动态链接库的管理命令 ldconfig，此执行程序存放在/sbin 目录下。
+- ldconfig 通常在系统启动时运行，而当用户安装了一个新的动态链接库时，就需要手工运行这个命令。
 
 #### ldd
 
@@ -97,7 +97,7 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
 
 #### readelf
 
-- 分析ELF文件。
+- 分析 ELF 文件。
 
   ```shell
   -h 显示elf文件开始的文件头信息。
@@ -124,7 +124,7 @@ nm是names的缩写，用来列出某些文件中的符号(函数和全局变量
 
 #### hexdump
 
-```hexdump```命令一般用来查看文件的十六进制编码，但实际上它能查看任何文件，而不只限于二进制文件。
+`hexdump`命令一般用来查看文件的十六进制编码，但实际上它能查看任何文件，而不只限于二进制文件。
 
 ```shell
 #参数
@@ -147,7 +147,7 @@ hexdump -c -s 0x1000 -n 100 a.out
 
 #### dumpbin
 
-- VC分析目标文件和可执行文件工具。
+- VC 分析目标文件和可执行文件工具。
 
   ```shell
   /ALL 打印输出所有信息。
@@ -157,17 +157,17 @@ hexdump -c -s 0x1000 -n 100 a.out
 #### strip
 
 - 去除文件中的符号信息。
-- strip只清除普通符号表，会保留动态符号表，即dynsym、dynstr段，而动态链接依靠的就是动态符号表。
-- `--strip-unneeded`参数确保strip掉的是没有用的符号，保留用于链接的符号，保留了很多有用的信息，确保该链接库是可用的。
+- strip 只清除普通符号表，会保留动态符号表，即 dynsym、dynstr 段，而动态链接依靠的就是动态符号表。
+- `--strip-unneeded`参数确保 strip 掉的是没有用的符号，保留用于链接的符号，保留了很多有用的信息，确保该链接库是可用的。
 
 ## 进程
 
 ### top
 
-- 按M，看内存占用。
-- 按P，看CPU占用。
-- 按组合键xb，然后用<>手动选择排序的列。
-- `wa`代表`iowait`，是CPU等待IO完成操作花费的时间占CPU的百分比。
+- 按 M，看内存占用。
+- 按 P，看 CPU 占用。
+- 按组合键 xb，然后用<>手动选择排序的列。
+- `wa`代表`iowait`，是 CPU 等待 IO 完成操作花费的时间占 CPU 的百分比。
 
 ### iostat
 
@@ -175,20 +175,20 @@ hexdump -c -s 0x1000 -n 100 a.out
 
 ### iotop
 
-- 查看进程实际占用I/O。
+- 查看进程实际占用 I/O。
 
 ### nohup
 
-```nohup```(```no hang up```)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫```nohup.out```的文件到当前目录下，如果当前目录的```nohup.out```文件不可写，输出重定向到```$HOME/nohup.out```文件中。
+`nohup`(`no hang up`)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫`nohup.out`的文件到当前目录下，如果当前目录的`nohup.out`文件不可写，输出重定向到`$HOME/nohup.out`文件中。
 
-```shell 
+```shell
 #常用
 nohup application [arg …] [2>&1] [&]
 ```
 
 ### ps
 
-```Linux ps```(```process status```)命令用于显示当前进程的状态，类似于```windows```的任务管理器。
+`Linux ps`(`process status`)命令用于显示当前进程的状态，类似于`windows`的任务管理器。
 
 ```shell
 #运行参数
@@ -227,7 +227,7 @@ ps -ef | grep test
 
 ### pstree
 
-```pstree```命令以树状图显示进程间的关系(```display a tree of processes```)。```ps```命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在```Linux```系统中，系统调用```fork```可以创建子进程，通过```shell```也可以创建子进程，```Linux```系统中进程之间的关系天生就是一棵树，树的根就是进程```PID```为```1```的```init```进程。
+`pstree`命令以树状图显示进程间的关系(`display a tree of processes`)。`ps`命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在`Linux`系统中，系统调用`fork`可以创建子进程，通过`shell`也可以创建子进程，`Linux`系统中进程之间的关系天生就是一棵树，树的根就是进程`PID`为`1`的`init`进程。
 
 ```shell
 #常用
@@ -237,7 +237,7 @@ pstree -p pid
 
 ### strace
 
-```strace```常用来跟踪进程执行时的系统调用和所接收的信号。
+`strace`常用来跟踪进程执行时的系统调用和所接收的信号。
 
 ```shell
 #参数
@@ -259,9 +259,9 @@ strace -p pid
 
 ### perf
 
-- Linux性能计数器是一个基于内核的子系统，它提供一个性能分析框架，比如硬件(CPU、PMU(Performance Monitoring Unit))功能和软件(软件计数器、tracepoint)功能。
-- 通过perf，应用程序可以利用PMU、tracepoint和内核中的计数器来进行性能统计。
-- Perf可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是CPU上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道CPU有多少时间在某个进程或某个函数上了。
+- Linux 性能计数器是一个基于内核的子系统，它提供一个性能分析框架，比如硬件(CPU、PMU(Performance Monitoring Unit))功能和软件(软件计数器、tracepoint)功能。
+- 通过 perf，应用程序可以利用 PMU、tracepoint 和内核中的计数器来进行性能统计。
+- Perf 可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是 CPU 上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道 CPU 有多少时间在某个进程或某个函数上了。
 
 ```shell
 #追踪记录保存到perf.data
@@ -293,6 +293,7 @@ perf report -i perf.data
 -l/-L 查看或者修改网卡队列数
 -c/-C 查看或者修改硬中断合并策略
 ```
+
 </details>
 
 ### ifconfig
@@ -307,14 +308,18 @@ RX errors：表示总的收包的错误数量
 RX dropped：数据包已经进入了Ring Buffer，但是由于其它原因导致的丢包
 RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的丢包
 ```
+
 </details>
 
 ### tcpdump
 
-![tcpdump](https://github.com/gongluck/images/blob/main/tcpdump/tcpdump.png)
+[tcpdump 原理](../code/tcpdump)
+![tcpdump捕获接收包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_recv.png)
+![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_send.png)
+![tcpdump](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump.png)
 
 ```shell
-#抓包选项: 
+#抓包选项:
 -c: 指定要抓取的包数量。
 -i interface: 指定tcpdump需要监听的接口。若未指定该选项，将从系统接口列表中搜寻编号最小的已配置好的接口(不包括loopback接口，要抓取loopback接口使用tcpdump -i lo)，一旦找到第一个符合条件的接口，搜寻马上结束。可以使用'any'关键字表示所有网络接口。
 -n: 对地址以数字方式显式，否则显式为主机名，也就是说-n选项不做主机名解析。
@@ -323,7 +328,7 @@ RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的�
 -P: 指定要抓取的包是流入还是流出的包。可以给定的值为"in"、"out"和"inout"，默认为"inout"。
 -s len: 设置tcpdump的数据包抓取长度为len，如果不设置默认将会是65535字节。对于要抓取的数据包较大时，长度设置不够可能会产生包截断，若出现包截断，输出行中会出现"[|proto]"的标志(proto实际会显示为协议名)。但是抓取len越长，包的处理时间越长，并且会减少tcpdump可缓存的数据包的数量，从而会导致数据包的丢失，所以在能抓取我们想要的包的前提下，抓取长度越小越好。
 
-#输出选项: 
+#输出选项:
 -e: 输出的每行中都将包括数据链路层头部信息，例如源MAC和目标MAC。
 -q: 快速打印输出。即打印很少的协议相关信息，从而输出行都比较简短。
 -X: 输出包的头部数据，会以16进制和ASCII两种方式同时输出。
@@ -332,7 +337,7 @@ RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的�
 -vv: 产生比-v更详细的输出。
 -vvv: 产生比-vv更详细的输出。
 
-#其他功能性选项: 
+#其他功能性选项:
 -D: 列出可用于抓包的接口。将会列出接口的数值编号和接口名，它们都可以用于"-i"后。
 -F: 从文件中读取抓包的表达式。若使用该选项，则命令行中给定的其他表达式都将失效。
 -w: 将抓包数据输出到文件中而不是标准输出。可以同时配合"-G time"选项使得输出文件每time秒就自动切换到另一个文件。可通过"-r"选项载入这些文件以进行分析和打印。保存的文件可以用wireshark打开分析！使用ctrl+C停止tcpdump抓包！

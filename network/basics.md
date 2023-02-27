@@ -8,6 +8,8 @@
     - [响应式（Reactive）](#响应式reactive)
     - [epoll](#epoll)
     - [I/O 的编程模型](#io-的编程模型)
+    - [`SO_REUSEADDR`/`SO_REUSEPORT`](#so_reuseaddrso_reuseport)
+    - [tcpdump](#tcpdump)
   - [Web 技术](#web-技术)
     - [统一资源定位符（URL）](#统一资源定位符url)
     - [DNS（Domain Name System，域名系统）](#dnsdomain-name-system域名系统)
@@ -68,6 +70,16 @@
 - NIO （None Blocking I/O，非阻塞 IO），API 的设计不会阻塞程序的调用。
 - AIO（Asynchronous I/O， 异步 I/O），API 的设计会多创造一条时间线。能够将异步操作再同步回主时间线的操作，我们称作异步转同步，也叫作异步编程。
 - 在处理高并发的时候，一种常见的 I/O 多路复用模式就是由少量的线程处理大量的网络接收、发送工作。然后再由更多的线程，通常是一个线程池处理具体的业务工作。
+
+### `SO_REUSEADDR`/`SO_REUSEPORT`
+
+[Linux 内核中 reuseport 的演进](https://segmentfault.com/a/1190000020524323)
+
+- 如果对 socket 设置了 SO_REUSEADDR 和 SO_REUSEPORT 选项，bind()时，也就在确定<src addr>和<src port>时起作用。
+- 在 TCP 中存在一个 TIME_WAIT 状态，它是指主动关闭的一端最后停留的阶段。假设 socketA 绑定到 A:X，在完成 TCP 通信后主动使用 close()，进入 TIME_WAIT，此时，如果 socketB 也去绑定 A:X，那么同样会得到 EADDRINUSE 错误，但如果 socketB 设置了 SO_REUSEADDR，那么就可以绑定成功。
+- SO_REUSEPORT 让两个 socket 可以绑定完全相同的<IP:Port>。
+
+### [tcpdump](../tools/command.md#tcpdump)
 
 ## Web 技术
 
