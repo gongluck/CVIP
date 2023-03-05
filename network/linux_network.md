@@ -8,6 +8,7 @@
   - [网络发包](#网络发包)
   - [epoll](#epoll)
   - [虚拟网络](#虚拟网络)
+  - [性能优化](#性能优化)
 
 ## 命令配置
 
@@ -89,3 +90,10 @@
 - virtual network
 
 ![virtual_network](https://github.com/gongluck/images/blob/main/network/linux/virtual/virtual_network.png)
+
+## 性能优化
+
+- 使用长连接取代短连接，可以显著降低 TCP 建立连接的成本。在每秒请求次数较多时，这样做的效果非常明显。
+- 使用内存等方式，来缓存不常变化的数据，可以降低网络 I/O 次数，同时加快应用程序的响应速度。
+- 使用 Protocol Buffer 等序列化的方式，压缩网络 I/O 的数据量，可以提高应用程序的吞吐。
+- 使用 DNS 缓存、预取、HTTPDNS 等方式，减少 DNS 解析的延迟，也可以提升网络 I/O 的整体速度。
