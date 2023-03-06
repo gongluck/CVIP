@@ -49,21 +49,6 @@
   - [x] [Linux 网络](./network/linux_network.md)
   - [x] [网络模型](./network/network_model.md)
 - [x] [开发工具](./tools/)
-- [x] [性能优化](./optimization/)
-  - [x] [CPU](./optimization/cpu.md)
-  - [x] [内存](./optimization/memory.md)
-  - [x] [索引](./optimization/index.md)
-  - [x] [磁盘](./optimization/disc.md)
-  - [x] [协程](./optimization/coroutine.md)
-  - [x] [锁](./optimization/lock.md)
-  - [x] [网络](./optimization/network.md)
-- [x] [分布式](./distribute/)
-  - [x] [CAP](./distribute/cap.md)
-  - [x] [AKF](./distribute/akf.md)
-  - [x] [NWR](./distribute/nwr.md)
-  - [x] [负载均衡](./distribute/load-balance.md)
-  - [x] [一致性哈希](./distribute/consistent-hash.md)
-  - [x] [过期缓存](./distribute/expired-cache.md)
 
 ## 源码和注释
 
