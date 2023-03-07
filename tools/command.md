@@ -1,6 +1,8 @@
 # 命令工具
 
 - [命令工具](#命令工具)
+  - [帮助](#帮助)
+  - [远程](#远程)
   - [文件](#文件)
     - [特殊文件](#特殊文件)
     - [df](#df)
@@ -30,26 +32,50 @@
     - [ifconfig](#ifconfig)
     - [tcpdump](#tcpdump)
 
+## 帮助
+
+- `man [page]`
+- `info [page]`
+
+## 远程
+
+- ssh 免密登录
+
+```bash
+#客户端生成公钥
+ssh-keygen
+
+#复制客户端id_rsa.pub内容，放置到服务器authorized_keys文件中
+#~/.ssh/authorized_keys
+```
+
 ## 文件
 
 ### 特殊文件
 
-- `/proc/pid/status`保存该`pid`进程的相关信息。
-- `/proc/pid/maps`保存该`pid`进程的虚拟地址空间信息。
-- `/proc/sys`目录可以查看或修改内核参数。
-- `/proc/cpuinfo`可以查看`CPU`信息。
-- `/proc/meminfo`可以查看内存信息。
-- `/proc/interrupts`统计所有的硬中断。
-- `/proc/softirqs`统计的所有的软中断信息。
-- `/proc/slabinfo`统计了内核数据结构的`slab`内存使用情况。
-- `/proc/net/dev`可以看到一些网卡统计数据。
-- `/sys/class/net/eth0/statistics/`也包含了网卡的统计信息。
+- 系统信息
+  - `/proc/sys`目录可以查看或修改内核参数。
+- 硬件信息
+  - `/proc/cpuinfo`可以查看`CPU`信息。
+  - `/proc/meminfo`可以查看内存信息。
+  - `/proc/interrupts`统计所有的硬中断。
+  - `/proc/softirqs`统计的所有的软中断信息。
+  - `/proc/slabinfo`统计了内核数据结构的`slab`内存使用情况。
+  - `/proc/net/dev`可以看到一些网卡统计数据。
+  - `/sys/class/net/eth0/statistics/`也包含了网卡的统计信息。
+- 进程信息
+  - `/proc/[pid]/status`保存该`pid`进程的相关信息。
+  - `/proc/[pid]/maps`保存该`pid`进程的虚拟地址空间信息。
 
 ### df
 
-`df`(`disk free`)命令用于显示目前在`Linux`系统上的文件系统磁盘使用情况统计。
+df(disk free)命令用于显示目前在 Linux 系统上的文件系统磁盘使用情况统计。
 
-```shell
+```bash
+-h, --human-readable
+  print sizes in powers of 1024 (e.g., 1023M)
+--total
+  elide all entries insignificant to available space, and produce a grand total
 #常用
 df --total -h
 df . --total -h
@@ -63,126 +89,198 @@ nm 是 names 的缩写，用来列出某些文件中的符号(函数和全局变
 
 #### size
 
-- 解析 ELF 文件的各段的大小。
+解析 ELF 文件的各段的大小。
 
 #### ar
 
-- 库相关操作。
+打包解包。
 
-  ```shell
-  -t 包含列出所有目标文件。
-  -x 解压出所有目标文件。
-  ```
+```bash
+-t
+  Display a table listing the contents of archive, or those of the files listed in member... that are present in the archive.  Normally only the member name is shown, but if the modifier O is specified, then the corresponding offset of the member is also displayed.  Finally, in order to see the modes (permissions), timestamp, owner, group, and size the v modifier should be included.
+  If you do not specify a member, all files in the archive are listed.
+  If there is more than one file with the same name (say, fie) in an archive (say b.a), ar t b.a fie lists only the first instance; to see them all, you must ask for a complete listing---in our example, ar t b.a.
+-x
+  Extract members (named member) from the archive.  You can use the v modifier with this operation, to request that ar list each name as it extracts it.
+  If you do not specify a member, all files in the archive are extracted.
+  Files cannot be extracted from a thin archive, and there are restrictions on extracting from archives created with P: The paths must not be absolute, may not contain "..", and any subdirectories in the paths must exist.  If it is desired to avoid these restrictions then used the --output option to specify an output directory.
+```
 
 #### ld
 
-- 连接器。
+链接器。
 
-  ```shell
-  -T 指定链接控制脚本。
-  -static 静态链接。
-  -e main 指定程序入口函数。
-  -s 禁止链接器产生符号表。
-  ```
+```bash
+-T scriptfile
+--script=scriptfile
+  Use scriptfile as the linker script.  This script replaces ld's default linker script (rather than adding to it), so commandfile must specify everything necessary to describe the output file. If scriptfile does not exist in the current directory, "ld" looks for it in the directories specified by any preceding -L options.  Multiple -T options accumulate.
+-Bstatic
+-dn
+-non_shared
+-static
+  Do not link against shared libraries.  This is only meaningful on platforms for which shared libraries are supported.  The different variants of this option are for compatibility with various systems.  You may use this option multiple times on the command line: it affects library searching for -l options which follow it.  This option also implies --unresolved-symbols=report-all.  This option can be used with -shared.  Doing so means that a shared library is being created but that all of the library's external references must be resolved by pulling in entries from static libraries.
+-e entry
+--entry=entry
+  Use entry as the explicit symbol for beginning execution of your program, rather than the default entry point.  If there is no symbol named entry, the linker will try to parse entry as a number, and use that as the entry address (the number will be interpreted in base 10; you may use a leading 0x for base 16, or a leading 0 for base 8).
+-s
+--strip-all
+  Omit all symbol information from the output file.
+```
 
 #### ldconfig
 
-- 作用主要是在默认搜寻目录/lib 和/usr/lib 以及动态库配置文件/etc/ld.so.conf 内所列的目录下，搜索出可共享的动态链接库,进而创建出动态装入程序(ld.so)所需的连接和缓存文件。
-- 缓存文件默认为/etc/ld.so.cache，此文件保存已排好序的动态链接库名字列表，为了让动态链接库为系统所共享，需运行动态链接库的管理命令 ldconfig，此执行程序存放在/sbin 目录下。
-- ldconfig 通常在系统启动时运行，而当用户安装了一个新的动态链接库时，就需要手工运行这个命令。
+ldconfig 主要是在默认搜寻目录/lib 和/usr/lib 以及动态库配置文件/etc/ld.so.conf 内所列的目录下，搜索出可共享的动态链接库，进而创建出动态装入程序(ld.so)所需的连接和缓存文件。
+缓存文件默认为/etc/ld.so.cache，此文件保存已排好序的动态链接库名字列表，为了让动态链接库为系统所共享，需运行动态链接库的管理命令 ldconfig，此执行程序存放在/sbin 目录下。
+ldconfig 通常在系统启动时运行，而当用户安装了一个新的动态链接库时，就需要手工运行这个命令。
 
 #### ldd
 
-- 查看依赖的动态库。
+查看依赖的动态库。
 
 #### readelf
 
-- 分析 ELF 文件。
+分析 ELF 文件。
 
-  ```shell
-  -h 显示elf文件开始的文件头信息。
-  -l 显示段(segment)表信息。
-  -S 显示段(section)表信息。
-  -s 显示符号表信息。
-  -D 显示符号表时用动态段信息解析。
-  -d 显示动态段信息。
-  ```
+```bash
+-a
+--all
+  Equivalent to specifying --file-header, --program-headers, --sections, --symbols, --relocs, --dynamic, --notes, --version-info, --arch-specific, --unwind, --section-groups and --histogram.
+  Note - this option does not enable --use-dynamic itself, so if that option is not present on the command line then dynamic symbols and dynamic relocs will not be displayed.
+```
 
 #### objdump
 
-- 反汇编目标文件或者可执行文件。
+反汇编目标文件或者可执行文件。
 
-  ```shell
-  -d 反汇编需要执行指令的那些section。
-  -D 反汇编所有section。
-  -h 显示Section Header信息。
-  -x 显示全部Header信息。
-  -s 除了显示全部Header信息，还显示对应的十六进制文件代码。
-  -r 查看需要重定位的地方。
-  -t 查看符号。
-  ```
+```bash
+-D
+--disassemble-all
+  Like -d, but disassemble the contents of all sections, not just those expected to contain instructions.
+  This option also has a subtle effect on the disassembly of instructions in code sections.  When option -d is in effect objdump will assume that any symbols present in a code section occur on the boundary between instructions and it will refuse to disassemble across such a boundary.  When option -D is in effect however this assumption is supressed.  This means that it is possible for the output of -d and -D to differ if, for example, data is stored in code sections.
+  If the target is an ARM architecture this switch also has the effect of forcing the disassembler to decode pieces of data found in code sections as if they were instructions.
+  Note if the --dwarf=follow-links option has also been enabled then any symbol tables in linked debug info files will be read in and used when disassembling.
+-t
+--syms
+  Print the symbol table entries of the file.  This is similar to the information provided by the nm program, although the display format is different.  The format of the output depends upon the format of the file being dumped, but there are two main types.  One looks like this:
+    [  4](sec  3)(fl 0x00)(ty   0)(scl   3) (nx 1) 0x00000000 .bss
+    [  6](sec  1)(fl 0x00)(ty   0)(scl   2) (nx 0) 0x00000000 fred
+  where the number inside the square brackets is the number of the entry in the symbol table, the sec number is the section number, the fl value are the symbol's flag bits, the ty number is the symbol's type, the scl number is the symbol's storage class and the nx value is the number of auxilary entries associated with the symbol.  The last two fields are the symbol's value and its name.
+  The other common output format, usually seen with ELF based files, looks like this:
+    00000000 l    d  .bss   00000000 .bss
+    00000000 g       .text  00000000 fred
+  Here the first number is the symbol's value (sometimes refered to as its address).  The next field is actually a set of characters and spaces indicating the flag bits that are set on the symbol.  These characters are described below.  Next is the section with which the symbol is associated or *ABS* if the section is absolute (ie not connected with any section), or *UND* if the section is referenced in the file being dumped, but not defined there.
+  After the section name comes another field, a number, which for common symbols is the alignment and for other symbol is the size.  Finally the symbol's name is displayed.
+    "l"
+    "g"
+    "u"
+    "!" The symbol is a local (l), global (g), unique global (u), neither global nor local (a space) or both global and local (!).  A symbol can be neither local or global for a variety of reasons, e.g., because it is used for debugging, but it is probably an indication of a bug if it is ever both local and global.  Unique global symbols are a GNU extension to the standard set of ELF symbol bindings.  For such a symbol the dynamic linker will make sure that in the entire process there is just one symbol with this name and type in use.
+    "w" The symbol is weak (w) or strong (a space).
+    "C" The symbol denotes a constructor (C) or an ordinary symbol (a space).
+    "W" The symbol is a warning (W) or a normal symbol (a space).  A warning symbol's name is a message to be displayed if the symbol following the warning symbol is ever referenced.
+    "I"
+    "i" The symbol is an indirect reference to another symbol (I), a function to be evaluated during reloc processing (i) or a normal symbol (a space).
+    "d"
+    "D" The symbol is a debugging symbol (d) or a dynamic symbol (D) or a normal symbol (a space).
+    "F"
+    "f"
+    "O" The symbol is the name of a function (F) or a file (f) or an object (O) or just a normal symbol (a space).
+-T
+--dynamic-syms
+  Print the dynamic symbol table entries of the file.  This is only meaningful for dynamic objects, such as certain types of shared libraries.  This is similar to the information provided by the nm program when given the -D (--dynamic) option.
+  The output format is similar to that produced by the --syms option, except that an extra field is inserted before the symbol's name, giving the version information associated with the symbol.  If the version is the default version to be used when resolving unversioned references to the symbol then it's displayed as is, otherwise it's put into parentheses.
+```
 
 #### hexdump
 
-`hexdump`命令一般用来查看文件的十六进制编码，但实际上它能查看任何文件，而不只限于二进制文件。
+查看文件的[十六进制]编码。
 
-```shell
-#参数
--b: 单字节八进制显示
--c: 单字节字符显示
--C: 规范化 十六进制+ASCII显示
--d: 两字节十进制显示
--o: 两字节八进制显示
--x: 两字节十六进制显示
--e: 格式 用于显示数据的格式字符串
--f: 格式文件 包含格式字符串的文件
--n: 长度 只解释输入的指定长度个字节
--s: 偏移 跳过开头指定长度个字节
--v: 显示时不压缩相似的行
--V: 显示此帮助并退出
-
+```bash
+ -C
+  Canonical hex+ASCII display.  Display the input offset in hexadecimal, followed by sixteen space-separated, two column, hexadecimal bytes, followed by the same sixteen bytes in %_p format enclosed in ``|'' characters.
+  Calling the command hd implies this option.
+-n length
+  Interpret only length bytes of input.
+-s offset
+  Skip offset bytes from the beginning of the input.  By default, offset is interpreted as a decimal number.  With a leading 0x or 0X, offset is interpreted as a hexadecimal number, otherwise, with a leading 0, offset is interpreted as an octal num‐ber.  Appending the character b, k, or m to offset causes it to be interpreted as a multiple of 512, 1024, or 1048576, respectively.
 #常用
-hexdump -c -s 0x1000 -n 100 a.out
+hexdump -C -s 0x1000 -n 100 a.out
 ```
 
 #### dumpbin
 
 - VC 分析目标文件和可执行文件工具。
 
-  ```shell
-  /ALL 打印输出所有信息。
-  /SUMMARY 输出基本信息。
-  ```
+```bash
+/ALL 打印输出所有信息。
+/SUMMARY 输出基本信息。
+```
 
 #### strip
 
-- 去除文件中的符号信息。
-- strip 只清除普通符号表，会保留动态符号表，即 dynsym、dynstr 段，而动态链接依靠的就是动态符号表。
-- `--strip-unneeded`参数确保 strip 掉的是没有用的符号，保留用于链接的符号，保留了很多有用的信息，确保该链接库是可用的。
+去除符号信息。
+
+```bash
+-s
+--strip-all
+  Remove all symbols.
+-g
+-S
+-d
+--strip-debug
+  Remove debugging symbols only.
+--strip-unneeded
+  Remove all symbols that are not needed for relocation processing.
+```
 
 ## 进程
 
 ### top
 
-- 按 M，看内存占用。
-- 按 P，看 CPU 占用。
-- 按组合键 xb，然后用<>手动选择排序的列。
-- `wa`代表`iowait`，是 CPU 等待 IO 完成操作花费的时间占 CPU 的百分比。
-- 状态包括运行（R）、空闲（I）、不可中断睡眠（D）、可中断睡眠（S）、僵尸（Z）以及暂停（T）等。
+```bash
+load average
+  system load avg over the last 1, 5 and 15 minutes
+Tasks
+  shows total tasks or threads, depending on the state of the Threads-mode toggle.  That total is further classified as: running; sleeping; stopped; zombie
+%Cpu(s)
+  shows CPU state percentages based on the interval since the last refresh.
+  As  a  default,  percentages  for  these individual categories are displayed.  Where two labels are shown below, those for more recent kernel versions are shown first.
+    us, user    : time running un-niced user processes
+    sy, system  : time running kernel processes
+    ni, nice    : time running niced user processes
+    id, idle    : time spent in the kernel idle handler
+    wa, IO-wait : time waiting for I/O completion
+    hi : time spent servicing hardware interrupts
+    si : time spent servicing software interrupts
+    st : time stolen from this vm by the hypervisor
+  1-id = us+sy+si
+Mem
+  This  portion  consists of two lines which may express values in kibibytes (KiB) through exbibytes (EiB) depending on the scaling factor enforced with the `E' interactive command.
+  As a default, Line 1 reflects physical memory, classified as: total, free, used and buff/cache
+  Line 2 reflects mostly virtual memory, classified as: total, free, used and avail (which is physical memory)
+  The avail number on line 2 is an estimation of physical memory available for starting new applications, without swapping.  Unlike the free field,  it  at‐tempts  to  account for readily reclaimable page cache and memory slabs.  It is available on kernels 3.14, emulated on kernels 2.6.27+, otherwise the same as free.
+
+#wa代表iowait，是 CPU 等待 IO 完成操作花费的时间占 CPU 的百分比。
+#状态包括运行（R）、空闲（I）、不可中断睡眠（D）、可中断睡眠（S）、僵尸（Z）以及暂停（T）等。
+#默认top命令配置显示的是平均的CPU使用情况，如果按下键盘1可以显示各颗逻辑CPU的使用情况。
+#按 M，看内存占用。
+#按 P，看 CPU 占用。
+#按组合键 xb，然后用<>手动选择排序的列。
+#按下字母f,进入列配置页面
+```
 
 ### iostat
 
-- 显示实际硬盘读写情况。
+显示实际硬盘读写情况。
 
 ### iotop
 
-- 查看进程实际占用 I/O。
+查看进程实际占用 I/O。
 
 ### nohup
 
 `nohup`(`no hang up`)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫`nohup.out`的文件到当前目录下，如果当前目录的`nohup.out`文件不可写，输出重定向到`$HOME/nohup.out`文件中。
 
-```shell
+```bash
 #常用
 nohup application [arg …] [2>&1] [&]
 ```
@@ -191,7 +289,7 @@ nohup application [arg …] [2>&1] [&]
 
 `Linux ps`(`process status`)命令用于显示当前进程的状态，类似于`windows`的任务管理器。
 
-```shell
+```bash
 #运行参数
 -A 列出所有的进程
 -e 同 -A
@@ -230,7 +328,7 @@ ps -ef | grep test
 
 `pstree`命令以树状图显示进程间的关系(`display a tree of processes`)。`ps`命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在`Linux`系统中，系统调用`fork`可以创建子进程，通过`shell`也可以创建子进程，`Linux`系统中进程之间的关系天生就是一棵树，树的根就是进程`PID`为`1`的`init`进程。
 
-```shell
+```bash
 #常用
 pstree pid
 pstree -p pid
@@ -240,7 +338,7 @@ pstree -p pid
 
 `strace`常用来跟踪进程执行时的系统调用和所接收的信号。
 
-```shell
+```bash
 #参数
 -p: 跟踪指定的进程
 -f: 跟踪由fork子进程系统调用
@@ -264,7 +362,7 @@ strace -p pid
 - 通过 perf，应用程序可以利用 PMU、tracepoint 和内核中的计数器来进行性能统计。
 - Perf 可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是 CPU 上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道 CPU 有多少时间在某个进程或某个函数上了。
 
-```shell
+```bash
 #追踪记录保存到perf.data
 perf record -a --call-graph dwarf [-p [pid]] [application]
 # record：表示记录
@@ -287,7 +385,7 @@ perf report -i perf.data
 <details>
 <summary>ethtool</summary>
 
-```shell
+```bash
 -i 显示网卡驱动的信息，如驱动的名称、版本等
 -S 查看网卡收发包的统计情况
 -g/-G 查看或者修改RingBuffer的大小
@@ -302,7 +400,7 @@ perf report -i perf.data
 <details>
 <summary>ifconfig</summary>
 
-```shell
+```bash
 RX packets：接收的总包数
 RX bytes：接收的字节数
 RX errors：表示总的收包的错误数量
@@ -319,7 +417,7 @@ RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的�
 ![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_send.png)
 ![tcpdump](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump.png)
 
-```shell
+```bash
 #抓包选项:
 -c: 指定要抓取的包数量。
 -i interface: 指定tcpdump需要监听的接口。若未指定该选项，将从系统接口列表中搜寻编号最小的已配置好的接口(不包括loopback接口，要抓取loopback接口使用tcpdump -i lo)，一旦找到第一个符合条件的接口，搜寻马上结束。可以使用'any'关键字表示所有网络接口。
