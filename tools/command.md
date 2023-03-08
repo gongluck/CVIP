@@ -195,7 +195,7 @@ ldconfig 通常在系统启动时运行，而当用户安装了一个新的动�
 查看文件的[十六进制]编码。
 
 ```bash
- -C
+-C
   Canonical hex+ASCII display.  Display the input offset in hexadecimal, followed by sixteen space-separated, two column, hexadecimal bytes, followed by the same sixteen bytes in %_p format enclosed in ``|'' characters.
   Calling the command hd implies this option.
 -n length
@@ -278,137 +278,163 @@ Mem
 
 ### nohup
 
-`nohup`(`no hang up`)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫`nohup.out`的文件到当前目录下，如果当前目录的`nohup.out`文件不可写，输出重定向到`$HOME/nohup.out`文件中。
+no hang up，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。在默认情况下，会输出一个名叫`nohup.out`的文件到当前目录下，如果当前目录的`nohup.out`文件不可写，输出重定向到`$HOME/nohup.out`文件中。
 
 ```bash
 #常用
-nohup application [arg …] [2>&1] [&]
+nohup COMMAND [arg …] [2>&1] [&] # 2>&1 将标准错误 2 重定向到标准输出 &1
 ```
 
 ### ps
 
-`Linux ps`(`process status`)命令用于显示当前进程的状态，类似于`windows`的任务管理器。
+process status，显示当前进程的状态，类似于 windows 的任务管理器。
 
 ```bash
-#运行参数
--A 列出所有的进程
--e 同 -A
--f 显示详细信息
--w 显示加宽可以显示较多的信息
--au 显示较详细的信息
--aux 显示所有包含其他使用者的进程
-  au(x) 输出格式 :
-    USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
-    USER: 进程拥有者
-    PID: pid
-    %CPU: 占用的 CPU 使用率
-    %MEM: 占用的内存使用率
-    VSZ: 占用的虚拟内存大小
-    RSS: 占用的内存大小
-    TTY: 终端的次要装置号码 (minor device number of tty)
-    STAT: 该进程的状态:
-      D: 无法中断的休眠状态 (通常 IO 的进程)
-      R: 正在执行中
-      S: 静止状态
-      T: 暂停执行
-      Z: 不存在但暂时无法消除
-      W: 没有足够的内存分页可分配
-      <: 高优先序的进程
-      N: 低优先序的进程
-      L: 有内存分页分配并锁在内存内 (实时系统或捱A I/O)
-    START: 进程开始时间
-    TIME: 执行的时间
-    COMMAND: 所执行的指令
+-e
+  Select all processes.  Identical to -A.
+-f
+  Do full-format listing.  This option can be combined with many other UNIX-style options to add additional columns.  It also causes the command arguments to be printed.  When used with -L, the NLWP (number of threads) and LWP (thread ID) columns will be added.  See the c option, the format keyword args, and the format keyword comm.
+-w
+  Wide output.  Use this option twice for unlimited width.
+--width n
+  Set screen width.
+-a
+  Select all processes except both session leaders (see getsid(2)) and processes not associated with a terminal.
+-u
+  Display user-oriented format.
+-x
+  Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all processes when some BSD-style (without "-") options are used or when the ps personality setting is BSD-like.  The set of processes selected in this manner is in addition to the set of processes selected by other means.  An alternate description is that this option causes ps to list all processes owned by you (same EUID as ps), or to list all processes when used together with the a option.
 
 #常用
-ps -ef | grep test
+ps -ef
+ps -aux
 ```
 
 ### pstree
 
-`pstree`命令以树状图显示进程间的关系(`display a tree of processes`)。`ps`命令可以显示当前正在运行的那些进程的信息，但是对于它们之间的关系却显示得不够清晰。在`Linux`系统中，系统调用`fork`可以创建子进程，通过`shell`也可以创建子进程，`Linux`系统中进程之间的关系天生就是一棵树，树的根就是进程`PID`为`1`的`init`进程。
+display a tree of processes，将所有进程以树状图显示，树状图将会以 pid (如果有指定) 或是以 init 这个基本进程为根 (root)，如果有指定使用者 id，则树状图会只显示该使用者所拥有的进程。
 
 ```bash
-#常用
-pstree pid
-pstree -p pid
+pstree [pid|user]
+-p
+  Show PIDs.  PIDs are shown as decimal numbers in parentheses after each process name.  -p implicitly disables compaction.
 ```
 
 ### strace
 
-`strace`常用来跟踪进程执行时的系统调用和所接收的信号。
+跟踪进程执行时的系统调用和所接收的信号。
 
 ```bash
-#参数
--p: 跟踪指定的进程
--f: 跟踪由fork子进程系统调用
--F: 尝试跟踪vfork子进程系统调吸入，与-f同时出现时, vfork不被跟踪
--o filename: 默认strace将结果输出到stdout。通过-o可以将输出写入到filename文件中
--ff: 常与-o选项一起使用，不同进程(子进程)产生的系统调用输出到filename.PID文件
--r: 打印每一个系统调用的相对时间
--t: 在输出中的每一行前加上时间信息。 -tt 时间确定到微秒级。还可以使用-ttt打印相对时间
--v: 输出所有系统调用。默认情况下，一些频繁调用的系统调用不会输出
--s: 指定每一行输出字符串的长度,默认是32。文件名一直全部输出
--c: 统计每种系统调用所执行的时间，调用次数，出错次数。
--e expr: 输出过滤器，通过表达式，可以过滤出掉你不想要输出
+-p pid
+--attach=pid
+  Attach to the process with the process ID pid and begin tracing.  The trace may be terminated at any time by a keyboard interrupt signal (CTRL-C).  strace will respond by detaching itself from the traced process(es) leaving it (them) to continue running.  Multiple  -p  op‐tions can be used to attach to many processes in addition to command (which is optional if at least one -p option is given).  -p "`pidof PROG`" syntax is supported.
+-f
+  Trace child processes as they are created by currently traced processes as a result of the fork(2), vfork(2) and clone(2) system  calls.Note that -p PID -f will attach all threads of process PID if it is multi-threaded, not only thread with thread_id = PID.
+-ff
+  If  the  -o  filename  option  is in effect, each processes trace is written to filename.pid where pid is the numeric process id of each process.  This is incompatible with -c, since no per-process counts are kept.
+-r
+  Print  a relative timestamp upon entry to each system call.  This records the time difference between the beginning of successive system calls.  Note that since -r option uses the monotonic clock time for measuring time difference and not the wall clock time, its  measure‐ments can differ from the difference in time reported by the -t option.
+-s strsize
+--string-limit=strsize
+  Specify  the maximum string size to print (the default is 32).  Note that filenames are not considered strings and are always printed in full.
+-t
+  Prefix each line of the trace with the wall clock time.
+-tt
+  If given twice, the time printed will include the microseconds.
+-ttt
+  If given thrice, the time printed will include the microseconds and the leading portion will be printed as the number of  seconds  since the epoch.
 
 #常用
-strace -p pid
+strace -p [pid] -tt
 ```
 
 ### perf
 
-- Linux 性能计数器是一个基于内核的子系统，它提供一个性能分析框架，比如硬件(CPU、PMU(Performance Monitoring Unit))功能和软件(软件计数器、tracepoint)功能。
-- 通过 perf，应用程序可以利用 PMU、tracepoint 和内核中的计数器来进行性能统计。
-- Perf 可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是 CPU 上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道 CPU 有多少时间在某个进程或某个函数上了。
+perf 是 Linux 的一款性能分析工具，能够进行函数级和指令级的热点查找，可以用来分析程序中热点函数的 CPU 占用率，从而定位性能瓶颈。
+Perf 可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是 CPU 上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道 CPU 有多少时间在某个进程或某个函数上了。
 
 ```bash
-#追踪记录保存到perf.data
-perf record -a --call-graph dwarf [-p [pid]] [application]
-# record：表示记录
-# -F n：表示每秒n次
-# -g：表示记录调用栈
-# --call-graph dward：表示分析调用栈的关系
-# sleep n：持续n秒
-# -a：表示对所有CPU采样
-# -p pid：表示分析指定的进程id
-# -o file：指定输出文件
+record
+  -F, --freq=
+    Profile at this frequency. Use max to use the currently maximum allowed frequency, i.e. the value in the kernel.perf_event_max_sample_rate sysctl. Will throttle down to the currently maximum allowed frequency. See --strict-freq.
+  -g
+    Enables call-graph (stack chain/backtrace) recording.
+  -a, --all-cpus
+    System-wide collection from all CPUs (default if no target is specified).
+  -p, --pid=
+    Record events on existing process ID (comma separated list).
+  -o, --output=
+    Output file name.
+  -e, --event=
+    Select the PMU event. Selection can be:
+    •   a symbolic event name (use perf list to list all events)
+    •   a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a hexadecimal event descriptor.
+    •   a symbolic or raw PMU event followed by an optional colon and a list of event modifiers, e.g., cpu-cycles:p. See the perf-list(1) man page for details on event modifiers.
+    •   a symbolically formed PMU event like pmu/param1=0x3,param2/ where param1, param2, etc are defined as formats for the PMU in /sys/bus/event_source/devices/<pmu>/format/*.
+    •   a symbolically formed event like pmu/config=M,config1=N,config3=K/ where M, N, K are numbers (in decimal, hex, octal format). Acceptable values for each of 'config', 'config1' and 'config2' are defined by corresponding entries in /sys/bus/event_source/devices/<pmu>/format/* param1 and param2 are defined as formats for the PMU in: /sys/bus/event_source/devices/<pmu>/format/*
+    There are also some parameters which are not defined in .../<pmu>/format/*.
+    These params can be used to overload default config values per event.
+    Here are some common parameters:
+    - 'period': Set event sampling period
+    - 'freq': Set event sampling frequency
+    - 'time': Disable/enable time stamping. Acceptable values are 1 for enabling time stamping. 0 for disabling time stamping.The default is 1.
+    - 'call-graph': Disable/enable callgraph. Acceptable str are "fp" for FP mode, "dwarf" for DWARF mode, "lbr" for LBR mode and "no" for disable callgraph.
+    - 'stack-size': user stack size for dwarf mode
+    - 'name' : User defined event name. Single quotes (') may be used to escape symbols in the name from parsing by shell and tool like this: name=\'CPU_CLK_UNHALTED.THREAD:cmask=0x1\'.
+    - 'aux-output': Generate AUX records instead of events. This requires that an AUX area event is also provided.
+    See the linkperf:perf-list[1] man page for more parameters.
+    Note: If user explicitly sets options which conflict with the params, the value set by the parameters will be overridden.
+    Also not defined in .../<pmu>/format/* are PMU driver specific configuration parameters.  Any configuration parameter preceded by the letter '@' is not interpreted in user space and sent down directly to the PMU driver.  For example:
+      perf record -e some_event/@cfg1,@cfg2=config/ ...
+    will see 'cfg1' and 'cfg2=config' pushed to the PMU driver associated with the event for further processing.  There is no restriction on what the configuration parameters are, as long as their semantic is understood and supported by the PMU driver.
+    •   a hardware breakpoint event in the form of \mem:addr[/len][:access] where addr is the address in memory you want to break in. Access is the memory access type (read, write, execute) it can be passed as follows: \mem:addr[:[r][w][x]]. len is the range, number of bytes from specified addr, which the breakpoint will cover. If you want to profile read-write accesses in 0x1000, just set mem:0x1000:rw. If you want to profile write accesses in [0x1000~1008), just set mem:0x1000/8:w.
+    •   a BPF source file (ending in .c) or a precompiled object file (ending in .o) selects one or more BPF events. The BPF program can attach to various perf events based on the ELF section names. When processing a '.c' file, perf searches an installed LLVM to compile it into an object file first. Optional clang options can be passed via the '--clang-opt' command line option, e.g.:
+      perf record --clang-opt "-DLINUX_VERSION_CODE=0x50000" \
+      -e tests/bpf-script-example.c
+    Note: '--clang-opt' must be placed before '--event/-e'.
+    •   a group of events surrounded by a pair of brace ("{event1,event2,...}"). Each event is separated by commas and the group should be quoted to prevent the shell interpretation. You also need to use --group on "perf report" to view group events together.
+report
+  -i, --input=
+    Input file name. (default: perf.data unless stdin is a fifo)
 
+#追踪记录
+perf record -a -g [-p [pid]] [application] -o perf.data
 #分析
 perf report -i perf.data
+#火焰图 on-cpu
+git clone https://github.com/brendangregg/FlameGraph
+cd FlameGraph
+perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > ksoftirqd.svg
 ```
 
 ## 网络
 
 ### ethtool
 
-<details>
-<summary>ethtool</summary>
+网络设备管理工具。
 
 ```bash
--i 显示网卡驱动的信息，如驱动的名称、版本等
--S 查看网卡收发包的统计情况
--g/-G 查看或者修改RingBuffer的大小
--l/-L 查看或者修改网卡队列数
--c/-C 查看或者修改硬中断合并策略
+-i --driver
+  Queries the specified network device for associated driver information.
+-S --statistics
+  Queries the specified network device for NIC- and driver-specific statistics.
+-g --show-ring
+  Queries the specified network device for rx/tx ring parameter information.
+-G --set-ring
+  Changes the rx/tx ring parameters of the specified network device.
+-l --show-channels
+  Queries  the  specified  network  device for the numbers of channels it has.  A channel is an IRQ and the set of queues that can trigger that IRQ.
+-L --set-channels
+  Changes the numbers of channels of the specified network device.
+-c --show-coalesce
+  Queries the specified network device for coalescing information.
+-C --coalesce
+  Changes the coalescing settings of the specified network device.
 ```
-
-</details>
 
 ### ifconfig
 
-<details>
-<summary>ifconfig</summary>
-
-```bash
-RX packets：接收的总包数
-RX bytes：接收的字节数
-RX errors：表示总的收包的错误数量
-RX dropped：数据包已经进入了Ring Buffer，但是由于其它原因导致的丢包
-RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的丢包
-```
-
-</details>
+管理网络接口。
 
 ### tcpdump
 
@@ -418,31 +444,43 @@ RX overruns：表示了fifo的overruns，这是由于Ring Buffer不足导致的�
 ![tcpdump](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump.png)
 
 ```bash
-#抓包选项:
--c: 指定要抓取的包数量。
--i interface: 指定tcpdump需要监听的接口。若未指定该选项，将从系统接口列表中搜寻编号最小的已配置好的接口(不包括loopback接口，要抓取loopback接口使用tcpdump -i lo)，一旦找到第一个符合条件的接口，搜寻马上结束。可以使用'any'关键字表示所有网络接口。
--n: 对地址以数字方式显式，否则显式为主机名，也就是说-n选项不做主机名解析。
--nn: 除了-n的作用外，还把端口显示为数值，否则显示端口服务名。
--N: 不打印出host的域名部分。例如tcpdump将会打印'nic'而不是'nic.ddn.mil'。
--P: 指定要抓取的包是流入还是流出的包。可以给定的值为"in"、"out"和"inout"，默认为"inout"。
--s len: 设置tcpdump的数据包抓取长度为len，如果不设置默认将会是65535字节。对于要抓取的数据包较大时，长度设置不够可能会产生包截断，若出现包截断，输出行中会出现"[|proto]"的标志(proto实际会显示为协议名)。但是抓取len越长，包的处理时间越长，并且会减少tcpdump可缓存的数据包的数量，从而会导致数据包的丢失，所以在能抓取我们想要的包的前提下，抓取长度越小越好。
-
-#输出选项:
--e: 输出的每行中都将包括数据链路层头部信息，例如源MAC和目标MAC。
--q: 快速打印输出。即打印很少的协议相关信息，从而输出行都比较简短。
--X: 输出包的头部数据，会以16进制和ASCII两种方式同时输出。
--XX: 输出包的头部数据，会以16进制和ASCII两种方式同时输出，更详细。
--v: 当分析和打印的时候，产生详细的输出。
--vv: 产生比-v更详细的输出。
--vvv: 产生比-vv更详细的输出。
-
-#其他功能性选项:
--D: 列出可用于抓包的接口。将会列出接口的数值编号和接口名，它们都可以用于"-i"后。
--F: 从文件中读取抓包的表达式。若使用该选项，则命令行中给定的其他表达式都将失效。
--w: 将抓包数据输出到文件中而不是标准输出。可以同时配合"-G time"选项使得输出文件每time秒就自动切换到另一个文件。可通过"-r"选项载入这些文件以进行分析和打印。保存的文件可以用wireshark打开分析！使用ctrl+C停止tcpdump抓包！
--r: 从给定的数据包文件中读取数据。使用"-"表示从标准输入中读取。
+-c count
+  Exit after receiving count packets.
+-i interface
+--interface=interface
+  Listen  on interface.  If unspecified, tcpdump searches the system interface list for the lowest numbered, configured up interface (excluding loopback), which may turn out to be, for example, ``eth0''.
+  On Linux systems with 2.2 or later kernels, an interface argument of ``any'' can be used to capture packets from all interfaces.   Note  that captures on the ``any'' device will not be done in promiscuous mode.
+  If the -D flag is supported, an interface number as printed by that flag can be used as the interface argument, if no interface on the system has that number as a name.
+-n
+  Don't convert addresses (i.e., host addresses, port numbers, etc.) to names.
+-N
+  Don't print domain name qualification of host names.  E.g., if you give this flag then tcpdump will print ``nic'' instead of ``nic.ddn.mil''.
+-p
+--no-promiscuous-mode
+  Don't put the interface into promiscuous mode.  Note that the interface might be in promiscuous mode for some other reason; hence, `-p'  can‐not be used as an abbreviation for `ether host {local-hw-addr} or ether broadcast'.
+-s snaplen
+--snapshot-length=snaplen
+  Snarf  snaplen  bytes  of data from each packet rather than the default of 262144 bytes.  Packets truncated because of a limited snapshot are indicated in the output with ``[|proto]'', where proto is the name of the protocol level at which the truncation  has  occurred.   Note  that taking  larger  snapshots  both  increases  the  amount  of time it takes to process packets and, effectively, decreases the amount of packet buffering.  This may cause packets to be lost.  You should limit snaplen to the smallest number that will capture  the  protocol  information you're  interested in.  Setting snaplen to 0 sets it to the default of 262144, for backwards compatibility with recent older versions of tcp‐dump.
+-e
+  Print  the  link-level  header on each dump line.  This can be used, for example, to print MAC layer addresses for protocols such as Ethernet and IEEE 802.11.
+-q
+  Quick (quiet?) output.  Print less protocol information so output lines are shorter.
+-x
+  When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex.   The smaller of the entire packet or snaplen bytes will be printed.  Note that this is the entire link-layer packet, so for link layers that pad (e.g. Ethernet), the padding bytes will also be printed when the higher layer packet is shorter than the required padding.
+-xx
+  When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex.
+-X
+  When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex and ASCII.  This is very handy for analysing new protocols.
+-XX
+  When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex and ASCII.
+-v
+  When  parsing  and printing, produce (slightly more) verbose output.  For example, the time to live, identification, total length and options in an IP packet are printed.  Also enables additional packet integrity checks such as verifying the IP and ICMP header checksum.
+  When writing to a file with the -w option, report, every 10 seconds, the number of packets captured.
+-vv
+  Even more verbose output.  For example, additional fields are printed from NFS reply packets, and SMB packets are fully decoded.
+-vvv
+  Even more verbose output.  For example, telnet SB ... SE options are printed in full.  With -X Telnet options are printed in hex as well.
 
 #常用
-tcpdump -D
-tcpdump -c 10 -i eth0 -nn -XX -vvv
+tcpdump -i eth0 -n -XX -vvv
 ```
