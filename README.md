@@ -14,11 +14,11 @@
 
 ## chapters and sections
 
-- [x] [数据结构与算法](./数据结构与算法/)
-  - [x] [算法复杂度分析](./数据结构与算法/算法复杂度分析.md)
-  - [x] [数据结构](./数据结构与算法/数据结构.md)
-  - [x] [排序算法](./数据结构与算法/排序算法.md)
-  - [x] [查找算法](./数据结构与算法/查找算法.md)
+- [x] [数据结构与算法](./data_structure_and_algorithm/)
+  - [x] [算法复杂度分析](./data_structure_and_algorithm/complexity_analysis.md)
+  - [x] [数据结构](./data_structure_and_algorithm/data_structure.md)
+  - [x] [排序算法](./data_structure_and_algorithm/sort.md)
+  - [x] [查找算法](./data_structure_and_algorithm/search.md)
 - [x] [计算机基础](./计算机基础/)
   - [x] [CPU](./计算机基础/cpu.md)
   - [x] [内存](./计算机基础/memory.md)
