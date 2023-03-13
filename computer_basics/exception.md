@@ -13,8 +13,8 @@
 
 ## 异常种类
 
-![异常种类](https://github.com/gongluck/images/blob/main/计算机基础/异常种类.png)
+![异常种类](https://github.com/gongluck/images/blob/main/exception/types.png)
 
 ## 异常处理
 
-![异常处理](https://github.com/gongluck/images/blob/main/计算机基础/异常处理.png)
+![异常处理](https://github.com/gongluck/images/blob/main/exception/handler.png)
