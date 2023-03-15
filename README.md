@@ -29,6 +29,8 @@
   - [x] [异常](./computer_basics/exception.md)
 - [x] [C++](./cpp/)
   - [x] [C++基础](./cpp/base.md)
+  - [x] [面向对象](./cpp/oop.md)
+  - [x] [模板](./cpp/template.md)
   - [x] [C++新特性](./cpp/advance.md)
   - [x] [ELF 文件结构](./cpp/elf.md)
   - [x] [GCC](./cpp/gcc.md)
