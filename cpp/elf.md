@@ -32,16 +32,16 @@ Linux 下的目标文件和可执行文件都按照该格式进行存储。
 
 ## 编译链接过程
 
-![编译链接过程](https://github.com/gongluck/images/blob/main/cpp/编译链接过程.png)
+![编译链接过程](https://github.com/gongluck/images/blob/main/cpp/compiling_and_linking_process.png)
 
 ## ELF 段(segment)和节(section)
 
-![ELF文件格式](https://github.com/gongluck/images/blob/main/cpp/ELF文件格式.png)
-![不同类型的ELF文件](https://github.com/gongluck/images/blob/main/cpp/不同类型的ELF文件.png)
+![ELF文件格式](https://github.com/gongluck/images/blob/main/elf/elf_file_format.png)
+![不同类型的ELF文件](https://github.com/gongluck/images/blob/main/elf/elf_file_types.png)
 
 - 段(segment)是程序执行的必要组成，**当多个目标文件链接成一个可执行文件时，会将相同权限的节(section)合并到一个段中。**
-- 在全局变量或函数之前加上`__attribute__((section("name")))`属性就可以把相应的变量或函数放到以"name"作为段名的段中。
-- 在全局变量或函数定义时加上`__attribute__((weak))`或声明时加上`__attribute__((weakref))`属性就可以把相应的变量或函数变成弱符号或弱引用。
+- 在全局变量或函数之前加上 `__attribute__((section("name")))` 属性就可以把相应的变量或函数放到以"name"作为段名的段中。
+- 在全局变量或函数定义时加上 `__attribute__((weak))` 或声明时加上 `__attribute__((weakref))` 属性就可以把相应的变量或函数变成弱符号或弱引用。
 - **如果用于编译和链接(可重定位文件)，则编译器和链接器将把 ELF 文件看作是节头表描述的节的集合，程序头表可选。**
 - **如果用于加载执行(可执行文件)，则加载器则将把 ELF 文件看作是程序头表描述的段的集合，一个段可能包含多个节，节头表可选。**
 
@@ -53,7 +53,7 @@ Linux 下的目标文件和可执行文件都按照该格式进行存储。
 <details>
 <summary>ELF File Header</summary>
 
-```C++
+```c++
 #define EI_NIDENT 16
 
 typedef struct elf32_hdr // elf文件头
@@ -100,7 +100,7 @@ typedef struct elf64_hdr
 <details>
 <summary>ELF Program Header</summary>
 
-```C++
+```c++
 // 程序头权限属性
 /* These constants define the permissions on sections in the program
    header, p_flags. */
@@ -111,7 +111,7 @@ typedef struct elf64_hdr
 typedef struct elf32_phdr // elf程序头表 segment
 {
   Elf32_Word p_type;   // 段类型 PT_XXX
-  Elf32_Off p_offset;  // 段在内存映像(虚拟内存基址)的偏移
+  Elf32_Off p_offset;  // 段位于文件的起始位置
   Elf32_Addr p_vaddr;  // 虚拟地址空间
   Elf32_Addr p_paddr;  // 物理装载地址
   Elf32_Word p_filesz; // 段文件长度
@@ -140,7 +140,7 @@ typedef struct elf64_phdr
 <details>
 <summary>ELF Section Header</summary>
 
-```C++
+```c++
 typedef struct elf32_shdr // elf段表描述结构
 {
   Elf32_Word sh_name;      //.shstrtab中的索引
@@ -172,7 +172,7 @@ typedef struct elf64_shdr
 
 </details>
 
-- 段名的字符串信息在`.strtab`段，需要从`e_shoff`的地址开始偏移`e_shstrndx`+1 个`e_shentsize`。
+- 段名的字符串信息在 `.strtab` 段，需要从 `e_shoff` 的地址开始偏移 `e_shstrndx` + 1 个 `e_shentsize`。
 
 ## ELF Section
 
@@ -194,8 +194,8 @@ typedef struct elf64_shdr
 
 ### .bss
 
-- 存在于`data`段中，占用空间不超过`4`字节，仅表示这个节本生的空间。
-- 保存未进行初始化的全局或局部静态数据。程序加载时数据被初始化为`0`，在程序执行期间可以进行赋值。
+- 存在于 `data` 段中，占用空间不超过 `4` 字节，仅表示这个节本生的空间。
+- 保存未进行初始化的全局或局部静态数据。程序加载时数据被初始化为 `0`，在程序执行期间可以进行赋值。
 
 ### .comment
 
@@ -207,20 +207,22 @@ typedef struct elf64_shdr
 
 ### .got/.plt/.got.plt
 
+![动态共享库实现](https://github.com/gongluck/images/blob/main/dynamic_shared_library/implementation.png)
+
 - GOT(Global Offset Table)全局偏移表。链接器为外部符号填充的实际偏移表。
-- PLT(Procedure Linkage Table)程序链接表。可以在`.got.plt`节中拿到地址，并跳转。当`.got.plt`没有所需地址的时，触发链接器去找到所需地址。
+- PLT(Procedure Linkage Table)程序链接表。可以在 `.got.plt` 节中拿到地址，并跳转。当 `.got.plt` 没有所需地址的时，触发链接器去找到所需地址。
 - .got.plt 中的值是 GOT 的一部分。包含上述 PLT 表所需地址(已经找到的和需要去触发的)。
 
 ### .shstrtab
 
-- 节头字符串表，用于保存节头表中用到的字符串，可通过`sh_name`进行索引。
+- 节头字符串表，用于保存节头表中用到的字符串，可通过 `sh_name` 进行索引。
 
 ### [.symtab](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L190)
 
 <details>
 <summary>符号表段</summary>
 
-```C++
+```c++
 typedef struct elf32_sym // 符号表结构
 {
   Elf32_Word st_name;     // 字符串表中的索引
@@ -250,11 +252,11 @@ typedef struct elf64_sym
 
 ### .strtab
 
-- 保存符号字符串表，表中的内容会被`.symtab`的结构引用。
+- 保存符号字符串表，表中的内容会被 `.symtab` 的结构引用。
 
 ### .dynsym
 
-- 保存了从共享库导入的动态符号表和全局符号，是`.symtab`所保存符号的子集。
+- 保存了从共享库导入的动态符号表和全局符号，是 `.symtab` 所保存符号的子集。
 - 保存的符号只能在运行时被解析，是运行时动态链接器所需的唯一符号。对于动态链接可执行文件的执行是必需的。
 
 ### .dynstr
@@ -266,7 +268,7 @@ typedef struct elf64_sym
 <details>
 <summary>动态段</summary>
 
-```C++
+```c++
 typedef struct dynamic // .dynamic段节点结构
 {
   Elf32_Sword d_tag; // 类型标识 DT_XXX
@@ -294,14 +296,14 @@ typedef struct
 
 ### .hash
 
-- 也称为`.gnu.hash`，保存了一个用于查找符号的散列表。
+- 也称为 `.gnu.hash`，保存了一个用于查找符号的散列表。
 
 ### [.rel.\*](https://github.com/gongluck/sourcecode/blob/main/linux-3.10/include/uapi/linux/elf.h#L157)
 
 <details>
 <summary>重定位表</summary>
 
-```C++
+```c++
 /* The following are used with relocations */ // 提取符号重定位信息
 #define ELF32_R_SYM(x) ((x) >> 8)             // 提取符号重定位绑定信息
 #define ELF32_R_TYPE(x) ((x)&0xff)            // 提取符号重定位类型
@@ -343,11 +345,11 @@ typedef struct elf64_rela
 ### .ctors/.dtors
 
 - 构造器和析构器分别保存了指向构造函数和析构函数的函数指针，构造函数是在 main 函数执行之前需要执行的代码；析构函数是在 main 函数之后需要执行的代码。
-- `__attribute__((constructor))`/`__attribute__((destructor))`声明会将函数名地址加入到`.ctors/.dtors` 指示的可变长数组。
+- `__attribute__((constructor))`/`__attribute__((destructor))` 声明会将函数名地址加入到 `.ctors/.dtors` 指示的可变长数组。
 
 ### .init/.finit
 
 - 支持全局和静态对象的构造和析构。
-- 若共享对象有.init 段或.finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
+- 若共享对象有 .init 段或 .finit 段，那么动态链接器将会执行段中的代码，以实现共享对象特有的初始化和反初始化过程。
 
 ## [ELF 分析程序](../code/elf/analyse.c)
