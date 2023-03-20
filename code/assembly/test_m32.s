@@ -1,62 +1,76 @@
-	.file	"test.cpp"
+	.file	"test.c"
 	.text
-	.section	.rodata
-	.type	_ZStL19piecewise_construct, @object
-	.size	_ZStL19piecewise_construct, 1
-_ZStL19piecewise_construct:
-	.zero	1
-	.local	_ZStL8__ioinit
-	.comm	_ZStL8__ioinit,1,1
-	.text
-	.globl	_Z4funci
-	.type	_Z4funci, @function
-_Z4funci:
-.LFB1519:
+	.globl	func
+	.type	func, @function
+func:
+.LFB0:
 	.cfi_startproc
 	endbr32
-	pushl	%ebp													#旧基址进栈保存
+	pushl	%ebp
 	.cfi_def_cfa_offset 8
 	.cfi_offset 5, -8
-	movl	%esp, %ebp										#新栈(基址)
+	movl	%esp, %ebp
 	.cfi_def_cfa_register 5
-	call	__x86.get_pc_thunk.ax					#把esp的内容赋值给eax (movl (%esp),%eax)
+	call	__x86.get_pc_thunk.ax
 	addl	$_GLOBAL_OFFSET_TABLE_, %eax
-	movl	8(%ebp), %eax									#根据具体内存偏移获取形参
+	movl	8(%ebp), %eax
 	addl	%eax, %eax
-	popl	%ebp													#恢复旧基址
+	popl	%ebp
 	.cfi_restore 5
 	.cfi_def_cfa 4, 4
-	ret																	#函数返回
+	ret	$4
 	.cfi_endproc
-.LFE1519:
-	.size	_Z4funci, .-_Z4funci
+.LFE0:
+	.size	func, .-func
+	.globl	func_asm
+	.type	func_asm, @function
+func_asm:
+.LFB1:
+	.cfi_startproc
+	endbr32
+	pushl	%ebp
+	.cfi_def_cfa_offset 8
+	.cfi_offset 5, -8
+	movl	%esp, %ebp
+	.cfi_def_cfa_register 5
+	subl	$24, %esp
+	call	__x86.get_pc_thunk.ax
+	addl	$_GLOBAL_OFFSET_TABLE_, %eax
+	movl	%gs:20, %eax
+	movl	%eax, -12(%ebp)
+	xorl	%eax, %eax
+	movl	$1, -20(%ebp)
+	movl	$2, -16(%ebp)
+	movl	$0, -24(%ebp)
+	movl	-20(%ebp), %eax
+	movl	-16(%ebp), %edx
+	movl	%eax, %ecx
+#APP
+# 23 "test.c" 1
+	movl $0, %eax
+	addl %ecx, %eax
+	addl %edx, %eax
+	movl %eax, -24(%ebp)
+	
+# 0 "" 2
+#NO_APP
+	nop
+	movl	-12(%ebp), %eax
+	xorl	%gs:20, %eax
+	je	.L4
+	call	__stack_chk_fail_local
+.L4:
+	leave
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
+	.cfi_endproc
+.LFE1:
+	.size	func_asm, .-func_asm
 	.globl	main
 	.type	main, @function
 main:
-.LFB1520:
-	.cfi_startproc
-	endbr32
-	pushl	%ebp 													#旧基址进栈保存
-	.cfi_def_cfa_offset 8
-	.cfi_offset 5, -8
-	movl	%esp, %ebp										#新栈(基址)
-	.cfi_def_cfa_register 5
-	call	__x86.get_pc_thunk.ax					#把esp的内容赋值给eax (movl (%esp),%eax)
-	addl	$_GLOBAL_OFFSET_TABLE_, %eax
-	pushl	$5														#函数参数入栈
-	call	_Z4funci											#函数调用
-	addl	$4, %esp											#函数参数出栈
-	nop
-	leave
-	.cfi_restore 5
-	.cfi_def_cfa 4, 4
-	ret																	#函数返回
-	.cfi_endproc
-.LFE1520:
-	.size	main, .-main
-	.type	_Z41__static_initialization_and_destruction_0ii, @function
-_Z41__static_initialization_and_destruction_0ii:
-.LFB2001:
+.LFB2:
 	.cfi_startproc
 	endbr32
 	pushl	%ebp
@@ -64,92 +78,30 @@ _Z41__static_initialization_and_destruction_0ii:
 	.cfi_offset 5, -8
 	movl	%esp, %ebp
 	.cfi_def_cfa_register 5
-	pushl	%ebx
-	subl	$4, %esp
-	.cfi_offset 3, -12
-	call	__x86.get_pc_thunk.bx
-	addl	$_GLOBAL_OFFSET_TABLE_, %ebx
-	cmpl	$1, 8(%ebp)
-	jne	.L7
-	cmpl	$65535, 12(%ebp)
-	jne	.L7
-	subl	$12, %esp
-	leal	_ZStL8__ioinit@GOTOFF(%ebx), %eax
-	pushl	%eax
-	call	_ZNSt8ios_base4InitC1Ev@PLT
-	addl	$16, %esp
-	subl	$4, %esp
-	leal	__dso_handle@GOTOFF(%ebx), %eax
-	pushl	%eax
-	leal	_ZStL8__ioinit@GOTOFF(%ebx), %eax
-	pushl	%eax
-	movl	_ZNSt8ios_base4InitD1Ev@GOT(%ebx), %eax
-	pushl	%eax
-	call	__cxa_atexit@PLT
-	addl	$16, %esp
-.L7:
-	nop
-	movl	-4(%ebp), %ebx
-	leave
-	.cfi_restore 5
-	.cfi_restore 3
-	.cfi_def_cfa 4, 4
-	ret
-	.cfi_endproc
-.LFE2001:
-	.size	_Z41__static_initialization_and_destruction_0ii, .-_Z41__static_initialization_and_destruction_0ii
-	.type	_GLOBAL__sub_I__Z4funci, @function
-_GLOBAL__sub_I__Z4funci:
-.LFB2002:
-	.cfi_startproc
-	endbr32
-	pushl	%ebp
-	.cfi_def_cfa_offset 8
-	.cfi_offset 5, -8
-	movl	%esp, %ebp
-	.cfi_def_cfa_register 5
-	subl	$8, %esp
 	call	__x86.get_pc_thunk.ax
 	addl	$_GLOBAL_OFFSET_TABLE_, %eax
-	subl	$8, %esp
-	pushl	$65535
-	pushl	$1
-	call	_Z41__static_initialization_and_destruction_0ii
-	addl	$16, %esp
+	pushl	$5
+	call	func
 	leave
 	.cfi_restore 5
 	.cfi_def_cfa 4, 4
 	ret
 	.cfi_endproc
-.LFE2002:
-	.size	_GLOBAL__sub_I__Z4funci, .-_GLOBAL__sub_I__Z4funci
-	.section	.init_array,"aw"
-	.align 4
-	.long	_GLOBAL__sub_I__Z4funci
+.LFE2:
+	.size	main, .-main
 	.section	.text.__x86.get_pc_thunk.ax,"axG",@progbits,__x86.get_pc_thunk.ax,comdat
 	.globl	__x86.get_pc_thunk.ax
 	.hidden	__x86.get_pc_thunk.ax
 	.type	__x86.get_pc_thunk.ax, @function
 __x86.get_pc_thunk.ax:
-.LFB2003:
+.LFB3:
 	.cfi_startproc
 	movl	(%esp), %eax
 	ret
 	.cfi_endproc
-.LFE2003:
-	.section	.text.__x86.get_pc_thunk.bx,"axG",@progbits,__x86.get_pc_thunk.bx,comdat
-	.globl	__x86.get_pc_thunk.bx
-	.hidden	__x86.get_pc_thunk.bx
-	.type	__x86.get_pc_thunk.bx, @function
-__x86.get_pc_thunk.bx:
-.LFB2004:
-	.cfi_startproc
-	movl	(%esp), %ebx
-	ret
-	.cfi_endproc
-.LFE2004:
-	.hidden	__dso_handle
-	.ident	"GCC: (Ubuntu 9.4.0-1ubuntu1~20.04) 9.4.0"
+.LFE3:
+	.hidden	__stack_chk_fail_local
+	.ident	"GCC: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0"
 	.section	.note.GNU-stack,"",@progbits
 	.section	.note.gnu.property,"a"
 	.align 4
