@@ -6,6 +6,7 @@
   - [远程](#远程)
   - [文件](#文件)
     - [特殊文件](#特殊文件)
+    - [监控文件内容](#监控文件内容)
     - [df](#df)
     - [二进制分析](#二进制分析)
       - [nm](#nm)
@@ -22,7 +23,11 @@
   - [进程](#进程)
     - [top](#top)
     - [iostat](#iostat)
+    - [vmstat](#vmstat)
+    - [pidstat](#pidstat)
+    - [dstat](#dstat)
     - [iotop](#iotop)
+    - [sar](#sar)
     - [nohup](#nohup)
     - [ps](#ps)
     - [pstree](#pstree)
@@ -73,6 +78,12 @@ ssh-keygen
 - 进程信息
   - `/proc/[pid]/status`保存该`pid`进程的相关信息。
   - `/proc/[pid]/maps`保存该`pid`进程的虚拟地址空间信息。
+
+### 监控文件内容
+
+```bash
+watch -d cat [file]
+```
 
 ### df
 
@@ -282,9 +293,25 @@ Mem
 
 显示实际硬盘读写情况。
 
+### vmstat
+
+可对操作系统的虚拟内存、进程、CPU 活动进行监控。
+
+### pidstat
+
+监控全部或指定进程的 cpu、内存、线程、设备 IO 等系统资源的占用情况。
+
+### dstat
+
+收集 CPU、磁盘、网络、分页、系统的数据信息。
+
 ### iotop
 
 查看进程实际占用 I/O。
+
+### sar
+
+全面地获取系统的 CPU、运行队列、磁盘读写（I/O）、分区（交换区）、内存、CPU 中断和网络等性能数据。
 
 ### nohup
 
