@@ -28,6 +28,9 @@
     - [dstat](#dstat)
     - [iotop](#iotop)
     - [sar](#sar)
+    - [cachestat](#cachestat)
+    - [cachetop](#cachetop)
+    - [memleak](#memleak)
     - [nohup](#nohup)
     - [ps](#ps)
     - [pstree](#pstree)
@@ -312,6 +315,18 @@ Mem
 ### sar
 
 全面地获取系统的 CPU、运行队列、磁盘读写（I/O）、分区（交换区）、内存、CPU 中断和网络等性能数据。
+
+### cachestat
+
+提供了整个操作系统缓存的读写命中情况。
+
+### cachetop
+
+提供了每个进程的缓存命中情况。
+
+### memleak
+
+跟踪系统或指定进程的内存分配、释放请求，然后定期输出一个未释放内存和相应调用栈的汇总情况。
 
 ### nohup
 
