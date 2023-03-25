@@ -31,6 +31,7 @@
     - [cachestat](#cachestat)
     - [cachetop](#cachetop)
     - [memleak](#memleak)
+    - [lsof](#lsof)
     - [nohup](#nohup)
     - [ps](#ps)
     - [pstree](#pstree)
@@ -327,6 +328,10 @@ Mem
 ### memleak
 
 跟踪系统或指定进程的内存分配、释放请求，然后定期输出一个未释放内存和相应调用栈的汇总情况。
+
+### lsof
+
+查看进程打开的文件。
 
 ### nohup
 
