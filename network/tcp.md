@@ -12,6 +12,7 @@
     - [断开连接的过程（4 次挥手）](#断开连接的过程4-次挥手)
     - [TCP 为什么是 3 次握手，4 次挥手？](#tcp-为什么是-3-次握手4-次挥手)
   - [Nagle 算法](#nagle-算法)
+  - [TCP\_QUICKACK](#tcp_quickack)
   - [TCP 的拆包和粘包](#tcp-的拆包和粘包)
   - [TCP Segment](#tcp-segment)
     - [Sequence Number 和 Acknowledgement Number](#sequence-number-和-acknowledgement-number)
@@ -90,6 +91,12 @@
 ![Nagle算法](https://github.com/gongluck/images/blob/main/network/tcp/nagle.png)
 
 - Nagle 算法默认是开启的，可以通过设置 socket 的 TCP_NODELAY 选项来关闭。
+
+## TCP_QUICKACK
+
+- TCP_QUICKACK 是 TCP 调优参数，可以快速确认接收到的数据包。
+- 默认情况下，TCP 等待一定时间来确认每个接收到的数据包，以避免不必要的确认。
+- 启用 TCP_QUICKACK 后，接收到的数据包将快速确认，这可以提高整个网络的性能。该参数在频繁进行小型数据传输的情况下特别有用，例如在浏览网页或电子邮件通信中。但是，启用此选项可能会增加发送的确认数量，从而增加网络流量。因此，应根据特定的网络流量和需求谨慎使用。
 
 ## TCP 的拆包和粘包
 

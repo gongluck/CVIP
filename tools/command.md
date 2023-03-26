@@ -40,6 +40,8 @@
   - [网络](#网络)
     - [ethtool](#ethtool)
     - [ifconfig](#ifconfig)
+    - [netstat](#netstat)
+    - [nslookup](#nslookup)
     - [tcpdump](#tcpdump)
 
 ## 帮助
@@ -492,6 +494,14 @@ perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > kso
 ### ifconfig
 
 管理网络接口。
+
+### netstat
+
+查看网络连接信息。
+
+### nslookup
+
+分析域名解析过程。
 
 ### tcpdump
 
