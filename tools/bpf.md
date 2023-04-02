@@ -2,6 +2,7 @@
 
 - [BPF](#bpf)
   - [BPF/eBPF 原理](#bpfebpf-原理)
+  - [检测技术](#检测技术)
   - [环境依赖](#环境依赖)
   - [BPF 开发和执行](#bpf-开发和执行)
   - [bpf 系统调用](#bpf-系统调用)
@@ -19,6 +20,12 @@
 - BPF（Berkeley Packet Filter）和 eBPF（Extended Berkeley Packet Filter）的原理都基于在内核空间执行用户定义的代码，从而实现高效的数据包和系统事件处理。
 - BPF 的原理是，在内核空间中定义一组过滤规则，通过执行用户定义的 BPF 代码，对网络数据包进行过滤和处理。BPF 代码通过一组特定的指令集，在内核中执行，可以快速地判断和处理数据包。
 - eBPF 的原理是，在内核空间中定义一组更加灵活和强大的处理规则，通过执行用户定义的 eBPF 代码，对网络数据包和系统事件进行更加高级别的处理和分析。eBPF 还提供了一些新的工具和 API，可以更加方便地使用和管理 eBPF 程序。eBPF 的指令集比 BPF 更加丰富和灵活，可以实现更多种类的数据处理和分析。
+
+## 检测技术
+
+- 静态检测描述的是添加到源代码中的硬编码的软件检测点。
+- Linux 中的内核静态检测技术被称为 tracepoint（跟踪点），还有针对用户空间软件的用户静态定义跟踪（USDT）。
+- 动态检测是在软件运行后，通过修改内存指令插入检测程序来创建检测点。
 
 ## 环境依赖
 
@@ -103,6 +110,7 @@ bpftrace -lv 'tracepoint:syscalls:*'
 - libbpf 要求内核开启 BTF 特性，需要非常新的发行版才会默认开启(如 RHEL 8.2+ 和 Ubuntu 20.10+ 等)。
 - 通过 SEC() 宏定义的数据结构和函数会放到特定的 ELF 段中，这样后续在加载 BPF 字节码时，就可以从这些段中获取所需的元数据。
 - 生成脚手架头文件
+
 ```bash
 clang -target bpf -D__TARGET_ARCH_x86_64 -I/usr/include/x86_64-linux-gnu -c [*.bpf.c] -o [*.bpf.o]
 bpftool gen skeleton [*.bpf.o] > [*.skel.h]
