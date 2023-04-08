@@ -4,11 +4,15 @@
   - [BPF/eBPF 原理](#bpfebpf-原理)
   - [检测技术](#检测技术)
   - [环境依赖](#环境依赖)
+  - [事件查询](#事件查询)
+    - [perf](#perf)
+    - [bpftrace](#bpftrace)
   - [BPF 开发和执行](#bpf-开发和执行)
-  - [bpf 系统调用](#bpf-系统调用)
-  - [bpftrace](#bpftrace)
-  - [BCC](#bcc)
-  - [libbpf](#libbpf)
+  - [使用方案](#使用方案)
+    - [bpf 系统调用](#bpf-系统调用)
+    - [bpftrace](#bpftrace-1)
+    - [BCC](#bcc)
+    - [libbpf](#libbpf)
   - [BPF 运行时](#bpf-运行时)
   - [BPF 映射](#bpf-映射)
   - [BTF](#btf)
@@ -24,8 +28,8 @@
 ## 检测技术
 
 - 静态检测描述的是添加到源代码中的硬编码的软件检测点。
-- Linux 中的内核静态检测技术被称为 tracepoint（跟踪点），还有针对用户空间软件的用户静态定义跟踪（USDT）。
-- 动态检测是在软件运行后，通过修改内存指令插入检测程序来创建检测点。
+- Linux 中的内核静态检测技术被称为 `tracepoint（跟踪点）`，还有针对用户空间软件的 `USDT（用户静态定义跟踪）`。
+- 动态检测是在软件运行后，通过修改内存指令插入检测程序来创建检测点，有 `kprobes（内核探针）`、`kretprobes（内核返回探针）`、`uprobes（用户空间探针）`、`uretprobes（用户级返回探针）`。
 
 ## 环境依赖
 
@@ -46,6 +50,24 @@ make clean
 make
 make install
 ./bpftool version -p
+```
+
+## 事件查询
+
+### [perf](./command.md#perf)
+
+```bash
+# 查看支持的事件
+perf list [tracepoint]
+# 查看参数与格式
+cat /sys/kernel/debug/tracing/events/.../format
+```
+
+### bpftrace
+
+```bash
+# 查看支持的事件
+bpftrace -lv [tracepoint/kprobe/kretprobe/usdt/uprobe/uretprobe/*:...:...]
 ```
 
 ## BPF 开发和执行
@@ -71,7 +93,9 @@ make install
   ```
 - 在内核插桩和跟踪点两者都可用的情况下，应该选择更稳定的跟踪点，以保证 eBPF 程序的可移植性(即在不同版本的内核中都可以正常执行)。
 
-## bpf 系统调用
+## 使用方案
+
+### bpf 系统调用
 
 ```c++
 #include <linux/bpf.h>
@@ -83,7 +107,7 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
 - size，代表属性的大小。
 - **不同版本的内核所支持的 BPF 命令是不同的**，具体支持的命令列表可以参考内核头文件 include/uapi/linux/bpf.h 中 `bpf_cmd` 的定义。
 
-## bpftrace
+### bpftrace
 
 ![bpftrace](https://github.com/gongluck/images/blob/main/linux/bpf/bpftrace.png)
 
@@ -96,15 +120,16 @@ bpftrace -lv 'tracepoint:syscalls:*'
 
 - bpftrace 通常用在快速排查和定位系统上，支持用单行脚本的方式来快速开发并执行一个 eBPF 程序。
 - bpftrace 的功能有限，不支持特别复杂的 eBPF 程序，也依赖于 BCC 和 LLVM 动态编译执行。
+- bpftrace 中，函数参数可以使用内置变量 arg0..N。
 
-## BCC
+### BCC
 
 - BCC 是一个 BPF 编译器集合，依赖于 LLVM 和内核头文件，包含了用于构建 BPF 程序的编程框架和库，并提供了大量可以直接使用的工具。
 - BCC 把 eBPF 执行过程通过内置框架抽象起来，并提供了 Python、C++ 等编程语言接口。可以直接通过 Python 语言去跟 eBPF 的各种事件和数据进行交互。
 - 用高级语言开发的 eBPF 程序，需要首先编译为 BPF 字节码，然后借助 bpf 系统调用加载到内核中，最后再通过性能监控等接口与具体的内核事件进行绑定。这样，内核的性能监控模块才会在内核事件发生时，自动执行 eBPF 程序。
 - 在 BCC 中，与 eBPF 程序中 `BPF_PERF_OUTPUT` 相对应的用户态辅助函数是 `open_perf_buffer()` 。它需要传入一个回调函数，用于处理从 Perf 事件类型的 BPF 映射中读取到的数据。而后通过一个循环调用 perf_buffer_poll 读取映射的内容，并执行回调函数。
 
-## libbpf
+### libbpf
 
 - libbpf 是从内核中抽离出来的标准库，用它开发的 eBPF 程序可以直接分发执行，不需要每台机器都安装 LLVM 和内核头文件。
 - libbpf 要求内核开启 BTF 特性，需要非常新的发行版才会默认开启(如 RHEL 8.2+ 和 Ubuntu 20.10+ 等)。

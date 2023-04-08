@@ -20,20 +20,24 @@
       - [hexdump](#hexdump)
       - [dumpbin](#dumpbin)
       - [strip](#strip)
-  - [进程](#进程)
-    - [top](#top)
-    - [iostat](#iostat)
-    - [vmstat](#vmstat)
+  - [CPU](#cpu)
+    - [mpstat](#mpstat)
     - [pidstat](#pidstat)
+    - [ps](#ps)
+    - [sar](#sar)
+    - [time](#time)
+    - [top](#top)
+    - [turbostat](#turbostat)
+    - [vmstat](#vmstat)
+  - [others](#others)
+    - [iostat](#iostat)
     - [dstat](#dstat)
     - [iotop](#iotop)
-    - [sar](#sar)
     - [cachestat](#cachestat)
     - [cachetop](#cachetop)
     - [memleak](#memleak)
     - [lsof](#lsof)
     - [nohup](#nohup)
-    - [ps](#ps)
     - [pstree](#pstree)
     - [strace](#strace)
     - [perf](#perf)
@@ -259,11 +263,91 @@ hexdump -C -s 0x1000 -n 100 a.out
   Remove all symbols that are not needed for relocation processing.
 ```
 
-## 进程
+## CPU
+
+### mpstat
+
+```bash
+Report processors related statistics.
+
+  -A 
+    This option is equivalent to specifying -n -u -I ALL.  This option also implies specifying -N ALL -P ALL unless these options are explicitly set on the command line.
+
+#%usr     用户时间，不包括%nice
+#%nice    以nice设置的优先级运行的进程的用户时间
+#%sys     系统时间（内核）
+#%iowait  IO等待
+#%irq     硬件中断CPU使用率
+#%soft    软件中断CPU使用率
+#%steal   用在服务其他租户上的时间
+#%guest   用在客户虚拟机上的CPU时间
+#%gnice   用在提升优先级的客户机上的CPU时间
+#%idle    空闲
+```
+
+### pidstat
+
+```bash
+Report statistics for Linux tasks.
+
+  -p { pid[,...] | SELF | ALL }
+    Select tasks (processes) for which statistics are to be reported.  pid is the process identification number. The SELF keyword indicates  that statistics are to be reported for the pidstat process itself, whereas the ALL keyword indicates that statistics are to be reported for all the tasks managed by the system.
+  -t
+    Also display statistics for threads associated with selected tasks.
+    This option adds the following values to the reports:
+      TGID   The identification number of the thread group leader.
+      TID    The identification number of the thread being monitored.
+```
+
+### ps
+
+```bash
+report a snapshot of the current processes.
+
+  -a
+    Select all processes except both session leaders (see getsid(2)) and processes not associated with a terminal.
+  -e
+    Select all processes.  Identical to -A.
+  -f
+    Do full-format listing.  This option can be combined with many other UNIX-style options to add additional columns.  It also causes the command arguments to be printed.  When used with -L, the NLWP (number of threads) and LWP (thread ID) columns will be added.  See the c option, the format keyword args, and the format keyword comm.
+  -u
+    Display user-oriented format.
+  -w
+    Wide output.  Use this option twice for unlimited width.
+  --width n
+    Set screen width.
+  -x
+    Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all processes when some BSD-style (without "-") options are used or when the ps personality setting is BSD-like.  The set of processes selected in this manner is in addition to the set of processes selected by other means.  An alternate description is that this option causes ps to list all processes owned by you (same EUID as ps), or to list all processes when used together with the a option.
+
+ps -ef
+ps aux
+```
+
+### sar
+
+```bash
+Collect, report, or save system activity information.
+
+  -A 
+    This is equivalent to specifying -bBdFHSvwWy -I SUM -m ALL -n ALL -q ALL -r ALL -u ALL. This option also implies specifying -I ALL -P ALL unless these options are explicitly set on the command line.
+  -q [ keyword[,...] | ALL ]
+    Report system load and pressure-stall statistics.
+    Possible keywords are CPU, IO, LOAD, MEM and PSI.
+  -u [ ALL ]
+    Report CPU utilization. The ALL keyword indicates that all the CPU fields should be displayed. 
+```
+
+### time
+
+```bash
+run programs and summarize system resource usage
+```
 
 ### top
 
 ```bash
+display Linux processes
+
 load average
   system load avg over the last 1, 5 and 15 minutes
 Tasks
@@ -281,7 +365,7 @@ Tasks
     st : time stolen from this vm by the hypervisor
   1-id = us+sy+si
 Mem
-  This  portion  consists of two lines which may express values in kibibytes (KiB) through exbibytes (EiB) depending on the scaling factor enforced with the `E' interactive command.
+  This  portion  consists of two lines which may express values in kibibytes (KiB) through exbibytes (EiB) depending on the scaling factor enforced with the 'E' interactive command.
   As a default, Line 1 reflects physical memory, classified as: total, free, used and buff/cache
   Line 2 reflects mostly virtual memory, classified as: total, free, used and avail (which is physical memory)
   The avail number on line 2 is an estimation of physical memory available for starting new applications, without swapping.  Unlike the free field,  it  at‐tempts  to  account for readily reclaimable page cache and memory slabs.  It is available on kernels 3.14, emulated on kernels 2.6.27+, otherwise the same as free.
@@ -295,17 +379,32 @@ Mem
 #按下字母f,进入列配置页面
 ```
 
-### iostat
+### turbostat
 
-显示实际硬盘读写情况。
+```bash
+Report processor frequency and idle statistics
+```
 
 ### vmstat
 
-可对操作系统的虚拟内存、进程、CPU 活动进行监控。
+```bash
+Report virtual memory statistics
+  vmstat reports information about processes, memory, paging, block IO, traps, disks and cpu activity.
+  The first report produced gives averages since the last reboot.  Additional reports give information on a sampling period of length delay.  The process and memory reports are instantaneous in either case.
 
-### pidstat
+#r  运行队列长度
+#us 用户时间比例
+#sy 系统（内核）时间比例
+#id 空闲比例
+#wa 等待IO比例
+#st 窃取比例
+```
 
-监控全部或指定进程的 cpu、内存、线程、设备 IO 等系统资源的占用情况。
+## others
+
+### iostat
+
+显示实际硬盘读写情况。
 
 ### dstat
 
@@ -315,9 +414,6 @@ Mem
 
 查看进程实际占用 I/O。
 
-### sar
-
-全面地获取系统的 CPU、运行队列、磁盘读写（I/O）、分区（交换区）、内存、CPU 中断和网络等性能数据。
 
 ### cachestat
 
@@ -344,30 +440,6 @@ no hang up，用于在系统后台不挂断地运行命令，退出终端不会�
 nohup COMMAND [arg …] [2>&1] [&] # 2>&1 将标准错误 2 重定向到标准输出 &1
 ```
 
-### ps
-
-process status，显示当前进程的状态，类似于 windows 的任务管理器。
-
-```bash
--e
-  Select all processes.  Identical to -A.
--f
-  Do full-format listing.  This option can be combined with many other UNIX-style options to add additional columns.  It also causes the command arguments to be printed.  When used with -L, the NLWP (number of threads) and LWP (thread ID) columns will be added.  See the c option, the format keyword args, and the format keyword comm.
--w
-  Wide output.  Use this option twice for unlimited width.
---width n
-  Set screen width.
--a
-  Select all processes except both session leaders (see getsid(2)) and processes not associated with a terminal.
--u
-  Display user-oriented format.
--x
-  Lift the BSD-style "must have a tty" restriction, which is imposed upon the set of all processes when some BSD-style (without "-") options are used or when the ps personality setting is BSD-like.  The set of processes selected in this manner is in addition to the set of processes selected by other means.  An alternate description is that this option causes ps to list all processes owned by you (same EUID as ps), or to list all processes when used together with the a option.
-
-#常用
-ps -ef
-ps -aux
-```
 
 ### pstree
 
@@ -455,6 +527,15 @@ record
 report
   -i, --input=
     Input file name. (default: perf.data unless stdin is a fifo)
+list [tracepoint]
+  List all symbolic event types
+trace
+  This command will show the events associated with the target, initially syscalls, but other system events like pagefaults, task lifetime events, scheduling events, etc.
+  This is a live mode tool in addition to working with perf.data files like the other perf tools. Files can be generated using the perf record command but the session needs to include the raw_syscalls events (-e raw_syscalls:*). Alternatively, perf trace record can be used as a shortcut to automatically include the raw_syscalls events when writing events to a file.
+    -e, --expr, --event
+      List of syscalls and other perf events (tracepoints, HW cache events, etc) to show. Globbing is supported, e.g.: "epoll_*", "msg", etc. See perf list for a complete list of events. Prefixing with ! shows all syscalls but the ones specified. You may need to escape it.
+    --filter=<filter>
+      Event filter. This option should follow an event selector (-e) which selects tracepoint event(s).
 
 #追踪记录
 perf record -a -g [-p [pid]] [application] -o perf.data
