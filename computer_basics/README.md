@@ -12,7 +12,6 @@
 
 ## 总纲
 
-![总纲](https://github.com/gongluck/images/blob/main/computer_basics/summarize.png)
 ![性能分析](https://github.com/gongluck/images/blob/main/linux/performance/tools.png)
 
 ## [CPU](./cpu.md)
