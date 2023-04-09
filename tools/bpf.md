@@ -122,11 +122,11 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
 ![BPF运行时](https://github.com/gongluck/images/blob/main/linux/bpf/bpf_runtime.png)
 ![BPF程序](https://github.com/gongluck/images/blob/main/linux/bpf/bpf_program.png)
 
-- **eBPF 辅助函数**提供了一系列用于 eBPF 程序与内核其他模块进行交互的函数。
-- **eBPF 验证器**确保 eBPF 程序的安全。
-- **11 个 64 位寄存器、一个程序计数器和一个 512 字节的栈组成的存储模块**用于控制 eBPF 程序的执行。
-- **即时编译器**将 eBPF 字节码编译成本地机器指令，以便更高效地在内核中执行。
-- **BPF 映射（map）**用于提供可被用户空间程序访问的大块存储，进而控制 eBPF 程序的运行状态。
+- **eBPF 辅助函数** 提供了一系列用于 eBPF 程序与内核其他模块进行交互的函数。
+- **eBPF 验证器** 确保 eBPF 程序的安全。
+- **11 个 64 位寄存器、一个程序计数器和一个 512 字节的栈组成的存储模块** 用于控制 eBPF 程序的执行。
+- **即时编译器** 将 eBPF 字节码编译成本地机器指令，以便更高效地在内核中执行。
+- **BPF 映射（map）** 用于提供可被用户空间程序访问的大块存储，进而控制 eBPF 程序的运行状态。
 
 ## BPF 映射
 
