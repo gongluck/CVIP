@@ -20,33 +20,33 @@
       - [hexdump](#hexdump)
       - [dumpbin](#dumpbin)
       - [strip](#strip)
-  - [CPU](#cpu)
+  - [性能分析](#性能分析)
+    - [ethtool](#ethtool)
+    - [free](#free)
+    - [ifconfig](#ifconfig)
+    - [iostat](#iostat)
+    - [iotop](#iotop)
+    - [ip](#ip)
+    - [mount](#mount)
     - [mpstat](#mpstat)
+    - [netstat](#netstat)
+    - [perf](#perf)
     - [pidstat](#pidstat)
+    - [pmap](#pmap)
     - [ps](#ps)
     - [sar](#sar)
+    - [ss](#ss)
+    - [tcpdump](#tcpdump)
     - [time](#time)
+    - [traceroute](#traceroute)
     - [top](#top)
     - [turbostat](#turbostat)
     - [vmstat](#vmstat)
   - [others](#others)
-    - [iostat](#iostat)
-    - [dstat](#dstat)
-    - [iotop](#iotop)
-    - [cachestat](#cachestat)
-    - [cachetop](#cachetop)
-    - [memleak](#memleak)
     - [lsof](#lsof)
     - [nohup](#nohup)
     - [pstree](#pstree)
     - [strace](#strace)
-    - [perf](#perf)
-  - [网络](#网络)
-    - [ethtool](#ethtool)
-    - [ifconfig](#ifconfig)
-    - [netstat](#netstat)
-    - [nslookup](#nslookup)
-    - [tcpdump](#tcpdump)
 
 ## 帮助
 
@@ -263,7 +263,75 @@ hexdump -C -s 0x1000 -n 100 a.out
   Remove all symbols that are not needed for relocation processing.
 ```
 
-## CPU
+## 性能分析
+
+### ethtool
+
+```bash
+query or control network driver and hardware settings
+
+  -i --driver
+    Queries the specified network device for associated driver information.
+  -k --show-features --show-offload
+    Queries the specified network device for the state of protocol offload and other features.
+```
+
+### free
+
+```bash
+Display amount of free and used memory in the system
+
+  -m, --mebi
+    Display the amount of memory in mebibytes.
+  -w, --wide
+    Switch  to  the wide mode. The wide mode produces lines longer than 80 characters. In this mode buffers and cache are reported in two separate columns.
+```
+
+### ifconfig
+
+```bash
+configure a network interface
+```
+
+### iostat
+
+```bash
+Report Central Processing Unit (CPU) statistics and input/output statistics for devices and partitions.
+
+  -s
+    Display a short (narrow) version of the report that should fit in 80 characters wide screens.
+  -t
+    Print  the time for each report displayed. The timestamp format may depend on the value of the S_TIME_FORMAT environment variable (see below).
+  -x
+    Display extended statistics.
+  -z
+    Tell iostat to omit output for any devices for which there was no activity during the sample period.
+```
+
+### iotop
+
+```bash
+simple top-like I/O monitor
+```
+
+### ip
+
+```bash
+show / manipulate routing, network devices, interfaces and tunnels
+```
+
+### mount
+
+```bash
+mount a filesystem
+
+  link
+    network device.
+  monitor
+    watch for netlink messages.
+  route
+    routing table entry.
+```
 
 ### mpstat
 
@@ -285,11 +353,78 @@ Report processors related statistics.
 #%idle    空闲
 ```
 
+### netstat
+
+```bash
+Print network connections, routing tables, interface statistics, masquerade connections, and multicast memberships
+
+  -a, --all
+    Show both listening and non-listening sockets.  With the --interfaces option, show interfaces that are not up
+  --interfaces, -i
+    Display a table of all network interfaces.
+  --route, -r
+    Display the kernel routing tables. See the description in route(8) for details.  netstat -r and route -e produce the same output.
+  --statistics, -s
+    Display summary statistics for each protocol.
+```
+
+### perf
+
+![常用perf子命令](https://github.com/gongluck/images/blob/main/linux/perf/perf_subcommand.png)
+
+```bash
+Performance analysis tools for Linux
+
+  record
+    Run a command and record its profile into perf.data
+      -a, --all-cpus
+        System-wide collection from all CPUs (default if no target is specified).
+      -e, --event=
+        Select the PMU event. 
+      -F, --freq=
+        Profile at this frequency. Use max to use the currently maximum allowed frequency, i.e. the value in the kernel.perf_event_max_sample_rate sysctl. Will throttle down to the currently maximum allowed frequency. See --strict-freq.
+      -g
+        Enables call-graph (stack chain/backtrace) recording.
+      --call-graph
+        Setup and enable call-graph (stack chain/backtrace) recording, implies -g. Default is "fp" (for user space).
+      -o, --output=
+        Output file name.
+      -p, --pid=
+        Record events on existing process ID (comma separated list).
+    
+  report
+    Read perf.data (created by perf record) and display the profile
+      -i, --input=
+        Input file name. (default: perf.data unless stdin is a fifo)
+  
+  list [*]
+    List all symbolic event types
+  
+  trace
+    This command will show the events associated with the target, initially syscalls, but other system events like pagefaults, task lifetime events, scheduling events, etc.
+    This is a live mode tool in addition to working with perf.data files like the other perf tools. Files can be generated using the perf record command but the session needs to include the raw_syscalls events (-e raw_syscalls:*). Alternatively, perf trace record can be used as a shortcut to automatically include the raw_syscalls events when writing events to a file.
+      -e, --expr, --event
+        List of syscalls and other perf events (tracepoints, HW cache events, etc) to show. Globbing is supported, e.g.: "epoll_*", "msg", etc. See perf list for a complete list of events. Prefixing with ! shows all syscalls but the ones specified. You may need to escape it.
+      --filter=<filter>
+        Event filter. This option should follow an event selector (-e) which selects tracepoint event(s).
+
+#追踪记录
+perf record -a -g [-p [pid]] [application] -o perf.data
+#分析
+perf report -i perf.data
+#火焰图 on-cpu
+git clone https://github.com/brendangregg/FlameGraph
+cd FlameGraph
+perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > perf.svg
+```
+
 ### pidstat
 
 ```bash
 Report statistics for Linux tasks.
 
+  -d
+    Report I/O statistics (kernels 2.6.20 and later only).
   -p { pid[,...] | SELF | ALL }
     Select tasks (processes) for which statistics are to be reported.  pid is the process identification number. The SELF keyword indicates  that statistics are to be reported for the pidstat process itself, whereas the ALL keyword indicates that statistics are to be reported for all the tasks managed by the system.
   -t
@@ -297,6 +432,20 @@ Report statistics for Linux tasks.
     This option adds the following values to the reports:
       TGID   The identification number of the thread group leader.
       TID    The identification number of the thread being monitored.
+```
+
+### pmap
+
+```bash
+pmap [options] pid [...]
+report memory map of a process
+
+  -x, --extended
+    Show the extended format.
+  -X
+    Show even more details than the -x option. WARNING: format changes according to /proc/PID/smaps
+  -XX
+    Show everything the kernel provides
 ```
 
 ### ps
@@ -330,11 +479,99 @@ Collect, report, or save system activity information.
 
   -A 
     This is equivalent to specifying -bBdFHSvwWy -I SUM -m ALL -n ALL -q ALL -r ALL -u ALL. This option also implies specifying -I ALL -P ALL unless these options are explicitly set on the command line.
+  -B
+    Report paging statistics.
+  -d
+    Report activity for each block device.  When data are displayed, the device name is displayed as it (should) appear in /dev.  sar uses data in /sys to determine the device name based on its major and minor numbers.  If this name resolution fails, sar will use name  mapping  controlled  by /etc/sysstat/sysstat.ioconf file.  Persistent device names can also be printed if option -j is used (see below). Statistics for all devices are displayed unless a restricted list is specified using option --dev= (see  corresponding  option entry).  Note that disk activity depends on sadc options -S DISK and -S XDISK to be collected.
+  -H
+    Report hugepages utilization statistics.
+  -n { keyword[,...] | ALL }
+    Report network statistics.
+    Possible keywords are DEV, EDEV, FC, ICMP, EICMP, ICMP6, EICMP6, IP, EIP, IP6, EIP6, NFS, NFSD, SOCK, SOCK6, SOFT, TCP, ETCP, UDP and UDP6.
+    With the DEV keyword, statistics from the network devices are reported.  Statistics for all network interfaces are displayed  unless a restricted list is specified using option --iface= (see corresponding option entry). 
   -q [ keyword[,...] | ALL ]
     Report system load and pressure-stall statistics.
     Possible keywords are CPU, IO, LOAD, MEM and PSI.
+  -r [ ALL ]
+    Report memory utilization statistics. The ALL keyword indicates that all the memory fields should be  displayed.
+  -S
+    Report swap space utilization statistics.
   -u [ ALL ]
     Report CPU utilization. The ALL keyword indicates that all the CPU fields should be displayed. 
+  -W
+    Report swapping statistics.
+```
+
+### ss
+
+```bash
+another utility to investigate sockets
+
+  -e, --extended
+    Show detailed socket information. The output format is:
+      uid:<uid_number> ino:<inode_number> sk:<cookie>
+  -i, --info
+    Show internal TCP information.
+  -m, --memory
+    Show socket memory usage. The output format is:
+      skmem:(r<rmem_alloc>,rb<rcv_buf>,t<wmem_alloc>,tb<snd_buf>,f<fwd_alloc>,w<wmem_queued>,o<opt_mem>,bl<back_log>,d<sock_drop>)
+  -p, --processes
+    Show process using socket.
+  -t, --tcp
+    Display TCP sockets.
+  -u, --udp
+    Display UDP sockets.
+```
+
+### tcpdump
+
+[tcpdump 原理](../code/tcpdump)
+![tcpdump捕获接收包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_recv.png)
+![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_send.png)
+![tcpdump](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump.png)
+
+```bash
+dump traffic on a network
+
+  -c count
+    Exit after receiving count packets.
+  -e
+    Print  the  link-level  header on each dump line.  This can be used, for example, to print MAC layer addresses for protocols such as Ethernet and IEEE 802.11.
+  -i interface
+  --interface=interface
+    Listen  on interface.  If unspecified, tcpdump searches the system interface list for the lowest numbered, configured up interface (excluding loopback), which may turn out to be, for example, ''eth0''.
+    On Linux systems with 2.2 or later kernels, an interface argument of ''any'' can be used to capture packets from all interfaces.   Note  that captures on the ''any'' device will not be done in promiscuous mode.
+    If the -D flag is supported, an interface number as printed by that flag can be used as the interface argument, if no interface on the system has that number as a name.
+  -n
+    Don't convert addresses (i.e., host addresses, port numbers, etc.) to names.
+  -N
+    Don't print domain name qualification of host names.  E.g., if you give this flag then tcpdump will print ``nic'' instead of ``nic.ddn.mil''.
+  -p
+  --no-promiscuous-mode
+    Don't put the interface into promiscuous mode.  Note that the interface might be in promiscuous mode for some other reason; hence, `-p'  can‐not be used as an abbreviation for `ether host {local-hw-addr} or ether broadcast'.
+  -q
+    Quick (quiet?) output.  Print less protocol information so output lines are shorter.
+  -s snaplen
+  --snapshot-length=snaplen
+    Snarf  snaplen  bytes  of data from each packet rather than the default of 262144 bytes.  Packets truncated because of a limited snapshot are indicated in the output with ``[|proto]'', where proto is the name of the protocol level at which the truncation  has  occurred.   Note  that taking  larger  snapshots  both  increases  the  amount  of time it takes to process packets and, effectively, decreases the amount of packet buffering.  This may cause packets to be lost.  You should limit snaplen to the smallest number that will capture  the  protocol  information you're  interested in.  Setting snaplen to 0 sets it to the default of 262144, for backwards compatibility with recent older versions of tcp‐dump.
+  -v
+    When  parsing  and printing, produce (slightly more) verbose output.  For example, the time to live, identification, total length and options in an IP packet are printed.  Also enables additional packet integrity checks such as verifying the IP and ICMP header checksum.
+    When writing to a file with the -w option, report, every 10 seconds, the number of packets captured.
+  -vv
+    Even more verbose output.  For example, additional fields are printed from NFS reply packets, and SMB packets are fully decoded.
+  -vvv
+    Even more verbose output.  For example, telnet SB ... SE options are printed in full.  With -X Telnet options are printed in hex as well.
+  -x
+    When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex.   The smaller of the entire packet or snaplen bytes will be printed.  Note that this is the entire link-layer packet, so for link layers that pad (e.g. Ethernet), the padding bytes will also be printed when the higher layer packet is shorter than the required padding.
+  -xx
+    When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex.
+  -X
+    When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex and ASCII.  This is very handy for analysing new protocols.
+  -XX
+    When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex and ASCII.
+  
+#常用
+tcpdump -i eth0 -n -XX -vvv
 ```
 
 ### time
@@ -343,10 +580,20 @@ Collect, report, or save system activity information.
 run programs and summarize system resource usage
 ```
 
+### traceroute
+
+```bash
+print the route packets trace to network host
+```
+
 ### top
 
 ```bash
 display Linux processes
+
+  -o  :Override-sort-field as:  -o fieldname
+    Specifies the name of the field on which tasks will be sorted, independent of what is reflected in the configuration file.  You can prepend  a '+' or '-' to the field name to also override the sort direction.  A leading '+' will force sorting high to low, whereas a '-' will ensure a low to high ordering.
+    This option exists primarily to support automated/scripted batch mode operation.
 
 load average
   system load avg over the last 1, 5 and 15 minutes
@@ -392,40 +639,21 @@ Report virtual memory statistics
   vmstat reports information about processes, memory, paging, block IO, traps, disks and cpu activity.
   The first report produced gives averages since the last reboot.  Additional reports give information on a sampling period of length delay.  The process and memory reports are instantaneous in either case.
 
-#r  运行队列长度
-#us 用户时间比例
-#sy 系统（内核）时间比例
-#id 空闲比例
-#wa 等待IO比例
-#st 窃取比例
+#r      运行队列长度
+#swpd   交换出的内存量
+#free   空闲的可用内存
+#buff   用于缓冲缓存的内存
+#cache  用于页缓存的内存
+#si     换入的内存（换页）
+#so     换出的内存（换页）
+#us     用户时间比例
+#sy     系统（内核）时间比例
+#id     空闲比例
+#wa     等待IO比例
+#st     窃取比例
 ```
 
 ## others
-
-### iostat
-
-显示实际硬盘读写情况。
-
-### dstat
-
-收集 CPU、磁盘、网络、分页、系统的数据信息。
-
-### iotop
-
-查看进程实际占用 I/O。
-
-
-### cachestat
-
-提供了整个操作系统缓存的读写命中情况。
-
-### cachetop
-
-提供了每个进程的缓存命中情况。
-
-### memleak
-
-跟踪系统或指定进程的内存分配、释放请求，然后定期输出一个未释放内存和相应调用栈的汇总情况。
 
 ### lsof
 
@@ -439,7 +667,6 @@ no hang up，用于在系统后台不挂断地运行命令，退出终端不会�
 #常用
 nohup COMMAND [arg …] [2>&1] [&] # 2>&1 将标准错误 2 重定向到标准输出 &1
 ```
-
 
 ### pstree
 
@@ -477,158 +704,4 @@ pstree [pid|user]
 
 #常用
 strace -p [pid] -tt
-```
-
-### perf
-
-perf 是 Linux 的一款性能分析工具，能够进行函数级和指令级的热点查找，可以用来分析程序中热点函数的 CPU 占用率，从而定位性能瓶颈。
-Perf 可以对程序进行函数级别的采样，从而了解程序的性能瓶颈在哪里。其基本原理是：每隔一个固定时间，就是 CPU 上产生一个中断，看当前是哪个进程、哪个函数，然后给对应的进程和函数加一个统计值，这样就知道 CPU 有多少时间在某个进程或某个函数上了。
-
-```bash
-record
-  -F, --freq=
-    Profile at this frequency. Use max to use the currently maximum allowed frequency, i.e. the value in the kernel.perf_event_max_sample_rate sysctl. Will throttle down to the currently maximum allowed frequency. See --strict-freq.
-  -g
-    Enables call-graph (stack chain/backtrace) recording.
-  -a, --all-cpus
-    System-wide collection from all CPUs (default if no target is specified).
-  -p, --pid=
-    Record events on existing process ID (comma separated list).
-  -o, --output=
-    Output file name.
-  -e, --event=
-    Select the PMU event. Selection can be:
-    •   a symbolic event name (use perf list to list all events)
-    •   a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a hexadecimal event descriptor.
-    •   a symbolic or raw PMU event followed by an optional colon and a list of event modifiers, e.g., cpu-cycles:p. See the perf-list(1) man page for details on event modifiers.
-    •   a symbolically formed PMU event like pmu/param1=0x3,param2/ where param1, param2, etc are defined as formats for the PMU in /sys/bus/event_source/devices/<pmu>/format/*.
-    •   a symbolically formed event like pmu/config=M,config1=N,config3=K/ where M, N, K are numbers (in decimal, hex, octal format). Acceptable values for each of 'config', 'config1' and 'config2' are defined by corresponding entries in /sys/bus/event_source/devices/<pmu>/format/* param1 and param2 are defined as formats for the PMU in: /sys/bus/event_source/devices/<pmu>/format/*
-    There are also some parameters which are not defined in .../<pmu>/format/*.
-    These params can be used to overload default config values per event.
-    Here are some common parameters:
-    - 'period': Set event sampling period
-    - 'freq': Set event sampling frequency
-    - 'time': Disable/enable time stamping. Acceptable values are 1 for enabling time stamping. 0 for disabling time stamping.The default is 1.
-    - 'call-graph': Disable/enable callgraph. Acceptable str are "fp" for FP mode, "dwarf" for DWARF mode, "lbr" for LBR mode and "no" for disable callgraph.
-    - 'stack-size': user stack size for dwarf mode
-    - 'name' : User defined event name. Single quotes (') may be used to escape symbols in the name from parsing by shell and tool like this: name=\'CPU_CLK_UNHALTED.THREAD:cmask=0x1\'.
-    - 'aux-output': Generate AUX records instead of events. This requires that an AUX area event is also provided.
-    See the linkperf:perf-list[1] man page for more parameters.
-    Note: If user explicitly sets options which conflict with the params, the value set by the parameters will be overridden.
-    Also not defined in .../<pmu>/format/* are PMU driver specific configuration parameters.  Any configuration parameter preceded by the letter '@' is not interpreted in user space and sent down directly to the PMU driver.  For example:
-      perf record -e some_event/@cfg1,@cfg2=config/ ...
-    will see 'cfg1' and 'cfg2=config' pushed to the PMU driver associated with the event for further processing.  There is no restriction on what the configuration parameters are, as long as their semantic is understood and supported by the PMU driver.
-    •   a hardware breakpoint event in the form of \mem:addr[/len][:access] where addr is the address in memory you want to break in. Access is the memory access type (read, write, execute) it can be passed as follows: \mem:addr[:[r][w][x]]. len is the range, number of bytes from specified addr, which the breakpoint will cover. If you want to profile read-write accesses in 0x1000, just set mem:0x1000:rw. If you want to profile write accesses in [0x1000~1008), just set mem:0x1000/8:w.
-    •   a BPF source file (ending in .c) or a precompiled object file (ending in .o) selects one or more BPF events. The BPF program can attach to various perf events based on the ELF section names. When processing a '.c' file, perf searches an installed LLVM to compile it into an object file first. Optional clang options can be passed via the '--clang-opt' command line option, e.g.:
-      perf record --clang-opt "-DLINUX_VERSION_CODE=0x50000" \
-      -e tests/bpf-script-example.c
-    Note: '--clang-opt' must be placed before '--event/-e'.
-    •   a group of events surrounded by a pair of brace ("{event1,event2,...}"). Each event is separated by commas and the group should be quoted to prevent the shell interpretation. You also need to use --group on "perf report" to view group events together.
-report
-  -i, --input=
-    Input file name. (default: perf.data unless stdin is a fifo)
-list [tracepoint]
-  List all symbolic event types
-trace
-  This command will show the events associated with the target, initially syscalls, but other system events like pagefaults, task lifetime events, scheduling events, etc.
-  This is a live mode tool in addition to working with perf.data files like the other perf tools. Files can be generated using the perf record command but the session needs to include the raw_syscalls events (-e raw_syscalls:*). Alternatively, perf trace record can be used as a shortcut to automatically include the raw_syscalls events when writing events to a file.
-    -e, --expr, --event
-      List of syscalls and other perf events (tracepoints, HW cache events, etc) to show. Globbing is supported, e.g.: "epoll_*", "msg", etc. See perf list for a complete list of events. Prefixing with ! shows all syscalls but the ones specified. You may need to escape it.
-    --filter=<filter>
-      Event filter. This option should follow an event selector (-e) which selects tracepoint event(s).
-
-#追踪记录
-perf record -a -g [-p [pid]] [application] -o perf.data
-#分析
-perf report -i perf.data
-#火焰图 on-cpu
-git clone https://github.com/brendangregg/FlameGraph
-cd FlameGraph
-perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > ksoftirqd.svg
-```
-
-## 网络
-
-### ethtool
-
-网络设备管理工具。
-
-```bash
--i --driver
-  Queries the specified network device for associated driver information.
--S --statistics
-  Queries the specified network device for NIC- and driver-specific statistics.
--g --show-ring
-  Queries the specified network device for rx/tx ring parameter information.
--G --set-ring
-  Changes the rx/tx ring parameters of the specified network device.
--l --show-channels
-  Queries  the  specified  network  device for the numbers of channels it has.  A channel is an IRQ and the set of queues that can trigger that IRQ.
--L --set-channels
-  Changes the numbers of channels of the specified network device.
--c --show-coalesce
-  Queries the specified network device for coalescing information.
--C --coalesce
-  Changes the coalescing settings of the specified network device.
-```
-
-### ifconfig
-
-管理网络接口。
-
-### netstat
-
-查看网络连接信息。
-
-### nslookup
-
-分析域名解析过程。
-
-### tcpdump
-
-[tcpdump 原理](../code/tcpdump)
-![tcpdump捕获接收包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_recv.png)
-![tcpdump捕获发送包](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump_send.png)
-![tcpdump](https://github.com/gongluck/images/blob/main/network/linux/tcpdump/tcpdump.png)
-
-```bash
--c count
-  Exit after receiving count packets.
--i interface
---interface=interface
-  Listen  on interface.  If unspecified, tcpdump searches the system interface list for the lowest numbered, configured up interface (excluding loopback), which may turn out to be, for example, ``eth0''.
-  On Linux systems with 2.2 or later kernels, an interface argument of ``any'' can be used to capture packets from all interfaces.   Note  that captures on the ``any'' device will not be done in promiscuous mode.
-  If the -D flag is supported, an interface number as printed by that flag can be used as the interface argument, if no interface on the system has that number as a name.
--n
-  Don't convert addresses (i.e., host addresses, port numbers, etc.) to names.
--N
-  Don't print domain name qualification of host names.  E.g., if you give this flag then tcpdump will print ``nic'' instead of ``nic.ddn.mil''.
--p
---no-promiscuous-mode
-  Don't put the interface into promiscuous mode.  Note that the interface might be in promiscuous mode for some other reason; hence, `-p'  can‐not be used as an abbreviation for `ether host {local-hw-addr} or ether broadcast'.
--s snaplen
---snapshot-length=snaplen
-  Snarf  snaplen  bytes  of data from each packet rather than the default of 262144 bytes.  Packets truncated because of a limited snapshot are indicated in the output with ``[|proto]'', where proto is the name of the protocol level at which the truncation  has  occurred.   Note  that taking  larger  snapshots  both  increases  the  amount  of time it takes to process packets and, effectively, decreases the amount of packet buffering.  This may cause packets to be lost.  You should limit snaplen to the smallest number that will capture  the  protocol  information you're  interested in.  Setting snaplen to 0 sets it to the default of 262144, for backwards compatibility with recent older versions of tcp‐dump.
--e
-  Print  the  link-level  header on each dump line.  This can be used, for example, to print MAC layer addresses for protocols such as Ethernet and IEEE 802.11.
--q
-  Quick (quiet?) output.  Print less protocol information so output lines are shorter.
--x
-  When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex.   The smaller of the entire packet or snaplen bytes will be printed.  Note that this is the entire link-layer packet, so for link layers that pad (e.g. Ethernet), the padding bytes will also be printed when the higher layer packet is shorter than the required padding.
--xx
-  When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex.
--X
-  When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex and ASCII.  This is very handy for analysing new protocols.
--XX
-  When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex and ASCII.
--v
-  When  parsing  and printing, produce (slightly more) verbose output.  For example, the time to live, identification, total length and options in an IP packet are printed.  Also enables additional packet integrity checks such as verifying the IP and ICMP header checksum.
-  When writing to a file with the -w option, report, every 10 seconds, the number of packets captured.
--vv
-  Even more verbose output.  For example, additional fields are printed from NFS reply packets, and SMB packets are fully decoded.
--vvv
-  Even more verbose output.  For example, telnet SB ... SE options are printed in full.  With -X Telnet options are printed in hex as well.
-
-#常用
-tcpdump -i eth0 -n -XX -vvv
 ```
