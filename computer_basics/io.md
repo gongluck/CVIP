@@ -7,6 +7,9 @@
   - [RAID](#raid)
   - [IO 栈](#io-栈)
   - [性能分析](#性能分析)
+  - [性能工具](#性能工具)
+    - [传统工具](#传统工具)
+    - [BPF工具](#bpf工具)
 
 ## 索引节点和目录项
 
@@ -50,3 +53,32 @@
 - 在需要同步写的场景中，尽量将`写请求合并`，而不是让每个请求都同步写入磁盘，即可以用 `fsync()` 取代 O_SYNC。
 - 在多个应用程序共享相同磁盘时，为了保证 I/O 不被某个应用完全占用，推荐你使用 `cgroups` 的 I/O 子系统，来限制进程/进程组的 IOPS 以及吞吐量。
 - 在使用 CFQ 调度器时，可以用 ionice 来调整进程的 `I/O 调度优先级`，特别是提高核心应用的 I/O 优先级。ionice 支持三个优先级类：Idle、Best-effort 和 Realtime。其中， Best-effort 和 Realtime 还分别支持 0-7 的级别，数值越小，则表示优先级别越高。
+
+## 性能工具
+
+### 传统工具
+
+- [df](../tools/command.md#df)
+- [mount](../tools/command.md#mount)
+- [strace](../tools/command.md#strace)
+- [perf](../tools/command.md#perf)
+- [iostat](../tools/command.md#iostat)
+
+### BPF工具
+
+- opensnoop[-bpfcc/.bt]
+- statsnoop[-bpfcc/.bt]
+- syncsnoop[-bpfcc/.bt]
+- vfsstat[-bpfcc/.bt]
+- vfscount[-bpfcc/.bt]
+- fileslower[-bpfcc]
+- filetop[-bpfcc]
+- cachestat[-bfpcc]
+- dcstat[-bpfcc]
+- dcsnoop[-bpfcc/.bt]
+- mountsnoop[-bpfcc]
+- biolatency[-bpfcc/.bt]
+- biosnoop[-bpfcc/.bt]
+- biotop[-bpfcc]
+- bitsize[-bpfcc/.bt]
+- mdflush[-bpfcc/.bt]
