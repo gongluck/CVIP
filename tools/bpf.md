@@ -105,6 +105,14 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
 - BCC 是一个 BPF 编译器集合，依赖于 LLVM 和内核头文件，包含了用于构建 BPF 程序的编程框架和库，并提供了大量可以直接使用的工具。
 - 用高级语言开发的 eBPF 程序，需要首先编译为 BPF 字节码，然后借助 bpf 系统调用加载到内核中，最后再通过性能监控等接口与具体的内核事件进行绑定。这样，内核的性能监控模块才会在内核事件发生时，自动执行 eBPF 程序。
 - 在 BCC 中，与 eBPF 程序中 `BPF_PERF_OUTPUT` 相对应的用户态辅助函数是 `open_perf_buffer()` 。它需要传入一个回调函数，用于处理从 Perf 事件类型的 BPF 映射中读取到的数据。而后通过一个循环调用 `perf_buffer_poll` 读取映射的内容，并执行回调函数。
+- BCC 实用工具：
+  ```bash
+  argdist-bpfcc
+  bpflist-bpfcc
+  funccount-bpfcc
+  stackcount-bpfcc
+  trace-bpfcc
+  ```
 
 ### libbpf
 
@@ -141,14 +149,21 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
   ```
 - 通过对 BPF 代码中的访问偏移量进行重写，解决了不同内核版本中数据结构偏移量不同的问题。
 - 在 libbpf 中预定义不同内核版本中的数据结构的修改，解决了不同内核中数据结构不兼容的问题。
+- BTF 是 BPF 版本的调试信息。
 
 ## bpftool
 
 ```bash
-# 列出eBPF程序
-bpftool prog list
-# 查看指令
-bpftool prog dump xlated id [id]
+# 列出通过perf_event_open()挂载的BPF程序
+bpftool perf
+# 列出全部BPF程序
+bpftool prog show
+# 翻译BPF指令为汇编
+bpftool prog dump xlated id [id] [linum/opcodes/visual]
+# 显示JIT编译之后的机器码
+bpftool prog dump jited id [id]
+# 打印BTF的ID
+bpftool btf dump id [id]
 # 查询当前系统支持的辅助函数列表
 bpftool feature probe
 # 查询支持程序类型

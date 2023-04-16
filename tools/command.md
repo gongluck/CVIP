@@ -338,7 +338,7 @@ mount a filesystem
 ```bash
 Report processors related statistics.
 
-  -A 
+  -A
     This option is equivalent to specifying -n -u -I ALL.  This option also implies specifying -N ALL -P ALL unless these options are explicitly set on the command line.
 
 #%usr     用户时间，不包括%nice
@@ -380,7 +380,7 @@ Performance analysis tools for Linux
       -a, --all-cpus
         System-wide collection from all CPUs (default if no target is specified).
       -e, --event=
-        Select the PMU event. 
+        Select the PMU event.
       -F, --freq=
         Profile at this frequency. Use max to use the currently maximum allowed frequency, i.e. the value in the kernel.perf_event_max_sample_rate sysctl. Will throttle down to the currently maximum allowed frequency. See --strict-freq.
       -g
@@ -391,15 +391,18 @@ Performance analysis tools for Linux
         Output file name.
       -p, --pid=
         Record events on existing process ID (comma separated list).
-    
+
   report
     Read perf.data (created by perf record) and display the profile
       -i, --input=
         Input file name. (default: perf.data unless stdin is a fifo)
-  
+
   list [*]
     List all symbolic event types
-  
+
+  stat
+    Run a command and gather performance counter statistics
+
   trace
     This command will show the events associated with the target, initially syscalls, but other system events like pagefaults, task lifetime events, scheduling events, etc.
     This is a live mode tool in addition to working with perf.data files like the other perf tools. Files can be generated using the perf record command but the session needs to include the raw_syscalls events (-e raw_syscalls:*). Alternatively, perf trace record can be used as a shortcut to automatically include the raw_syscalls events when writing events to a file.
@@ -409,13 +412,18 @@ Performance analysis tools for Linux
         Event filter. This option should follow an event selector (-e) which selects tracepoint event(s).
 
 #追踪记录
-perf record -a -g [-p [pid]] [application] -o perf.data
+perf record -F 99 -a -g [-p [pid]] [application] -o perf.data -- sleep 30
 #分析
 perf report -i perf.data
-#火焰图 on-cpu
+#火焰图
 git clone https://github.com/brendangregg/FlameGraph
 cd FlameGraph
-perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > perf.svg
+# on-cpu
+perf record -F 99 -a -g -o perf.data -- sleep 30
+perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > oncpu.svg
+# off-cpu
+perf record -F 99 -a -g -e sched:sched_switch,sched:sched_wakeup -o perf.data -- sleep 30
+perf script -i perf.data | ./stackcollapse-perf.pl --all | ./flamegraph.pl > offcpu.svg
 ```
 
 ### pidstat
@@ -477,7 +485,7 @@ ps aux
 ```bash
 Collect, report, or save system activity information.
 
-  -A 
+  -A
     This is equivalent to specifying -bBdFHSvwWy -I SUM -m ALL -n ALL -q ALL -r ALL -u ALL. This option also implies specifying -I ALL -P ALL unless these options are explicitly set on the command line.
   -B
     Report paging statistics.
@@ -488,7 +496,7 @@ Collect, report, or save system activity information.
   -n { keyword[,...] | ALL }
     Report network statistics.
     Possible keywords are DEV, EDEV, FC, ICMP, EICMP, ICMP6, EICMP6, IP, EIP, IP6, EIP6, NFS, NFSD, SOCK, SOCK6, SOFT, TCP, ETCP, UDP and UDP6.
-    With the DEV keyword, statistics from the network devices are reported.  Statistics for all network interfaces are displayed  unless a restricted list is specified using option --iface= (see corresponding option entry). 
+    With the DEV keyword, statistics from the network devices are reported.  Statistics for all network interfaces are displayed  unless a restricted list is specified using option --iface= (see corresponding option entry).
   -q [ keyword[,...] | ALL ]
     Report system load and pressure-stall statistics.
     Possible keywords are CPU, IO, LOAD, MEM and PSI.
@@ -497,7 +505,7 @@ Collect, report, or save system activity information.
   -S
     Report swap space utilization statistics.
   -u [ ALL ]
-    Report CPU utilization. The ALL keyword indicates that all the CPU fields should be displayed. 
+    Report CPU utilization. The ALL keyword indicates that all the CPU fields should be displayed.
   -W
     Report swapping statistics.
 ```
@@ -569,7 +577,7 @@ dump traffic on a network
     When parsing and printing, in addition to printing the headers of each packet, print the data of each packet (minus its link level header) in hex and ASCII.  This is very handy for analysing new protocols.
   -XX
     When parsing and printing, in addition to printing the headers of each packet, print the data  of  each  packet,  including  its  link  level header, in hex and ASCII.
-  
+
 #常用
 tcpdump -i eth0 -n -XX -vvv
 ```

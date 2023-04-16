@@ -12,6 +12,9 @@
   - [中断](#中断)
   - [上下文切换](#上下文切换)
   - [性能分析](#性能分析)
+  - [分析工具](#分析工具)
+    - [传统工具](#传统工具)
+    - [BPF 工具](#bpf-工具)
 
 ## CPU 组成
 
@@ -109,3 +112,32 @@
 - 为进程设置资源限制：使用 `Linux cgroups` 来设置进程的 CPU 使用上限，可以防止由于某个应用自身的问题，而耗尽系统资源。
 - `NUMA（Non-Uniform Memory Access）优化`：支持 NUMA 的处理器会被划分为多个 node，每个 node 都有自己的本地内存空间。NUMA 优化，其实就是让 CPU 尽可能只访问本地内存。
 - `中断负载均衡`：无论是软中断还是硬中断，它们的中断处理程序都可能会耗费大量的 CPU。开启 `irqbalance` 服务或者配置 `smp_affinity`，就可以把中断处理过程负载均衡到多个 CPU 上。
+
+## 分析工具
+
+### 传统工具
+
+- uptime
+- [top](../tools/command.md#top)
+- [mpstat](../tools/command.md#mpstat)
+- [**perf**](../tools/command.md#perf)
+- [tlbstat](https://raw.githubusercontent.com/brendangregg/pmc-cloud-tools/master/tlbstat)
+
+### BPF 工具
+
+- execsnoop[-bpfcc/.bt]
+- exitsnoop[-bpfcc]
+- profile[-bpfcc]
+
+  ```bash
+  # 火焰图
+  profile[-bpfcc] -af 30 > out.stacks
+  git clone https://github.com/brendangregg/FlameGraph
+  cd FlameGraph
+  ./flamegraph.pl --color=java < ../out.stacks > out.svg
+
+  #bpftrace单行程序
+  bpftrace -e 'profile:hz:49 /pid/ { @samples[ustack, kstack, comm] = count(); }'
+  ```
+
+- offcputime[-bpfcc]
