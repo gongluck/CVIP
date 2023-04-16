@@ -10,6 +10,9 @@
   - [DMA](#dma)
   - [缓存命中率](#缓存命中率)
   - [性能分析](#性能分析)
+  - [性能工具](#性能工具)
+    - [传统工具](#传统工具)
+    - [BPF 工具](#bpf-工具)
 
 ## 地址转换
 
@@ -88,3 +91,21 @@
 - 尽量使用缓存和缓冲区来访问数据。比如，可以使用堆栈明确声明内存空间，来存储需要缓存的数据；或者用 Redis 这类的外部缓存组件，优化数据的访问。
 - 使用 `cgroups` 等方式限制进程的内存使用情况。这样，可以确保系统内存不会被异常进程耗尽。
 - 通过 `/proc/pid/oom_adj` ，调整核心应用的 `oom_score`。这样，可以保证即使内存紧张，核心应用也不会被 OOM 杀死。
+
+## 性能工具
+
+### 传统工具
+
+- dmesg
+- swapon
+- [free](../tools/command.md#free)
+- [ps](../tools/command.md#ps)
+- pmap
+- [vmstat](../tools/command.md#vmstat)
+- [sar](../tools/command.md#sar)
+
+### BPF 工具
+
+- oomkill[-bpfcc/.bt]
+- memleak[-bpfcc]
+- shmsnoop[-bpfcc]
