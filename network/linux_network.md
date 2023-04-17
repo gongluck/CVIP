@@ -9,6 +9,9 @@
   - [epoll](#epoll)
   - [虚拟网络](#虚拟网络)
   - [性能优化](#性能优化)
+  - [性能工具](#性能工具)
+    - [传统工具](#传统工具)
+    - [BPF工具](#bpf工具)
 
 ## 命令配置
 
@@ -97,3 +100,25 @@
 - 使用内存等方式，来缓存不常变化的数据，可以降低网络 I/O 次数，同时加快应用程序的响应速度。
 - 使用 Protocol Buffer 等序列化的方式，压缩网络 I/O 的数据量，可以提高应用程序的吞吐。
 - 使用 DNS 缓存、预取、HTTPDNS 等方式，减少 DNS 解析的延迟，也可以提升网络 I/O 的整体速度。
+
+## 性能工具
+
+### 传统工具
+
+- [ss](../tools/command.md#ss)
+- [ip](../tools/command.md#ip)
+- nstat
+- [netstat](../tools/command.md#netstat)
+- [sar](../tools/command.md#sar)
+- nicstat
+- [ethtool](../tools/command.md#ethtool)
+- [tcpdump](../tools/command.md#tcpdump)
+
+### BPF工具
+
+- tcpconnect[-bpfcc/.bt]
+- tcpaccept[-bpfcc/.bt]
+- tcplife[-bpfcc/.bt]
+- tcptop[-bpfcc]
+- tcpretrans[-bpfcc/.bt]
+- gethostlatency[-bpfcc/.bt]

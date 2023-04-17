@@ -318,6 +318,9 @@ simple top-like I/O monitor
 
 ```bash
 show / manipulate routing, network devices, interfaces and tunnels
+
+  route
+    routing table entry.
 ```
 
 ### mount
