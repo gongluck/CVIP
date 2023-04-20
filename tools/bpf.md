@@ -13,6 +13,7 @@
     - [bpftrace](#bpftrace-1)
     - [BCC](#bcc)
     - [libbpf](#libbpf)
+    - [eunomia-bpf](#eunomia-bpf)
   - [BPF 运行时](#bpf-运行时)
   - [BPF 映射](#bpf-映射)
   - [BTF](#btf)
@@ -124,6 +125,36 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
   clang -target bpf -D__TARGET_ARCH_x86_64 -I/usr/include/x86_64-linux-gnu -c [*.bpf.c] -o [*.bpf.o]
   bpftool gen skeleton [*.bpf.o] > [*.skel.h]
   ```
+
+### eunomia-bpf
+
+- 环境准备
+
+```bash
+# 用于运行 eBPF 程序
+wget https://aka.pw/bpf-ecli -O ecli && chmod +x ./ecli
+# 下载编译器工具链，用于将 eBPF 内核代码编译为 config 文件或 WASM 模块
+wget https://github.com/eunomia-bpf/eunomia-bpf/releases/latest/download/ecc && chmod +x ./ecc
+# 编译
+ecc minimal.bpf.c
+# 运行
+ecli run ./package.json
+# 查看输出
+cat /sys/kernel/debug/tracing/trace_pipe
+
+# 编译 eunomia-bpf
+apt install clang libelf1 libelf-dev zlib1g-dev
+curl https://sh.rustup.rs -sSf | sh -s
+source "$HOME/.cargo/env"
+git clone https://github.com/eunomia-bpf/eunomia-bpf.git
+cd eunomia-bpf
+git submodule update --init --recursive --remote       # check out libbpf
+make bpf-loader-rs
+make ecli
+make wasm-runtime
+make ecc
+make all
+```
 
 ## BPF 运行时
 
