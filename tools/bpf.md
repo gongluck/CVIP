@@ -7,18 +7,22 @@
   - [事件查询](#事件查询)
     - [perf](#perf)
     - [bpftrace](#bpftrace)
+    - [sys 文件系统](#sys-文件系统)
   - [BPF 开发和执行](#bpf-开发和执行)
   - [使用方案](#使用方案)
     - [bpf 系统调用](#bpf-系统调用)
     - [bpftrace](#bpftrace-1)
     - [BCC](#bcc)
     - [libbpf](#libbpf)
-    - [eunomia-bpf](#eunomia-bpf)
+    - [~~eunomia-bpf~~](#eunomia-bpf)
   - [BPF 运行时](#bpf-运行时)
   - [BPF 映射](#bpf-映射)
   - [BTF](#btf)
   - [bpftool](#bpftool)
   - [faddr2line](#faddr2line)
+  - [使用场景](#使用场景)
+    - [XDP](#xdp)
+    - [TC](#tc)
 
 ## BPF/eBPF 原理
 
@@ -71,6 +75,12 @@ cat /sys/kernel/debug/tracing/events/.../format
 bpftrace -lv [tracepoint/kprobe/kretprobe/usdt/uprobe/uretprobe/*:...:...]
 ```
 
+### sys 文件系统
+
+```bash
+cat /sys/kernel/debug/tracing/available_filter_functions
+```
+
 ## BPF 开发和执行
 
 - eBPF 内部的内存空间只有寄存器和栈，而且不能随意调用内核函数，内核定义了一系列的辅助函数（`bpf_probe_read`等），用于 eBPF 程序与内核其他模块进行交互。
@@ -89,6 +99,8 @@ bpftrace -lv [tracepoint/kprobe/kretprobe/usdt/uprobe/uretprobe/*:...:...]
 int bpf(int cmd, union bpf_attr *attr, unsigned int size);
 ```
 
+![bpf_syscall](https://github.com/gongluck/images/blob/main/linux/bpf/bpf_syscall.png)
+
 - cmd，操作命令。
 - attr，eBPF 属性指针，不同类型的操作命令需要传入不同的属性参数。
 - size，代表属性的大小。
@@ -101,18 +113,31 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
 - bpftrace 通常用在快速排查和定位系统上，功能有限不支持特别复杂的 eBPF 程序，也依赖于 BCC 和 LLVM 动态编译执行。
 - bpftrace 中，函数参数可以使用内置变量 arg0..N。
 
-### BCC
+### [BCC](https://github.com/iovisor/bcc.git)
 
 - BCC 是一个 BPF 编译器集合，依赖于 LLVM 和内核头文件，包含了用于构建 BPF 程序的编程框架和库，并提供了大量可以直接使用的工具。
 - 用高级语言开发的 eBPF 程序，需要首先编译为 BPF 字节码，然后借助 bpf 系统调用加载到内核中，最后再通过性能监控等接口与具体的内核事件进行绑定。这样，内核的性能监控模块才会在内核事件发生时，自动执行 eBPF 程序。
 - 在 BCC 中，与 eBPF 程序中 `BPF_PERF_OUTPUT` 相对应的用户态辅助函数是 `open_perf_buffer()` 。它需要传入一个回调函数，用于处理从 Perf 事件类型的 BPF 映射中读取到的数据。而后通过一个循环调用 `perf_buffer_poll` 读取映射的内容，并执行回调函数。
-- BCC 实用工具：
+- 安装 BCC
   ```bash
-  argdist-bpfcc
-  bpflist-bpfcc
-  funccount-bpfcc
-  stackcount-bpfcc
-  trace-bpfcc
+  apt-get install bpfcc-tools linux-headers-$(uname -r)
+  ```
+- BCC 实用工具
+  ```bash
+  execsnoop
+  opensnoop
+  ext4slower (or btrfs*, xfs*, zfs*)
+  biolatency
+  biosnoop
+  cachestat
+  tcpconnect
+  tcpaccept
+  tcpretrans
+  runqlat
+  profile
+  trace
+  argdist
+  funccount
   ```
 
 ### libbpf
@@ -126,9 +151,7 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
   bpftool gen skeleton [*.bpf.o] > [*.skel.h]
   ```
 
-### eunomia-bpf
-
-- 环境准备
+### ~~eunomia-bpf~~
 
 ```bash
 # 用于运行 eBPF 程序
@@ -206,4 +229,36 @@ bpftool feature probe | grep program_type
 ```bash
 # 解析堆栈代码行
 faddr2line [source] [func+num]
+```
+
+## 使用场景
+
+### XDP
+
+![xdp](https://github.com/gongluck/images/blob/main/linux/bpf/xdp.png)
+
+```bash
+# 编译 XDP 程序
+clang -O2 -target bpf -c drop_world.c -o drop_world.o
+# 加载 XDP 程序
+sudo ip link set dev lo xdp obj drop_world.o sec xdp verbose
+# 卸载 XDP 程序
+sudo ip link set dev lo xdp off
+```
+- [样例代码](../code/ebpf/xdp)
+- 当前主流内核版本的 Linux 系统在加载 XDP BPF 程序时，会自动在 native 和 generic 这两种模式选择，完成加载后，可以使用 ip 命令行工具来查看选择的模式。
+
+### TC
+
+- [样例代码](../code/ebpf/tc)
+
+```bash
+# 编译TC程序
+clang -O2 -target bpf -c drop_tcp.c -o drop_tcp.o
+# 为目标网卡创建clsact
+sudo tc qdisc add dev lo clsact
+# 加载 TC 程序
+sudo tc filter add dev lo egress bpf da obj drop_tcp.o sec tc verbose
+# 查看
+sudo tc filter show dev lo egress
 ```

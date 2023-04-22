@@ -14,6 +14,20 @@
 
 ![性能分析](https://github.com/gongluck/images/blob/main/linux/performance/tools.png)
 
+```bash
+First 60 Seconds: Summary
+# uptime
+# dmesg -T | tail
+# vmstat -w 1
+# mpstat -P ALL 1
+# pidstat 1
+# iostat -xz 1
+# free -m
+# sar -n DEV 1
+# sar -n TCP,ETCP 1
+# top
+```
+
 ## [CPU](./cpu.md)
 
 ## [内存](./memory.md)
