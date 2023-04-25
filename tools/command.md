@@ -43,6 +43,7 @@
     - [turbostat](#turbostat)
     - [vmstat](#vmstat)
   - [others](#others)
+    - [iptables](#iptables)
     - [lsof](#lsof)
     - [nohup](#nohup)
     - [pstree](#pstree)
@@ -665,6 +666,15 @@ Report virtual memory statistics
 ```
 
 ## others
+
+### iptables
+
+```bash
+sudo iptables -F -t nat
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 192.168.1.1:80
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+sudo iptables -t nat -nL --line
+```
 
 ### lsof
 

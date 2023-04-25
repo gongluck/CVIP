@@ -23,6 +23,10 @@
   - [使用场景](#使用场景)
     - [XDP](#xdp)
     - [TC](#tc)
+  - [内核源码里的 BPF 示例代码](#内核源码里的-bpf-示例代码)
+    - [下载内核源码](#下载内核源码)
+    - [编译 BPF 示例代码](#编译-bpf-示例代码)
+  - [XDP教程](#xdp教程)
 
 ## BPF/eBPF 原理
 
@@ -192,8 +196,39 @@ make all
 
 ## BPF 映射
 
+```c++
+// 原生版 BPF Map 创建方式
+union bpf_attr my_map_attr {
+  .map_type = BPF_MAP_TYPE_ARRAY,
+  .key_size = sizeof(int),
+  .value_size = sizeof(int),
+  .max_entries = 1024,
+  .map_flags = BPF_F_NO_PREALLOC,
+};
+int fd = bpf(BPF_MAP_CREATE, &my_map_attr, sizeof(my_map_attr));
+
+// 简化版 BPF Map 创建方式
+struct bpf_map_def SEC("maps") my_bpf_map = {
+  .type       = BPF_MAP_TYPE_ARRAY,
+  .key_size   = sizeof(int),
+  .value_size   = sizeof(int),
+  .max_entries = 1024,
+  .map_flags   = BPF_F_NO_PREALLOC,
+};
+
+// 查看 /tools/lib/bpf/bpf.h 定义的辅助函数
+
+// 使用 bpftool 查看BPF Map信息
+bpftool map 
+bpftool map dump id [map id]
+```
+
 - BPF 映射用于提供大块的键值存储，可被用户空间程序访问，进而获取 eBPF 程序的运行状态。eBPF 程序最多可以访问 64 个不同的 BPF 映射，并且不同的 eBPF 程序也可以通过相同的 BPF 映射来共享它们的状态。
 - BPF 系统调用中并没有删除映射的命令，因为 BPF 映射会在用户态程序关闭文件描述符的时候自动删除（即 close(fd)）。想在程序退出后还保留映射，就需要调用 `BPF_OBJ_PIN` 命令，将映射挂载到 `/sys/fs/bpf` 中。
+- bpf_map_create 创建 BPF Map 操作之外。
+- bpf_map_lookup_elem(map, key)函数，通过 key 查询 BPF Map，得到对应 value。
+- bpf_map_update_elem(map, key, value, options)函数，通过 key-value 更新 BPF Map，如果这个 key 不存在，也可以作为新的元素插入到 BPF Map 中去。
+- bpf_map_get_next_key(map, lookup_key, next_key)函数，这个函数可以用来遍历 BPF Map。
 
 ## BTF
 
@@ -241,10 +276,14 @@ faddr2line [source] [func+num]
 # 编译 XDP 程序
 clang -O2 -target bpf -c drop_world.c -o drop_world.o
 # 加载 XDP 程序
-sudo ip link set dev lo xdp obj drop_world.o sec xdp verbose
+ip link set dev lo xdp obj drop_world.o sec xdp verbose
+# 显示程序列表
+bpftool net list dev lo
+ip link show dev lo
 # 卸载 XDP 程序
-sudo ip link set dev lo xdp off
+ip link set dev lo xdp off
 ```
+
 - [样例代码](../code/ebpf/xdp)
 - 当前主流内核版本的 Linux 系统在加载 XDP BPF 程序时，会自动在 native 和 generic 这两种模式选择，完成加载后，可以使用 ip 命令行工具来查看选择的模式。
 
@@ -259,6 +298,70 @@ clang -O2 -target bpf -c drop_tcp.c -o drop_tcp.o
 sudo tc qdisc add dev lo clsact
 # 加载 TC 程序
 sudo tc filter add dev lo egress bpf da obj drop_tcp.o sec tc verbose
+# 卸载 TC 程序
+sudo tc filter del dev lo egress bpf da obj drop_tcp.o sec tc verbose
 # 查看
 sudo tc filter show dev lo egress
+```
+
+## 内核源码里的 BPF 示例代码
+
+### 下载内核源码
+
+```bash
+# 第一种方式
+# 搜索
+apt-cache search linux-source
+  linux-source - Linux kernel source with Ubuntu patches
+  linux-source-5.15.0 - Linux kernel source for version 5.15.0 with Ubuntu patches
+  linux-source-5.19.0 - Linux kernel source for version 5.19.0 with Ubuntu patches
+# 安装
+apt install linux-source-5.15.0
+
+# 第二种方式
+apt-get source linux
+
+# 以上两种方式，内核源代码均下载至/usr/src/目录下
+
+# 在线查看代码
+https://elixir.bootlin.com/linux/v5.15/source/samples/bpf
+```
+
+### 编译 BPF 示例代码
+
+```bash
+# 切换到内核源代码根目录
+cd /usr/src/linux-source-5.15.0/
+# 生成内核编译时需要的头文件
+make headers_install
+# 可视化选择你想为内核添加的内核模块，最终生成保存了相关模块信息的.config文件，为执行后面的命令做准备
+make menuconfig
+# 使用make命令编译samples/bpf/目录下所有bpf示例代码，注意需要加上最后的/符号
+make samples/bpf/ # or  make M=samples/bpf
+
+# 编译bpftool
+make -C bpf/bpftool/
+
+# 添加自定义BPF代码
+# 追加新的一行至hostprogs-y开头的代码块最后，保证自己的BPF程序能够生成可执行文件
+hostprogs-y += my_bpf
+# 一般BPF程序使用以下命令即可，具体取决于你的程序是否依赖其他特殊头文件
+my_bpf-objs := my_bpf_user.o
+# 3. 追加新的一行至always开头的代码块最后，保证触发生成可执行文件的任务
+always += my_bpf_kern.o
+```
+
+## XDP教程
+
+```bash
+git clone https://github.com/xdp-project/xdp-tutorial.git
+cd xdp-tutorial/
+git submodule update --init
+sudo apt install clang llvm libelf-dev libpcap-dev gcc-multilib build-essential
+sudo apt install linux-tools-$(uname -r)
+# sudo apt install linux-tools-5.10.0-1021-oem
+sudo apt install linux-headers-$(uname -r)
+# sudo apt install linux-headers-5.10.0-1021-oem
+sudo apt install linux-tools-common linux-tools-generic
+sudo apt install tcpdump
 ```
