@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 from bcc import BPF
 import ctypes as ct
 
@@ -9,7 +10,7 @@ struct user_msg_t {
 
 BPF_HASH(config, u32, struct user_msg_t);
 
-BPF_PERF_OUTPUT(output); 
+BPF_RINGBUF_OUTPUT(output, 1); 
 
 struct data_t {     
    int pid;
@@ -20,8 +21,8 @@ struct data_t {
 
 int hello(void *ctx) {
    struct data_t data = {}; 
-   struct user_msg_t *p;
    char message[12] = "Hello World";
+   struct user_msg_t *p;
 
    data.pid = bpf_get_current_pid_tgid() >> 32;
    data.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
@@ -35,17 +36,16 @@ int hello(void *ctx) {
       bpf_probe_read_kernel(&data.message, sizeof(data.message), message); 
    }
 
-   output.perf_submit(ctx, &data, sizeof(data)); 
+   output.ringbuf_output(&data, sizeof(data), 0); 
  
    return 0;
 }
 """
 
 b = BPF(text=program)
+b["config"][ct.c_int(0)] = ct.create_string_buffer(b"Hey root!")
 syscall = b.get_syscall_fnname("execve")
 b.attach_kprobe(event=syscall, fn_name="hello")
-b["config"][ct.c_int(0)] = ct.create_string_buffer(b"Hey root!")
-b["config"][ct.c_int(501)] = ct.create_string_buffer(b"Hi user 501!")
 
 
 def print_event(cpu, data, size):
@@ -53,6 +53,6 @@ def print_event(cpu, data, size):
     print(f"{data.pid} {data.uid} {data.command.decode()} {data.message.decode()}")
 
 
-b["output"].open_perf_buffer(print_event)
+b["output"].open_ring_buffer(print_event)
 while True:
-    b.perf_buffer_poll()
+    b.ring_buffer_poll()
