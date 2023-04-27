@@ -2,19 +2,22 @@
 
 - [BPF](#bpf)
   - [BPF/eBPF 原理](#bpfebpf-原理)
-  - [检测技术](#检测技术)
-  - [环境依赖](#环境依赖)
+  - [检测类型](#检测类型)
   - [事件查询](#事件查询)
+    - [文件系统](#文件系统)
     - [perf](#perf)
     - [bpftrace](#bpftrace)
-    - [sys 文件系统](#sys-文件系统)
   - [BPF 开发和执行](#bpf-开发和执行)
+    - [编译BPF模块](#编译bpf模块)
+    - [加载/卸载BPF模块](#加载卸载bpf模块)
+    - [绑定/解绑BPF模块到事件](#绑定解绑bpf模块到事件)
+    - [查询BPF模块](#查询bpf模块)
+    - [追踪输出](#追踪输出)
   - [使用方案](#使用方案)
     - [bpf 系统调用](#bpf-系统调用)
     - [bpftrace](#bpftrace-1)
     - [BCC](#bcc)
     - [libbpf](#libbpf)
-    - [~~eunomia-bpf~~](#eunomia-bpf)
   - [BPF 运行时](#bpf-运行时)
   - [BPF 映射](#bpf-映射)
   - [BTF](#btf)
@@ -26,50 +29,35 @@
   - [内核源码里的 BPF 示例代码](#内核源码里的-bpf-示例代码)
     - [下载内核源码](#下载内核源码)
     - [编译 BPF 示例代码](#编译-bpf-示例代码)
-  - [XDP教程](#xdp教程)
+  - [XDP 教程](#xdp-教程)
 
 ## BPF/eBPF 原理
 
 - BPF（Berkeley Packet Filter）和 eBPF（Extended Berkeley Packet Filter）的原理都基于在内核空间执行用户定义的代码，从而实现高效的数据包和系统事件处理。
 - BPF 的原理是，在内核空间中定义一组过滤规则，通过执行用户定义的 BPF 代码，对网络数据包进行过滤和处理。BPF 代码通过一组特定的指令集，在内核中执行，可以快速地判断和处理数据包。
-- eBPF 的原理是，在内核空间中定义一组更加灵活和强大的处理规则，通过执行用户定义的 eBPF 代码，对网络数据包和系统事件进行更加高级别的处理和分析。eBPF 还提供了一些新的工具和 API，可以更加方便地使用和管理 eBPF 程序。eBPF 的指令集比 BPF 更加丰富和灵活，可以实现更多种类的数据处理和分析。
+- eBPF 的原理是，在内核空间中定义一组更加灵活和强大的处理规则，通过执行用户定义的 eBPF 代码，对网络数据包和系统事件进行更加高级别的处理和分析。
 
-## 检测技术
+## 检测类型
 
 - 静态检测描述的是添加到源代码中的硬编码的软件检测点，有内核的 `tracepoint（跟踪点）`，还有针对用户空间软件的 `USDT（用户静态定义跟踪）`。
 - 动态检测是在软件运行后，通过修改内存指令插入检测程序来创建检测点，有 `kprobes（内核探针）`、`kretprobes（内核返回探针）`、`uprobes（用户空间探针）`、`uretprobes（用户级返回探针）`。
 
-## 环境依赖
+## 事件查询
+
+### 文件系统
 
 ```bash
-apt install -y make clang llvm libelf-dev libbpf-dev bpfcc-tools libbpfcc-dev linux-tools-$(uname -r) linux-headers-$(uname -r)
-
-#从内核源码编译
-uname -r
-#5.15.0-60-generic
-apt-cache search linux-source
-apt install linux-source-5.15.0
-cd /usr/src/
-tar -jxvf linux-source-5.15.0.tar.bz2
-apt -y install binutils-dev libelf-dev libcap-dev
-cd linux-source-5.15.0/tools
-make -C bpf/bpftool
-cd bpf/bpftool
-make clean
-make
-make install
-./bpftool version -p
+# 可用的 tracepoint 过滤函数的列表
+cat /sys/kernel/debug/tracing/available_filter_functions
+# 参数与格式
+cat /sys/kernel/debug/tracing/events/.../format
 ```
-
-## 事件查询
 
 ### [perf](./command.md#perf)
 
 ```bash
 # 查看支持的事件
 perf list [*]
-# 查看参数与格式
-cat /sys/kernel/debug/tracing/events/.../format
 ```
 
 ### bpftrace
@@ -77,12 +65,6 @@ cat /sys/kernel/debug/tracing/events/.../format
 ```bash
 # 查看支持的事件
 bpftrace -lv [tracepoint/kprobe/kretprobe/usdt/uprobe/uretprobe/*:...:...]
-```
-
-### sys 文件系统
-
-```bash
-cat /sys/kernel/debug/tracing/available_filter_functions
 ```
 
 ## BPF 开发和执行
@@ -93,6 +75,43 @@ cat /sys/kernel/debug/tracing/available_filter_functions
 - 内核把所有函数以及非栈变量的地址都抽取到了 `/proc/kallsyms` 中，这样调试器就可以根据地址找出对应的函数和变量名称。
 - 内核调试文件系统向用户空间提供了内核调试所需的基本信息，如内核符号列表、跟踪点、函数跟踪（ftrace）状态以及参数格式等。在终端中执行 `ls -lh /sys/kernel/debug` 来查询内核调试文件系统的具体信息。可以从 `/sys/kernel/debug/tracing` 中找到所有内核预定义的跟踪点，进而可以在需要时把 eBPF 程序挂载到对应的跟踪点。
 - 在内核插桩和跟踪点两者都可用的情况下，应该选择更稳定的跟踪点，以保证 eBPF 程序的可移植性。
+
+### 编译BPF模块
+
+```bash
+clang -target bpf -I /usr/include/$(uname -m)-linux-gnu -g -O2 -c [*.bpf.c] -o [*.bpf.o]
+```
+
+### 加载/卸载BPF模块
+
+```bash
+bpftool prog load [*.bpf.o] [/sys/fs/bpf/*]
+rm [/sys/fs/bpf/*]
+```
+
+### 绑定/解绑BPF模块到事件
+
+```bash
+bpftool net attach xdp id [id] dev [dev]
+bpftool net detach xdp dev [dev]
+```
+
+### 查询BPF模块
+
+```bash
+bpftool prog list [--pretty]
+bpftool net list
+bpftool prog show id [id] [--pretty]
+bpftool prog dump xlated id [id]
+bpftool prog dump jited id [id]
+```
+
+### 追踪输出
+
+```bash
+cat /sys/kernel/debug/tracing/trace_pipe
+bpftool prog tracelog
+```
 
 ## 使用方案
 
@@ -128,66 +147,12 @@ apt-get install bpfcc-tools linux-headers-$(uname -r)
 - BCC 是一个 BPF 编译器集合，依赖于 LLVM 和内核头文件，包含了用于构建 BPF 程序的编程框架和库，并提供了大量可以直接使用的工具。
 - 用高级语言开发的 eBPF 程序，需要首先编译为 BPF 字节码，然后借助 bpf 系统调用加载到内核中，最后再通过性能监控等接口与具体的内核事件进行绑定。这样，内核的性能监控模块才会在内核事件发生时，自动执行 eBPF 程序。
 - 在 BCC 中，与 eBPF 程序中 `BPF_PERF_OUTPUT` 相对应的用户态辅助函数是 `open_perf_buffer()` 。它需要传入一个回调函数，用于处理从 Perf 事件类型的 BPF 映射中读取到的数据。而后通过一个循环调用 `perf_buffer_poll` 读取映射的内容，并执行回调函数。
-- 安装 BCC
-  ```bash
-  apt-get install bpfcc-tools linux-headers-$(uname -r)
-  ```
-- BCC 实用工具
-  ```bash
-  execsnoop
-  opensnoop
-  ext4slower (or btrfs*, xfs*, zfs*)
-  biolatency
-  biosnoop
-  cachestat
-  tcpconnect
-  tcpaccept
-  tcpretrans
-  runqlat
-  profile
-  trace
-  argdist
-  funccount
-  ```
 
 ### libbpf
 
 - libbpf 是从内核中抽离出来的标准库，用它开发的 eBPF 程序可以直接分发执行，不需要每台机器都安装 LLVM 和内核头文件。
 - libbpf 要求内核开启 BTF 特性，需要非常新的发行版才会默认开启（如 RHEL 8.2+ 和 Ubuntu 20.10+ 等）。
 - 通过 SEC() 宏定义的数据结构和函数会放到特定的 ELF 段中，这样后续在加载 BPF 字节码时，就可以从这些段中获取所需的元数据。
-- 生成脚手架头文件：
-  ```bash
-  clang -target bpf -D__TARGET_ARCH_x86_64 -I/usr/include/x86_64-linux-gnu -c [*.bpf.c] -o [*.bpf.o]
-  bpftool gen skeleton [*.bpf.o] > [*.skel.h]
-  ```
-
-### ~~eunomia-bpf~~
-
-```bash
-# 用于运行 eBPF 程序
-wget https://aka.pw/bpf-ecli -O ecli && chmod +x ./ecli
-# 下载编译器工具链，用于将 eBPF 内核代码编译为 config 文件或 WASM 模块
-wget https://github.com/eunomia-bpf/eunomia-bpf/releases/latest/download/ecc && chmod +x ./ecc
-# 编译
-ecc minimal.bpf.c
-# 运行
-ecli run ./package.json
-# 查看输出
-cat /sys/kernel/debug/tracing/trace_pipe
-
-# 编译 eunomia-bpf
-apt install clang libelf1 libelf-dev zlib1g-dev
-curl https://sh.rustup.rs -sSf | sh -s
-source "$HOME/.cargo/env"
-git clone https://github.com/eunomia-bpf/eunomia-bpf.git
-cd eunomia-bpf
-git submodule update --init --recursive --remote       # check out libbpf
-make bpf-loader-rs
-make ecli
-make wasm-runtime
-make ecc
-make all
-```
 
 ## BPF 运行时
 
@@ -196,7 +161,7 @@ make all
 
 - **eBPF 辅助函数** 提供了一系列用于 eBPF 程序与内核其他模块进行交互的函数。
 - **eBPF 验证器** 确保 eBPF 程序的安全。
-- **11 个 64 位寄存器、一个程序计数器和一个 512 字节的栈组成的存储模块** 用于控制 eBPF 程序的执行。
+- **11 个（软件实现的） 64 位寄存器、一个程序计数器和一个 512 字节的栈组成的存储模块** 用于控制 eBPF 程序的执行。
 - **即时编译器** 将 eBPF 字节码编译成本地机器指令，以便更高效地在内核中执行。
 - **BPF 映射（map）** 用于提供可被用户空间程序访问的大块存储，进而控制 eBPF 程序的运行状态。
 
@@ -225,7 +190,7 @@ struct bpf_map_def SEC("maps") my_bpf_map = {
 // 查看 /tools/lib/bpf/bpf.h 定义的辅助函数
 
 // 使用 bpftool 查看BPF Map信息
-bpftool map 
+bpftool map list
 bpftool map dump id [map id]
 ```
 
@@ -357,7 +322,7 @@ my_bpf-objs := my_bpf_user.o
 always += my_bpf_kern.o
 ```
 
-## XDP教程
+## XDP 教程
 
 ```bash
 git clone https://github.com/xdp-project/xdp-tutorial.git
