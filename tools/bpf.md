@@ -22,14 +22,12 @@
   - [BPF 映射](#bpf-映射)
   - [BTF](#btf)
   - [bpftool](#bpftool)
-  - [faddr2line](#faddr2line)
   - [使用场景](#使用场景)
     - [XDP](#xdp)
     - [TC](#tc)
   - [内核源码里的 BPF 示例代码](#内核源码里的-bpf-示例代码)
     - [下载内核源码](#下载内核源码)
     - [编译 BPF 示例代码](#编译-bpf-示例代码)
-  - [XDP 教程](#xdp-教程)
 
 ## BPF/eBPF 原理
 
@@ -143,13 +141,14 @@ int bpf(int cmd, union bpf_attr *attr, unsigned int size);
 apt-get install bpfcc-tools linux-headers-$(uname -r)
 ```
 
-- [样例代码](../code/ebpf/hello)
+- [样例代码](../code/ebpf/bcc)
 - BCC 是一个 BPF 编译器集合，依赖于 LLVM 和内核头文件，包含了用于构建 BPF 程序的编程框架和库，并提供了大量可以直接使用的工具。
 - 用高级语言开发的 eBPF 程序，需要首先编译为 BPF 字节码，然后借助 bpf 系统调用加载到内核中，最后再通过性能监控等接口与具体的内核事件进行绑定。这样，内核的性能监控模块才会在内核事件发生时，自动执行 eBPF 程序。
 - 在 BCC 中，与 eBPF 程序中 `BPF_PERF_OUTPUT` 相对应的用户态辅助函数是 `open_perf_buffer()` 。它需要传入一个回调函数，用于处理从 Perf 事件类型的 BPF 映射中读取到的数据。而后通过一个循环调用 `perf_buffer_poll` 读取映射的内容，并执行回调函数。
 
 ### libbpf
 
+- [样例代码](../code/ebpf/libbpf)
 - libbpf 是从内核中抽离出来的标准库，用它开发的 eBPF 程序可以直接分发执行，不需要每台机器都安装 LLVM 和内核头文件。
 - libbpf 要求内核开启 BTF 特性，需要非常新的发行版才会默认开启（如 RHEL 8.2+ 和 Ubuntu 20.10+ 等）。
 - 通过 SEC() 宏定义的数据结构和函数会放到特定的 ELF 段中，这样后续在加载 BPF 字节码时，就可以从这些段中获取所需的元数据。
@@ -196,17 +195,25 @@ bpftool map dump id [map id]
 
 - BPF 映射用于提供大块的键值存储，可被用户空间程序访问，进而获取 eBPF 程序的运行状态。eBPF 程序最多可以访问 64 个不同的 BPF 映射，并且不同的 eBPF 程序也可以通过相同的 BPF 映射来共享它们的状态。
 - BPF 系统调用中并没有删除映射的命令，因为 BPF 映射会在用户态程序关闭文件描述符的时候自动删除（即 close(fd)）。想在程序退出后还保留映射，就需要调用 `BPF_OBJ_PIN` 命令，将映射挂载到 `/sys/fs/bpf` 中。
-- bpf_map_create 创建 BPF Map 操作之外。
-- bpf_map_lookup_elem(map, key)函数，通过 key 查询 BPF Map，得到对应 value。
-- bpf_map_update_elem(map, key, value, options)函数，通过 key-value 更新 BPF Map，如果这个 key 不存在，也可以作为新的元素插入到 BPF Map 中去。
-- bpf_map_get_next_key(map, lookup_key, next_key)函数，这个函数可以用来遍历 BPF Map。
+- bpf_map_create 创建 BPF Map。
+- bpf_map_lookup_elem(map, key)，通过 key 查询 BPF Map，得到对应 value。
+- bpf_map_update_elem(map, key, value, options)，通过 key-value 更新 BPF Map，如果这个 key 不存在，也可以作为新的元素插入到 BPF Map 中去。
+- bpf_map_get_next_key(map, lookup_key, next_key)，遍历 BPF Map。
 
 ## BTF
 
-- 从内核 5.2 开始，只要开启了 `CONFIG_DEBUG_INFO_BTF`，在编译内核时，内核数据结构的定义就会自动内嵌在内核二进制文件 `vmlinux` 中。还可以把这些数据结构的定义导出到一个头文件中（通常命名为 vmlinux.h）:
-  ```bash
-  bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-  ```
+```bash
+# 列出BTF信息
+bpftool btf list
+bpftool btf dump id [id]
+bpftool btf dump file [*.o]
+# 导出内核数据结构
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+# 导出BPF模块头文件
+bpftool gen skeleton [*.o] > [*.skel.h]
+```
+
+- 从内核 5.2 开始，只要开启了 `CONFIG_DEBUG_INFO_BTF`，在编译内核时，内核数据结构的定义就会自动内嵌在内核二进制文件 `vmlinux` 中。还可以把这些数据结构的定义导出到一个头文件中（通常命名为 vmlinux.h）。
 - 通过对 BPF 代码中的访问偏移量进行重写，解决了不同内核版本中数据结构偏移量不同的问题。
 - 在 libbpf 中预定义不同内核版本中的数据结构的修改，解决了不同内核中数据结构不兼容的问题。
 - BTF 是 BPF 版本的调试信息。
@@ -222,19 +229,10 @@ bpftool prog show
 bpftool prog dump xlated id [id] [linum/opcodes/visual]
 # 显示JIT编译之后的机器码
 bpftool prog dump jited id [id]
-# 打印BTF的ID
-bpftool btf dump id [id]
 # 查询当前系统支持的辅助函数列表
 bpftool feature probe
 # 查询支持程序类型
 bpftool feature probe | grep program_type
-```
-
-## [faddr2line](https://github.com/torvalds/linux/blob/master/scripts/faddr2line)
-
-```bash
-# 解析堆栈代码行
-faddr2line [source] [func+num]
 ```
 
 ## 使用场景
@@ -320,19 +318,4 @@ hostprogs-y += my_bpf
 my_bpf-objs := my_bpf_user.o
 # 3. 追加新的一行至always开头的代码块最后，保证触发生成可执行文件的任务
 always += my_bpf_kern.o
-```
-
-## XDP 教程
-
-```bash
-git clone https://github.com/xdp-project/xdp-tutorial.git
-cd xdp-tutorial/
-git submodule update --init
-sudo apt install clang llvm libelf-dev libpcap-dev gcc-multilib build-essential
-sudo apt install linux-tools-$(uname -r)
-# sudo apt install linux-tools-5.10.0-1021-oem
-sudo apt install linux-headers-$(uname -r)
-# sudo apt install linux-headers-5.10.0-1021-oem
-sudo apt install linux-tools-common linux-tools-generic
-sudo apt install tcpdump
 ```

@@ -49,8 +49,8 @@ b["config"][ct.c_int(501)] = ct.create_string_buffer(b"Hi user 501!")
 
 
 def print_event(cpu, data, size):
-    data = b["output"].event(data)
-    print(f"{data.pid} {data.uid} {data.command.decode()} {data.message.decode()}")
+    mydata = b["output"].event(data)
+    print(f"{mydata.pid} {mydata.uid} {mydata.command.decode()} {mydata.message.decode()}")
 
 
 b["output"].open_perf_buffer(print_event)

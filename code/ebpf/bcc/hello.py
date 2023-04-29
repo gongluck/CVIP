@@ -3,7 +3,7 @@ from bcc import BPF
 
 # 要在内核中执行的代码（字符串）
 program = """
-int hello_world(void *ctx) {
+int hello_world() {
     bpf_trace_printk("Hello World  !\\n");
     return 0;
 }
