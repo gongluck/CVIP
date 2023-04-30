@@ -8,10 +8,10 @@
     - [perf](#perf)
     - [bpftrace](#bpftrace)
   - [BPF 开发和执行](#bpf-开发和执行)
-    - [编译BPF模块](#编译bpf模块)
-    - [加载/卸载BPF模块](#加载卸载bpf模块)
-    - [绑定/解绑BPF模块到事件](#绑定解绑bpf模块到事件)
-    - [查询BPF模块](#查询bpf模块)
+    - [编译 BPF 模块](#编译-bpf-模块)
+    - [加载/卸载 BPF 模块](#加载卸载-bpf-模块)
+    - [绑定/解绑 BPF 模块到事件](#绑定解绑-bpf-模块到事件)
+    - [查询 BPF 模块](#查询-bpf-模块)
     - [追踪输出](#追踪输出)
   - [使用方案](#使用方案)
     - [bpf 系统调用](#bpf-系统调用)
@@ -45,6 +45,8 @@
 ### 文件系统
 
 ```bash
+# 所有导出符号
+cat /proc/kallsyms
 # 可用的 tracepoint 过滤函数的列表
 cat /sys/kernel/debug/tracing/available_filter_functions
 # 参数与格式
@@ -74,27 +76,27 @@ bpftrace -lv [tracepoint/kprobe/kretprobe/usdt/uprobe/uretprobe/*:...:...]
 - 内核调试文件系统向用户空间提供了内核调试所需的基本信息，如内核符号列表、跟踪点、函数跟踪（ftrace）状态以及参数格式等。在终端中执行 `ls -lh /sys/kernel/debug` 来查询内核调试文件系统的具体信息。可以从 `/sys/kernel/debug/tracing` 中找到所有内核预定义的跟踪点，进而可以在需要时把 eBPF 程序挂载到对应的跟踪点。
 - 在内核插桩和跟踪点两者都可用的情况下，应该选择更稳定的跟踪点，以保证 eBPF 程序的可移植性。
 
-### 编译BPF模块
+### 编译 BPF 模块
 
 ```bash
 clang -target bpf -I /usr/include/$(uname -m)-linux-gnu -g -O2 -c [*.bpf.c] -o [*.bpf.o]
 ```
 
-### 加载/卸载BPF模块
+### 加载/卸载 BPF 模块
 
 ```bash
 bpftool prog load [*.bpf.o] [/sys/fs/bpf/*]
 rm [/sys/fs/bpf/*]
 ```
 
-### 绑定/解绑BPF模块到事件
+### 绑定/解绑 BPF 模块到事件
 
 ```bash
 bpftool net attach xdp id [id] dev [dev]
 bpftool net detach xdp dev [dev]
 ```
 
-### 查询BPF模块
+### 查询 BPF 模块
 
 ```bash
 bpftool prog list [--pretty]
@@ -161,6 +163,8 @@ apt-get install bpfcc-tools linux-headers-$(uname -r)
 - **eBPF 辅助函数** 提供了一系列用于 eBPF 程序与内核其他模块进行交互的函数。
 - **eBPF 验证器** 确保 eBPF 程序的安全。
 - **11 个（软件实现的） 64 位寄存器、一个程序计数器和一个 512 字节的栈组成的存储模块** 用于控制 eBPF 程序的执行。
+- 寄存器 0 用于辅助函数的返回值，也用于 eBPF 程序的返回值。寄存器 10 总是保持指向 eBPF 堆栈帧的指针（并且 eBPF 程序不能修改它）。
+- 当调用 eBPF 程序时，寄存器 1 始终保存传递给该程序的上下文参数。
 - **即时编译器** 将 eBPF 字节码编译成本地机器指令，以便更高效地在内核中执行。
 - **BPF 映射（map）** 用于提供可被用户空间程序访问的大块存储，进而控制 eBPF 程序的运行状态。
 
