@@ -9,9 +9,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <bpf/libbpf.h>
 
-// BTF
+//  BTF
 #include "minimal.skel.h"
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
@@ -33,12 +32,22 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    skel->bss->my_pid = getpid();
+    // skel->bss->my_pid = getpid();//保存静态或全局数据的BSS段
 
     err = minimal_bpf__load(skel);
     if (err)
     {
         fprintf(stderr, "Failed to load and verify BPF skeleton\n");
+        goto cleanup;
+    }
+
+    int index = 0;
+    int pid = getpid();
+    int mapfd = bpf_map__fd(skel->maps.my_pid_map);
+    err = bpf_map_update_elem(mapfd, &index, &pid, BPF_ANY);
+    if (err < 0)
+    {
+        fprintf(stderr, "Error updating map with pid: %s\n", strerror(err));
         goto cleanup;
     }
 
