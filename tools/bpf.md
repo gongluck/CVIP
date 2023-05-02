@@ -150,6 +150,14 @@ apt-get install bpfcc-tools linux-headers-$(uname -r)
 
 ### libbpf
 
+```bash
+# 编译源码
+git clone https://github.com/libbpf/libbpf.git
+cd libbpf/src/
+make -j 8
+make install DESTDIR=/
+```
+
 - [样例代码](../code/ebpf/libbpf)
 - libbpf 是从内核中抽离出来的标准库，用它开发的 eBPF 程序可以直接分发执行，不需要每台机器都安装 LLVM 和内核头文件。
 - libbpf 要求内核开启 BTF 特性，需要非常新的发行版才会默认开启（如 RHEL 8.2+ 和 Ubuntu 20.10+ 等）。
