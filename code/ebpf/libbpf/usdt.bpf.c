@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-05-03 01:44:56
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-03 21:54:10
+ * @Last Modified time: 2023-05-03 22:06:09
  */
 
 /*
@@ -19,6 +19,7 @@ bpftool gen skeleton usdt.bpf.obj.o > usdt.skel.h
 
 pid_t my_pid;
 
+// https://www.gnu.org/software/libc/manual/html_node/Non_002dlocal-Goto-Probes.html
 SEC("usdt/libc.so.6:libc:setjmp")
 int BPF_USDT(usdt_auto_attach, void *arg1, int arg2, void *arg3)
 {
