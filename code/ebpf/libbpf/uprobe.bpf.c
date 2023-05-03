@@ -5,7 +5,7 @@
  * @Last Modified time: 2023-05-03 00:49:14
  */
 
-// clang -target bpf -g -O2 -D __TARGET_ARCH_x86 -c uprobe.bpf.c -o uprobe.bpf.o
+// clang -target bpf -g -O2 -D __TARGET_ARCH_x86 -I /usr/include/x86_64-linux-gnu/ -c uprobe.bpf.c -o uprobe.bpf.o
 // bpftool gen skeleton uprobe.bpf.o > uprobe.skel.h
 
 #include <linux/bpf.h>

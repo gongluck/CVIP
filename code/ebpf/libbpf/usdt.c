@@ -1,9 +1,13 @@
 /*
  * @Author: gongluck
  * @Date: 2023-05-03 01:46:01
- * @Last Modified by:   gongluck
- * @Last Modified time: 2023-05-03 01:46:01
+ * @Last Modified by: gongluck
+ * @Last Modified time: 2023-05-03 21:55:40
  */
+
+/*
+gcc -g usdt.c -L /usr/lib64 -l:libbpf.a -lelf -lz -o usdt
+*/
 
 #include <signal.h>
 #include <unistd.h>
@@ -31,12 +35,12 @@ static void usdt_trigger()
 
 int main(int argc, char **argv)
 {
-    struct usdt_bpf *skel;
+    struct usdt_bpf_obj *skel;
     int err;
 
     libbpf_set_print(libbpf_print_fn);
 
-    skel = usdt_bpf__open();
+    skel = usdt_bpf_obj__open();
     if (!skel)
     {
         fprintf(stderr, "Failed to open BPF skeleton\n");
@@ -45,19 +49,16 @@ int main(int argc, char **argv)
 
     skel->bss->my_pid = getpid();
 
-    err = usdt_bpf__load(skel);
+    err = usdt_bpf_obj__load(skel);
     if (!skel)
     {
         fprintf(stderr, "Failed to load BPF skeleton\n");
         return 1;
     }
 
-    /*
-     * Manually attach to libc.so we find.
-     * We specify pid here, so we don't have to do pid filtering in BPF program.
-     */
     skel->links.usdt_manual_attach = bpf_program__attach_usdt(skel->progs.usdt_manual_attach, getpid(),
-                                                              "libc.so.6", "libc", "setjmp", NULL);
+                                                              "libc.so.6", "libc", "setjmp", // usdt/libc.so.6:libc:setjmp
+                                                              NULL);
     if (!skel->links.usdt_manual_attach)
     {
         err = errno;
@@ -65,11 +66,7 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    /*
-     * Auto attach by libbpf, libbpf should be able to find libc.so in your system.
-     * By default, auto attach does NOT specify pid, so we do pid filtering in BPF program
-     */
-    err = usdt_bpf__attach(skel);
+    err = usdt_bpf_obj__attach(skel);
     if (err)
     {
         fprintf(stderr, "Failed to attach BPF skeleton\n");
@@ -88,13 +85,12 @@ int main(int argc, char **argv)
 
     while (!exiting)
     {
-        /* trigger our BPF programs */
-        usdt_trigger();
         fprintf(stderr, ".");
+        usdt_trigger();
         sleep(1);
     }
 
 cleanup:
-    usdt_bpf__destroy(skel);
+    usdt_bpf_obj__destroy(skel);
     return -err;
 }

@@ -151,6 +151,7 @@ apt-get install bpfcc-tools linux-headers-$(uname -r)
 ### libbpf
 
 ```bash
+apt install make gcc libelf-dev pkg-config
 # 编译源码
 git clone https://github.com/libbpf/libbpf.git
 cd libbpf/src/
