@@ -44,3 +44,7 @@ build
 # redis
 *.rdb
 nodes.conf
+
+# ebpf
+vmlinux.h
+*.skel.h

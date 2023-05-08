@@ -8,6 +8,7 @@
     - [perf](#perf)
     - [bpftrace](#bpftrace)
   - [BPF 开发和执行](#bpf-开发和执行)
+    - [安装内核头文件和工具](#安装内核头文件和工具)
     - [编译 BPF 模块](#编译-bpf-模块)
     - [加载/卸载 BPF 模块](#加载卸载-bpf-模块)
     - [绑定/解绑 BPF 模块到事件](#绑定解绑-bpf-模块到事件)
@@ -75,6 +76,13 @@ bpftrace -lv [tracepoint/kprobe/kretprobe/usdt/uprobe/uretprobe/*:...:...]
 - 内核把所有函数以及非栈变量的地址都抽取到了 `/proc/kallsyms` 中，这样调试器就可以根据地址找出对应的函数和变量名称。
 - 内核调试文件系统向用户空间提供了内核调试所需的基本信息，如内核符号列表、跟踪点、函数跟踪（ftrace）状态以及参数格式等。在终端中执行 `ls -lh /sys/kernel/debug` 来查询内核调试文件系统的具体信息。可以从 `/sys/kernel/debug/tracing` 中找到所有内核预定义的跟踪点，进而可以在需要时把 eBPF 程序挂载到对应的跟踪点。
 - 在内核插桩和跟踪点两者都可用的情况下，应该选择更稳定的跟踪点，以保证 eBPF 程序的可移植性。
+
+### 安装内核头文件和工具
+
+```bash
+apt install linux-headers-$(uname -r)
+apt install linux-tools-common linux-tools-generic
+```
 
 ### 编译 BPF 模块
 
@@ -256,17 +264,17 @@ bpftool feature probe | grep program_type
 
 ```bash
 # 编译 XDP 程序
-clang -O2 -target bpf -c drop_world.c -o drop_world.o
+clang -O2 -target bpf -c [xdp.bpf.c] -o [xdp.bpf.o]
 # 加载 XDP 程序
-ip link set dev lo xdp obj drop_world.o sec xdp verbose
+ip link set dev [lo] [xdp/xdpgeneric] obj [xdp.bpf.o] sec [xdp]
 # 显示程序列表
-bpftool net list dev lo
-ip link show dev lo
+bpftool net list dev [lo]
+ip link show dev [lo]
 # 卸载 XDP 程序
-ip link set dev lo xdp off
+ip link set dev [lo] [xdp/xdpgeneric] off
 ```
 
-- [样例代码](../code/ebpf/xdp)
+- [样例代码](../code/ebpf/libbpf/xdp)
 - 当前主流内核版本的 Linux 系统在加载 XDP BPF 程序时，会自动在 native 和 generic 这两种模式选择，完成加载后，可以使用 ip 命令行工具来查看选择的模式。
 
 ### TC
