@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:29:30
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-08 11:51:56
+ * @Last Modified time: 2023-05-09 18:27:44
  */
 
 /*
@@ -32,7 +32,6 @@ int main(int argc, char **argv)
     int ret = 0;
     int ifindex = -1;
     int fd = bpf_obj_get(XDPMAPFILE "/xdp_stats_map");
-    fprintf(stderr, "%d\n", fd);
     CHECKGOTO((fd >= 0), true, cleanup);
 
     struct bpf_map_info info;
@@ -40,34 +39,55 @@ int main(int argc, char **argv)
     ret = bpf_obj_get_info_by_fd(fd, &info, &size);
     CHECKGOTO(ret, 0, cleanup);
 
-    fprintf(stderr, "name : %s\ntype : %d\nkeysize : %d\nvaluesize : %d\nmaxentries : %d\n", info.name, info.type, info.key_size, info.value_size, info.max_entries);
+    fprintf(stdout, "mapinfo : \n name : %s\n type : %d\n keysize : %d\n valuesize : %d\n maxentries : %d\n", info.name, info.type, info.key_size, info.value_size, info.max_entries);
+
+    // cpu counts
+    unsigned int start, end, cpus = 0;
+    char buff[128];
+    FILE *fp = fopen("/sys/devices/system/cpu/possible", "r");
+    CHECKGOTO((fp != NULL), true, cleanup);
+    fgets(buff, sizeof(buff), fp);
+    sscanf(buff, "%u-%u", &start, &end);
+    cpus = start == 0 ? end + 1 : 0;
+    fclose(fp);
+    fprintf(stdout, "cpus : %d\n", cpus);
 
     __u32 key = XDP_PASS;
     struct xdp_struct lastvalue = {0};
     struct xdp_struct value;
+    struct xdp_struct values[100] = {0};
     time_t lastime = time(NULL);
     time_t now;
     while (true)
     {
+        now = time(NULL);
         switch (MAPTYPE)
         {
         case BPF_MAP_TYPE_ARRAY:
             ret = bpf_map_lookup_elem(fd, &key, &value);
-            now = time(NULL);
-            if (now - lastime >= 1)
-            {
-                if (lastvalue.rx_bytes != 0 && lastvalue.rx_packets != 0)
-                {
-                    fprintf(stderr, "%lfKB/s : %lfpkg/s\n", (value.rx_bytes - lastvalue.rx_bytes) / (1024.0 * sleeptime), (double)(value.rx_packets - lastvalue.rx_packets) / sleeptime);
-                }
-                lastime = now;
-                lastvalue = value;
-            }
             break;
         case BPF_MAP_TYPE_PERCPU_ARRAY:
+            value.rx_packets = 0;
+            value.rx_bytes = 0;
+            ret = bpf_map_lookup_elem(fd, &key, values);
+            for (int i = 0; i < cpus; i++)
+            {
+                value.rx_packets += values[i].rx_packets;
+                value.rx_bytes += values[i].rx_bytes;
+            }
             break;
         default:
             break;
+        }
+
+        if (now - lastime >= 1)
+        {
+            if (lastvalue.rx_bytes != 0 && lastvalue.rx_packets != 0)
+            {
+                fprintf(stdout, "%lf KiB/s : %lf pkg/s\n", (value.rx_bytes - lastvalue.rx_bytes) / (1024.0 * sleeptime), (double)(value.rx_packets - lastvalue.rx_packets) / sleeptime);
+            }
+            lastime = now;
+            lastvalue = value;
         }
         sleep(sleeptime);
     }

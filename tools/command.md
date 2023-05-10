@@ -670,6 +670,10 @@ Report virtual memory statistics
 ### iptables
 
 ```bash
+# vi /etc/sysctl.conf
+# 开启转发
+# net.ipv4.ip_forward = 1
+# sysctl -p
 sudo iptables -F -t nat
 sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 192.168.1.1:80
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE

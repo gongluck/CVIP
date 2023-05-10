@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:29:30
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-08 11:51:56
+ * @Last Modified time: 2023-05-09 18:17:45
  */
 
 /*
@@ -14,7 +14,8 @@ gcc -g xdp.unload.c -L /usr/lib64 -l:libbpf.a -lelf -lz -o xdp_unloader
 #include <errno.h>
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
-
+#include <net/if.h>
+#include <linux/if_link.h>
 #include "xdp.struct.h"
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
@@ -44,10 +45,12 @@ int main(int argc, char **argv)
     CHECKGOTO(ret, 0, cleanup);
 
     printf("Successfully\n");
-    return 0;
+    goto close;
 
 cleanup:
     fprintf(stderr, "cleanup\n");
+
+close:
     if (bpfobj != NULL)
     {
         bpf_object__close(bpfobj);
