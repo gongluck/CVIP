@@ -207,7 +207,7 @@ struct bpf_map_def SEC("maps") my_bpf_map = {
   .map_flags   = BPF_F_NO_PREALLOC,
 };
 
-// 查看 /tools/lib/bpf/bpf.h 定义的辅助函数
+// 查看 bpf.h 中定义的 bpf_map_* 辅助函数
 
 // 使用 bpftool 查看BPF Map信息
 bpftool map list
@@ -279,7 +279,7 @@ ip link set dev [lo] [xdp/xdpgeneric] off
 
 ### TC
 
-- [样例代码](../code/ebpf/tc)
+- [样例代码](../code/ebpf/libbpf/tc)
 
 ```bash
 # 编译TC程序
