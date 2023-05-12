@@ -7,7 +7,7 @@
 
 #include <linux/bpf.h>
 
-#define DEVNAME "lo"
+#define DEVNAME "eth0"
 #define MAPTYPE /*BPF_MAP_TYPE_ARRAY*/ BPF_MAP_TYPE_PERCPU_ARRAY
 #define XDPFLAGS (XDP_FLAGS_UPDATE_IF_NOEXIST | XDP_FLAGS_SKB_MODE)
 #define XDPMAPFILE "/sys/fs/bpf/pining_map"
