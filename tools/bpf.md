@@ -264,8 +264,8 @@ bpftool feature probe | grep program_type
 
 ```bash
 # 编译 XDP 程序
-clang -O2 -target bpf -c [xdp.bpf.c] -o [xdp.bpf.o]
-# 加载 XDP 程序
+clang -target bpf -g -O2 [-D __x86_64__ -D __TARGET_ARCH_x86 -I /usr/include/x86_64-linux-gnu/] -c [xdp.bpf.c] -o [xdp.bpf.o]
+# 加载链接 XDP 程序
 ip link set dev [lo] [xdp/xdpgeneric] obj [xdp.bpf.o] sec [xdp]
 # 显示程序列表
 bpftool net list dev [lo]

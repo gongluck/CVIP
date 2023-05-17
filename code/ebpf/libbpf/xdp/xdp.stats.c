@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:29:30
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-09 18:27:44
+ * @Last Modified time: 2023-05-17 18:30:55
  */
 
 /*
@@ -32,12 +32,12 @@ int main(int argc, char **argv)
     int ret = 0;
     int ifindex = -1;
     int fd = bpf_obj_get(XDPMAPFILE "/xdp_stats_map");
-    CHECKGOTO((fd >= 0), true, cleanup);
+    CHECKGOTO((fd >= 0), cleanup);
 
     struct bpf_map_info info;
     unsigned int size = sizeof(info);
     ret = bpf_obj_get_info_by_fd(fd, &info, &size);
-    CHECKGOTO(ret, 0, cleanup);
+    CHECKGOTO((ret == 0), cleanup);
 
     fprintf(stdout, "mapinfo : \n name : %s\n type : %d\n keysize : %d\n valuesize : %d\n maxentries : %d\n", info.name, info.type, info.key_size, info.value_size, info.max_entries);
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     unsigned int start, end, cpus = 0;
     char buff[128];
     FILE *fp = fopen("/sys/devices/system/cpu/possible", "r");
-    CHECKGOTO((fp != NULL), true, cleanup);
+    CHECKGOTO((fp != NULL), cleanup);
     fgets(buff, sizeof(buff), fp);
     sscanf(buff, "%u-%u", &start, &end);
     cpus = start == 0 ? end + 1 : 0;

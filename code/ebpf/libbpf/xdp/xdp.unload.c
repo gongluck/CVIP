@@ -2,21 +2,18 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:29:30
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-09 18:17:45
+ * @Last Modified time: 2023-05-16 23:31:14
  */
 
 /*
 gcc -g xdp.unload.c -L /usr/lib64 -l:libbpf.a -lelf -lz -o xdp_unloader
 */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
-#include <net/if.h>
-#include <linux/if_link.h>
+#include "xdp.skel.h"
 #include "xdp.struct.h"
+
+#include <net/if.h>        //if_nametoindex
+#include <linux/if_link.h> //XDP_FLAGS_SKB_MODE
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
 {
@@ -28,21 +25,21 @@ int main(int argc, char **argv)
     libbpf_set_print(libbpf_print_fn);
 
     int ret = 0;
-    int ifindex = -1;
-    struct bpf_object *bpfobj = bpf_object__open("xdp.bpf.o");
-    CHECKGOTO((bpfobj != NULL), true, cleanup);
 
-    ret = bpf_object__load(bpfobj);
-    CHECKGOTO(ret, 0, cleanup);
+    struct xdp_bpf *skel = xdp_bpf__open();
+    CHECKGOTO((skel != NULL), cleanup);
 
-    ifindex = if_nametoindex(DEVNAME);
+    ret = xdp_bpf__load(skel);
+    CHECKGOTO((ret == 0), cleanup);
+
+    int ifindex = if_nametoindex(DEVNAME);
     fprintf(stderr, "ifindex : %d\n", ifindex);
 
-    ret = bpf_object__unpin_maps(bpfobj, XDPMAPFILE);
-    CHECKGOTO(ret, 0, cleanup);
-
     ret = bpf_xdp_detach(ifindex, XDPFLAGS, NULL);
-    CHECKGOTO(ret, 0, cleanup);
+    CHECKGOTO((ret == 0), cleanup);
+
+    ret = bpf_object__unpin_maps(skel->obj, XDPMAPFILE);
+    CHECKGOTO((ret == 0), cleanup);
 
     printf("Successfully\n");
     goto close;
@@ -51,10 +48,10 @@ cleanup:
     fprintf(stderr, "cleanup\n");
 
 close:
-    if (bpfobj != NULL)
+    if (skel != NULL)
     {
-        bpf_object__close(bpfobj);
-        bpfobj = NULL;
+        xdp_bpf__destroy(skel);
+        skel = NULL;
     }
     return 0;
 }

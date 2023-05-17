@@ -2,13 +2,12 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:35:21
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-08 11:39:52
+ * @Last Modified time: 2023-05-17 18:29:26
  */
 
 /*
-# bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 clang -target bpf -g -O2 -D __x86_64__ -D __TARGET_ARCH_x86 -I /usr/include/x86_64-linux-gnu/ -c xdp.bpf.c -o xdp.bpf.o
-# bpftool gen skeleton xdp.bpf.o > xdp.skel.h
+bpftool gen skeleton xdp.bpf.o > xdp.skel.h
 */
 
 #include <linux/bpf.h>
@@ -21,9 +20,25 @@ clang -target bpf -g -O2 -D __x86_64__ -D __TARGET_ARCH_x86 -I /usr/include/x86_
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <linux/icmp.h>
+
 #include "xdp.struct.h"
 
-struct bpf_map_def
+// extern
+unsigned char g_gataway_mac[ETH_ALEN] = {0xfa, 0x16, 0x3e, 0xff, 0x8b, 0xd5}; // route -n && arp 192.168.0.1
+unsigned char g_local_mac[ETH_ALEN] = {0xfa, 0x16, 0x3e, 0xb0, 0x08, 0xb5};	  // ifconfig
+__u32 g_server_ip = bpf_htonl(0x0e7768fe);									  // baidu 14.119.104.189
+__u32 g_local_ip = bpf_htonl(0xc0a800ad);									  // 192.168.0.173
+int g_show_trace = 0;
+
+#define showtrace(fmt, args...)                    \
+	do                                             \
+	{                                              \
+		if (g_show_trace != 0)                     \
+			___bpf_pick_printk(args)(fmt, ##args); \
+	} while (0)
+
+// 数据统计
+struct xdp_stats_map
 {
 	__uint(type, MAPTYPE);
 	__uint(key_size, sizeof(__u32));
@@ -31,199 +46,257 @@ struct bpf_map_def
 	__uint(max_entries, XDP_REDIRECT + 1);
 } xdp_stats_map SEC(".maps");
 
-static __always_inline int parse_eth(struct ethhdr *eth)
+// 客户端信息
+struct xdp_client_map
 {
-	switch (bpf_htons(eth->h_proto))
-	{
-	case ETH_P_IP: // bpf_printk("eth type : ETH_P_IP\n");
-		break;
-	case ETH_P_IPV6: // bpf_printk("eth type : ETH_P_IPV6\n");
-		break;
-	default:
-		bpf_printk("eth type : 0x%04x\n", bpf_htons(eth->h_proto));
-		break;
-	}
-	return eth->h_proto;
+	__uint(type, BPF_MAP_TYPE_LRU_HASH);
+	__type(key, __u32);
+	__type(value, __u32);
+	__uint(max_entries, 65535);
+} xdp_client_map SEC(".maps");
+
+/*											check packet data avaliable												*/
+
+#define check_header_fix(headertype, data, data_end, offset, pvalue)                           \
+	BPFCHECKGOTO(((data + offset) + sizeof(headertype)) < data_end, define_check_udp_fix_out); \
+	pvalue = data + offset;                                                                    \
+	define_check_udp_fix_out:
+
+// for ehthdr
+static __always_inline struct ethhdr *check_ethhdr_fix(void *data, void *data_end, unsigned int offset)
+{
+	struct ethhdr *eth = NULL;
+	check_header_fix(struct ethhdr, data, data_end, offset, eth);
+	return eth;
 }
 
-static __always_inline int parse_ipaddr(__u32 addr)
+// for iphdr
+static __always_inline struct iphdr *check_ipv4_fix(void *data, void *data_end, unsigned int offset)
 {
-	bpf_printk("0x%04x\n", bpf_ntohl(addr));
+	struct iphdr *ipv4 = NULL;
+	check_header_fix(struct iphdr, data, data_end, offset, ipv4);
+	return ipv4;
+}
+
+// for icmphdr
+static __always_inline struct icmphdr *check_icmp_fix(void *data, void *data_end, unsigned int offset)
+{
+	struct icmphdr *icmp = NULL;
+	check_header_fix(struct icmphdr, data, data_end, offset, icmp);
+	return icmp;
+}
+
+// for udphdr
+static __always_inline struct udphdr *check_udp_fix(void *data, void *data_end, unsigned int offset)
+{
+	struct udphdr *udp = NULL;
+	check_header_fix(struct udphdr, data, data_end, offset, udp);
+	return udp;
+}
+
+// dump data
+static __always_inline int dump_data(void *data, unsigned int len)
+{
+	for (unsigned int i = 0; i < len; ++i)
+	{
+		bpf_printk("0x%02x", ((unsigned char *)data)[i]);
+	}
+
 	return 0;
 }
 
-static __always_inline __u16 icmp_checksum_diff(struct icmphdr *icmp)
+/*											checksum											*/
+static __always_inline __u32 make_checksum_from(__u32 n)
 {
-	__sum16 old_csum = icmp->checksum;
-	icmp->checksum = 0;
+	return (n >> 16) + (n & 0xFFFF);
+}
+static __always_inline __u16 make_checksum_from32(__u32 n)
+{
+	return make_checksum_from(make_checksum_from(n));
+}
+
+// create icmp echo reply
+static __always_inline int icmp_reply(struct ethhdr *eth, struct iphdr *ipv4, struct icmphdr *icmp)
+{
+	// swap mac
+	SWAPDATA(eth->h_source, eth->h_dest, unsigned char, ETH_ALEN);
+
+	__sum16 old_csum = ipv4->check;
+	ipv4->check = 0;
+	struct iphdr ipv4_old = *ipv4;
+
+	// swap ip
+	SWAPDATA(ipv4->saddr, ipv4->daddr, __be32, 1);
+
+	__u32 csum = bpf_csum_diff((__be32 *)&ipv4_old, sizeof(ipv4_old), (__be32 *)ipv4, sizeof(*ipv4), ~old_csum /*取反操作还原成原累加数*/);
+	ipv4->check = ~make_checksum_from32(csum);
+
+	old_csum = icmp->checksum;
+	icmp->checksum = 0; // 在计算校验和时，需要将 ICMP 头部中的 checksum 字段置为 0，以免影响校验和的计算。
 	struct icmphdr icmp_old = *icmp;
-	icmp->type = ICMP_ECHOREPLY;
+	icmp->type = ICMP_ECHOREPLY; // 修改icmp的type
 
-	__u32 csum = bpf_csum_diff((__be32 *)&icmp_old, sizeof(icmp_old), (__be32 *)icmp, sizeof(*icmp), ~old_csum);
-	__u32 sum = (csum >> 16) + (csum & 0xffff);
-	sum += (sum >> 16);
-	return ~sum;
+	// csum = (diff = newsum - oldsum) + oldsum = newsum
+	csum = bpf_csum_diff((__be32 *)&icmp_old, sizeof(icmp_old), (__be32 *)icmp, sizeof(*icmp), ~old_csum /*取反操作还原成原累加数*/);
+	icmp->checksum = ~make_checksum_from32(csum);
+
+	return 0;
 }
 
-static __always_inline int parse_ipv4(struct iphdr *ip)
+static __always_inline int icmp_request_server(struct ethhdr *eth, struct iphdr *ipv4, struct icmphdr *icmp, unsigned int size)
 {
-	switch (ip->protocol)
-	{
-	case IPPROTO_TCP: // bpf_printk("ip type : IPPROTO_TCP\n");
-		break;
-	case IPPROTO_UDP: // bpf_printk("ip type : IPPROTO_UDP\n");
-		break;
-	case IPPROTO_ICMP: // bpf_printk("ip type : IPPROTO_ICMP\n");
-		break;
-	default:
-		bpf_printk("ip type : 0x%04x\n", ip->protocol);
-		break;
-	}
-	return ip->protocol;
+	// swap mac
+	COPYDATA(eth->h_source, g_local_mac, unsigned char, ETH_ALEN);
+	COPYDATA(eth->h_dest, g_gataway_mac, unsigned char, ETH_ALEN);
+
+	__sum16 old_csum = ipv4->check;
+	ipv4->check = 0; // 在计算校验和时，需要将 IP 头部中的 check 字段置为 0，以免影响校验和的计算。
+	struct iphdr ipv4_old = *ipv4;
+
+	// swap ip
+	COPYDATA(ipv4->saddr, g_local_ip, __be32, 1);  // dst(myself) -> src
+	COPYDATA(ipv4->daddr, g_server_ip, __be32, 1); // baidu -> dst
+
+	// ipv4->ttl -= 1;
+
+	// csum = (diff = newsum - oldsum) + oldsum = newsum
+	__u32 csum = bpf_csum_diff((__be32 *)&ipv4_old, sizeof(ipv4_old), (__be32 *)ipv4, sizeof(*ipv4), ~old_csum /*取反操作还原成原累加数*/);
+	ipv4->check = ~make_checksum_from32(csum);
+
+	return 0;
 }
 
-static __always_inline int parse_icmp(struct icmphdr *icmp)
+static __always_inline int icmp_reply_server(struct ethhdr *eth, struct iphdr *ipv4, __u32 client_addr)
 {
-	switch (icmp->type)
-	{
-	case ICMP_ECHOREPLY: // bpf_printk("icmp type : ICMP_ECHOREPLY\n");
-		break;
-	case ICMP_ECHO: // bpf_printk("icmp type : ICMP_ECHO\n");
-		break;
-	default:
-		bpf_printk("icmp type : 0x%02x\n", icmp->type);
-		break;
-	}
-	return icmp->type;
+	// swap mac
+	COPYDATA(eth->h_source, g_local_mac, unsigned char, ETH_ALEN);
+	COPYDATA(eth->h_dest, g_gataway_mac, unsigned char, ETH_ALEN);
+
+	__sum16 old_csum = ipv4->check;
+	ipv4->check = 0; // 在计算校验和时，需要将 IP 头部中的 check 字段置为 0，以免影响校验和的计算。
+	struct iphdr ipv4_old = *ipv4;
+
+	// swap ip
+	COPYDATA(ipv4->saddr, g_local_ip, __be32, 1);  // dst(myself) -> src
+	COPYDATA(ipv4->daddr, client_addr, __be32, 1); // baidu -> dst
+
+	// ipv4->ttl -= 1;
+
+	// csum = (diff = newsum - oldsum) + oldsum = newsum
+	__u32 csum = bpf_csum_diff((__be32 *)&ipv4_old, sizeof(ipv4_old), (__be32 *)ipv4, sizeof(*ipv4), ~old_csum /*取反操作还原成原累加数*/);
+	ipv4->check = ~make_checksum_from32(csum);
+
+	return 0;
 }
 
 SEC("xdp")
 int xdp_pass_func(struct xdp_md *ctx)
 {
 	// bpf_printk("pass");
+
+	int ret = 0;
+
 	int action = XDP_PASS;
-	void *data_end = (void *)(long)ctx->data_end;
+	struct xdp_struct *value = NULL;
+
+	__u32 client_identify = 0;
+	__u32 *client_addr = 0;
+
 	void *data = (void *)(long)ctx->data;
-	int size = ctx->data_end - ctx->data;
-	int protocol = -1;
-	int hdrsize = 0;
+	void *data_end = (void *)(long)ctx->data_end;
+	__u64 size = data_end - data;
+
+	// parse packet
 
 	do
 	{
-		// parse packet
-		struct ethhdr *eth = data;
-		hdrsize = sizeof(*eth);
-		if ((void *)(eth + 1) > data_end)
+		struct ethhdr *eth = check_ethhdr_fix(data, data_end, 0);
+		BPFCHECKGOTO((eth != NULL), out);
+
+		switch (bpf_ntohs(eth->h_proto))
 		{
-			bpf_printk("not eth");
-		}
-		else
+		case ETH_P_IP:
 		{
-			protocol = parse_eth(eth);
-			if (bpf_htons(protocol) == ETH_P_IP)
+			struct iphdr *ipv4 = check_ipv4_fix(data, data_end, sizeof(*eth));
+			BPFCHECKGOTO((ipv4 != NULL), out);
+			switch (ipv4->protocol)
 			{
-				struct iphdr *ipv4 = (void *)(eth + 1);
-				if ((void *)(ipv4 + 1) > data_end)
+			case IPPROTO_TCP:
+				break;
+			case IPPROTO_UDP:
+			{
+				struct udphdr *udp = check_udp_fix(data, data_end, sizeof(*eth) + ipv4->ihl * 4);
+				BPFCHECKGOTO((udp != NULL), out);
+			}
+			break;
+			case IPPROTO_ICMP:
+			{
+				struct icmphdr *icmp = check_icmp_fix(data, data_end, sizeof(*eth) + ipv4->ihl * 4);
+				BPFCHECKGOTO((icmp != NULL), out);
+				// bpf_printk("data :");
+				// dump_data(eth, sizeof(struct ethhdr));
+				// dump_data(ipv4, sizeof(struct iphdr));
+				// dump_data(icmp, sizeof(struct icmphdr));
+				switch (icmp->type)
 				{
-					bpf_printk("not ipv4");
+				case ICMP_ECHO:
+				{
+					showtrace("icmp echo id : %d, seq : %d", bpf_ntohs(icmp->un.echo.id), bpf_ntohs(icmp->un.echo.sequence));
+
+					// icmp_reply(eth, ipv4, icmp);
+
+					COPYDATA(client_identify, icmp->un.reserved, __u8, sizeof(client_identify));
+					showtrace("identify : 0x%04x", client_identify);
+					showtrace("client_addr : 0x%04x", ipv4->saddr);
+					ret = bpf_map_update_elem(&xdp_client_map, &client_identify, &ipv4->saddr, BPF_ANY);
+					BPFCHECKGOTO((ret == 0), out);
+
+					icmp_request_server(eth, ipv4, icmp, size);
+
+					action = XDP_TX;
 				}
-				else
+				break;
+				case ICMP_ECHOREPLY:
 				{
-					hdrsize = ipv4->ihl /*4位首部长度*/ * 4;
-					if (hdrsize < sizeof(*ipv4))
+					showtrace("icmp echoreply id : %d, seq : %d", bpf_ntohs(icmp->un.echo.id), bpf_ntohs(icmp->un.echo.sequence));
+
+					COPYDATA(client_identify, icmp->un.reserved, __u8, sizeof(client_identify));
+					showtrace("identify : 0x%04x", client_identify);
+					client_addr = bpf_map_lookup_elem(&xdp_client_map, &client_identify);
+					if (client_addr == NULL)
 					{
-						bpf_printk("ipv4 size error %d < %d\n", hdrsize, sizeof(*ipv4));
+						bpf_printk("identify(%d-%d) : 0x%04x not found\n", bpf_ntohs(icmp->un.echo.id), bpf_ntohs(icmp->un.echo.sequence), client_identify);
 					}
-					else
-					{
-						protocol = parse_ipv4(ipv4);
-						if (protocol == IPPROTO_TCP)
-						{
-							struct tcphdr *tcp = (void *)(ipv4 + 1);
-							if ((void *)(tcp + 1) > data_end)
-							{
-								bpf_printk("not tcp");
-							}
-							else
-							{
-								hdrsize = tcp->doff /*头偏移，32位单位*/ * 4;
-								if (hdrsize < sizeof(*tcp))
-								{
-									bpf_printk("tcp size error %d < %d\n", hdrsize, sizeof(*tcp));
-								}
-								else
-								{
-									// bpf_printk("tcp all size : %ld\n", size);
-								}
-							}
-						}
-						else if (protocol == IPPROTO_UDP)
-						{
-							struct udphdr *udp = (void *)(ipv4 + 1);
-							if ((void *)(udp + 1) > data_end)
-							{
-								bpf_printk("not udp");
-							}
-							else
-							{
-								hdrsize = bpf_ntohs(udp->len);
-								if (hdrsize < sizeof(*udp))
-								{
-									bpf_printk("udp size error %d < %d\n", hdrsize, sizeof(*udp));
-								}
-								else
-								{
-									// bpf_printk("udp data size : %ld\n", bpf_ntohs(udp->len));
-								}
-							}
-						}
-						else if (protocol == IPPROTO_ICMP)
-						{
-							struct icmphdr *icmp = (void *)(ipv4 + 1);
-							if ((void *)(icmp + 1) > data_end)
-							{
-								bpf_printk("not icmp");
-							}
-							else
-							{
-								protocol = parse_icmp(icmp);
-								if (protocol == ICMP_ECHO)
-								{
-									// bpf_printk("src addr ");
-									// parse_ipaddr(ipv4->saddr);
-									// bpf_printk("icmp echo id : %d, seq : %d\n", icmp->un.echo.id, bpf_ntohs(icmp->un.echo.sequence));
-									// if (bpf_ntohs(icmp->un.echo.sequence) % 10 != 0)
-									// {
-									// 	action = XDP_DROP;
-									// }
+					BPFCHECKGOTO((client_addr != NULL), out);
+					showtrace("client_addr : 0x%04x", *client_addr);
 
-									// swap mac
-									__u8 h_tmp[ETH_ALEN];
-									__builtin_memcpy(h_tmp, eth->h_source, ETH_ALEN);
-									__builtin_memcpy(eth->h_source, eth->h_dest, ETH_ALEN);
-									__builtin_memcpy(eth->h_dest, h_tmp, ETH_ALEN);
+					icmp_reply_server(eth, ipv4, *client_addr);
 
-									// swap ip
-									__be32 tmp = ipv4->saddr;
-									ipv4->saddr = ipv4->daddr;
-									ipv4->daddr = tmp;
-
-									// calc checksum
-									icmp->checksum = icmp_checksum_diff(icmp);
-
-									bpf_printk("icmp echo id : %d, seq : %d\n", icmp->un.echo.id, bpf_ntohs(icmp->un.echo.sequence));
-									action = XDP_TX;
-								}
-							}
-						}
-					}
+					action = XDP_TX;
+				}
+				break;
+				default:
+					showtrace("unhandle icmp type : 0x%02x\n", icmp->type);
+					break;
 				}
 			}
+			break;
+			default:
+				showtrace("unhandle ipv4 type : 0x%02x\n", ipv4->protocol);
+				break;
+			}
+		}
+		break;
+		default:
+			showtrace("unhandle eth type : 0x%04x\n", bpf_ntohs(eth->h_proto));
+			break;
 		}
 	} while (0);
 
-	__u32 key = XDP_PASS;
-	struct xdp_struct *value = bpf_map_lookup_elem(&xdp_stats_map, &key);
+out:
+
+	// data report
+	value = bpf_map_lookup_elem(&xdp_stats_map, &action);
 	if (value == NULL)
 	{
 		return XDP_ABORTED;
