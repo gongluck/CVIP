@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:29:30
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-17 18:30:55
+ * @Last Modified time: 2023-05-18 15:30:59
  */
 
 /*
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     fclose(fp);
     fprintf(stdout, "cpus : %d\n", cpus);
 
-    __u32 key = XDP_PASS;
+    __u32 key = XDP_TX;
     struct xdp_struct lastvalue = {0};
     struct xdp_struct value;
     struct xdp_struct values[100] = {0};

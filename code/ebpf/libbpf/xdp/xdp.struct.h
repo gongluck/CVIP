@@ -2,7 +2,7 @@
  * @Author: gongluck
  * @Date: 2023-05-08 11:32:51
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-17 18:21:49
+ * @Last Modified time: 2023-05-18 11:39:05
  */
 
 #include <linux/bpf.h>
@@ -40,6 +40,32 @@
 		COPYDATA(l, r, etype, ecount);   \
 		COPYDATA(r, tmp, etype, ecount); \
 	}
+
+/*
+ 0      7 8     15 16    23 24    31
++--------+--------+--------+--------+
+|          Source IP Address        |
++--------+--------+--------+--------+
+|        Destination IP Address     |
++--------+--------+--------+--------+
+|  zero  |  Protocol|    Length     |
++--------+--------+--------+--------+
+|                                   |
+|        UDP Packet (including      |
+|             UDP header)           |
+|                                   |
++-----------------------------------+
+*/
+
+// TCP/UDP伪首部
+struct pseudo_hdr
+{
+	__u32 src;
+	__u32 dst;
+	__u8 zero;
+	__u8 protocol;
+	__u16 len;
+} pseudo_hdr;
 
 // 数据统计结构
 struct xdp_struct

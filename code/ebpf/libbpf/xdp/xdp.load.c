@@ -2,15 +2,15 @@
  * @Author: gongluck
  * @Date: 2023-05-03 22:29:30
  * @Last Modified by: gongluck
- * @Last Modified time: 2023-05-16 23:26:54
+ * @Last Modified time: 2023-05-18 11:44:58
  */
 
 /*
 gcc -g xdp.load.c -L /usr/lib64 -l:libbpf.a -lelf -lz -o xdp_loader
 */
 
-#include "xdp.skel.h"
 #include "xdp.struct.h"
+#include "xdp.skel.h"
 
 #include <net/if.h>        //if_nametoindex
 #include <linux/if_link.h> //XDP_FLAGS_SKB_MODE
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     CHECKGOTO((skel != NULL), cleanup);
 
     // 加载前可以修改数据
-    skel->bss->g_show_trace = 1;
+    skel->bss->g_show_trace = 0;
     // skel->data->g_local_ip = 0x12345678;
 
     ret = xdp_bpf__load(skel);
