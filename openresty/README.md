@@ -8,6 +8,7 @@
   - [LuaJit](#luajit)
   - [NYI](#nyi)
   - [示例](#示例)
+  - [火焰图](#火焰图)
 
 
 ## 安装
@@ -73,3 +74,34 @@ luarocks search [...]
   ```
 
 ## [示例](../code/openresty)
+
+## 火焰图
+
+```bash
+# 编译openresty
+apt install -y systemtap-sdt-dev
+wget https://openresty.org/download/openresty-1.15.8.2.tar.gz
+tar zxvf openresty-1.15.8.2.tar.gz
+cd openresty-1.15.8.2
+# --without-luajit-gc64
+./configure --prefix=/usr/local/openresty --without-luajit-gc64 --with-pcre-jit --with-stream --with-http_v2_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --with-http_stub_status_module --with-http_realip_module --with-http_addition_module --with-http_auth_request_module --with-http_secure_link_module --with-http_random_index_module --with-http_gzip_static_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-threads --with-dtrace-probes --with-stream --with-http_ssl_module
+make
+make install
+```
+
+```bash
+# 安装系统符号
+wget http://ddebs.ubuntu.com/pool/main/l/linux/linux-image-unsigned-5.15.0-67-generic-dbgsym_5.15.0-67.74_amd64.ddeb
+sudo dpkg -i linux-image-unsigned-5.15.0-67-generic-dbgsym_5.15.0-67.74_amd64.ddeb
+# 安装依赖工具
+apt install systemtap -y
+git clone https://github.com/openresty/stapxx
+git clone https://github.com/openresty/openresty-systemtap-toolkit.git
+git clone https://github.com/brendangregg/FlameGraph.git
+export PATH=~/stapxx:~/FlameGraph:~/openresty-systemtap-toolkit:$PATH
+# 生成火焰图
+./stapxx/samples/lj-lua-stacks.sxx --arg time=10 --skip-badvars -x 741193 > tmp.bt
+fix-lua-bt tmp.bt > flame.bt
+stackcollapse-stap.pl flame.bt > flame.cbt
+flamegraph.pl --encoding="ISO-8859-1" --title="Lua-land on-CPU flamegraph" flame.cbt > flame.svg
+```

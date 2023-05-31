@@ -1,8 +1,11 @@
 -- upload.lua
 -- ==========================================
+
+-- curl -F 'file=@//tmp/test/file/test' http://localhost:8080/upload
+
 local upload = require "resty.upload"
 local cjson = require "cjson"
-local chunk_size = 4096
+local chunk_size = 40960
 local form, err = upload:new(chunk_size)
 
 if not form then
@@ -58,10 +61,10 @@ while true do
             local filename = get_file_name(value)
             if filename then
                 local fullpath = saveRootPath .. filename
-                if io.open(fullpath) then
-                    ngx.say("文件已存在")
-                    break
-                end
+                -- if io.open(fullpath) then
+                --     ngx.say("文件已存在")
+                --     break
+                -- end
 
                 fileToSave = io.open(fullpath, "w+")
                 if not fileToSave then
