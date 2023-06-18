@@ -45,6 +45,7 @@
   - [ ] [Linux 源码](./linux/linux.md)
 - [x] [计算机网络](./network/)
   - [x] [计算机网络基础](./network/basics.md)
+  - [x] [系统配置](./network/config.md)
   - [x] [IP](./network/ip.md)
   - [x] [TCP](./network/tcp.md)
   - [x] [UDP](./network/udp.md)
