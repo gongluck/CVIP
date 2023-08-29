@@ -37,10 +37,10 @@
   - [x] [调试](./cpp/debug.md)
   - [x] [汇编](./cpp/assembly.md)
   - [x] [C++对象模型](./cpp/objectmodel.md)
+- [x] [Go](./go/)
 - [ ] 开源库源码
   - [x] [STL 源码](./stl/)
   - [x] [Redis 源码](./redis/)
-  - [ ] [Go 源码]()
   - [ ] [xv6 源码](./linux/xv6.md)
   - [ ] [Linux 源码](./linux/linux.md)
 - [x] [计算机网络](./network/)
