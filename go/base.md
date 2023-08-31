@@ -20,6 +20,7 @@
     - [赢者为王](#赢者为王)
     - [并发的安全退出](#并发的安全退出)
     - [context 包](#context-包)
+  - [错误和异常](#错误和异常)
 
 ## 基础类型
 
@@ -783,3 +784,101 @@ func main() {
 ```
 
 当并发体超时或 main 主动停止工作者 Goroutine 时，每个工作者都可以安全退出。
+
+## 错误和异常
+
+在 Go 语言中，错误被认为是一种可以预期的结果；而异常则是一种非预期的结果，发生异常可能表示程序中存在 BUG 或发生了其它不可控的问题。Go 语言推荐使用 recover 函数将内部异常转为错误处理，这使得用户可以真正的关心业务相关的错误处理。
+
+Go 语言库的实现习惯: 即使在包内部使用了 panic，但是在导出函数时会被转化为明确的错误值。
+
+Go 语言中的错误是一种接口类型。接口信息中包含了原始类型和原始的值。只有当接口的类型和原始的值都为空的时候，接口的值才对应 nil。其实当接口中类型为空的时候，原始值必然也是空的；反之，当接口对应的原始值为空的时候，接口对应的原始类型并不一定为空的。
+
+在下面的例子中，试图返回自定义的错误类型，当没有错误的时候返回 nil：
+
+```go
+func returnsError() error {
+    var p *MyError = nil
+    if bad() {
+        p = ErrBad
+    }
+    return p // Will always return a non-nil error.
+}
+```
+
+但是，最终返回的结果其实并非是 nil：是一个正常的错误，错误的值是一个 MyError 类型的空指针。下面是改进的 returnsError：
+
+```go
+func returnsError() error {
+    if bad() {
+        return (*MyError)(err)
+    }
+    return nil
+}
+```
+
+panic支持抛出任意类型的异常（而不仅仅是 error 类型的错误），recover 函数调用的返回值和 panic 函数的输入参数类型一致，它们的函数签名如下：
+
+```go
+func panic(interface{})
+func recover() interface{}
+```
+
+Go 语言函数调用的正常流程是函数执行返回语句返回结果，在这个流程中是没有异常的，因此在这个流程中执行 recover 异常捕获函数始终是返回 nil。另一种是异常流程: 当函数调用 panic 抛出异常，函数将停止执行后续的普通语句，但是之前注册的 defer 函数调用仍然保证会被正常执行，然后再返回到调用者。对于当前函数的调用者，因为处理异常状态还没有被捕获，和直接调用 panic 函数的行为类似。在异常发生时，如果在 defer 中执行 recover 调用，它可以捕获触发 panic 时的参数，并且恢复到正常的执行流程。
+
+在非 defer 语句中执行 recover 调用是初学者常犯的错误:
+
+```go
+func main() {
+    if r := recover(); r != nil {
+        log.Fatal(r)
+    }
+
+    panic(123)
+
+    if r := recover(); r != nil {
+        log.Fatal(r)
+    }
+}
+```
+
+上面程序中两个 recover 调用都不能捕获任何异常。在第一个 recover 调用执行时，函数必然是在正常的非异常执行流程中，这时候 recover 调用将返回 nil。发生异常时，第二个 recover 调用将没有机会被执行到，因为 panic 调用会导致函数马上执行已经注册 defer 的函数后返回。
+
+其实 recover 函数调用有着更严格的要求：我们必须在 defer 函数中直接调用 recover。如果 defer 中调用的是 recover 函数的包装函数的话，异常的捕获工作将失败！比如，有时候我们可能希望包装自己的 MyRecover 函数，在内部增加必要的日志信息然后再调用 recover，这是错误的做法：
+
+```go
+func main() {
+    defer func() {
+        // 无法捕获异常
+        if r := MyRecover(); r != nil {
+            fmt.Println(r)
+        }
+    }()
+    panic(1)
+}
+
+func MyRecover() interface{} {
+    log.Println("trace...")
+    return recover()
+}
+```
+
+同样，如果是在嵌套的 defer 函数中调用 recover 也将导致无法捕获异常：
+
+```go
+func main() {
+    defer func() {
+        defer func() {
+            // 无法捕获异常
+            if r := recover(); r != nil {
+                fmt.Println(r)
+            }
+        }()
+    }()
+    panic(1)
+}
+```
+
+2 层嵌套的 defer 函数中直接调用 recover 和 1 层 defer 函数中调用包装的 MyRecover 函数一样，都是经过了 2 个函数帧才到达真正的 recover 函数，这个时候 Goroutine 的对应上一级栈帧中已经没有异常信息。
+
+必须要和有异常的栈帧只隔一个栈帧，recover 函数才能正常捕获异常。换言之，recover 函数捕获的是祖父一级调用函数栈帧的异常（刚好可以跨越一层 defer 函数）！
+
