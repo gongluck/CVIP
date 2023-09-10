@@ -1,0 +1,117 @@
+# 错误
+
+- [错误](#错误)
+  - [Go 语言中，错误的定义](#go-语言中错误的定义)
+  - [错误嵌套](#错误嵌套)
+  - [github.com/pkg/errors 包](#githubcompkgerrors-包)
+
+## Go 语言中，错误的定义
+
+在 Go 语言中，错误被认为是一种可以预期的结果。
+
+Go 语言中的错误是一种接口类型。接口信息中包含了原始类型和原始的值。只有当接口的类型和原始的值都为空的时候，接口的值才对应 nil。其实当接口中类型为空的时候，原始值必然也是空的；反之，当接口对应的原始值为空的时候，接口对应的原始类型并不一定为空的。
+
+在下面的例子中，试图返回自定义的错误类型，当没有错误的时候返回 nil：
+
+```go
+func returnsError() error {
+    var p *MyError = nil
+    if bad() {
+        p = ErrBad
+    }
+    return p // Will always return a non-nil error.
+}
+```
+
+但是，最终返回的结果其实并非是 nil：是一个正常的错误，错误的值是一个 MyError 类型的空指针。下面是改进的 returnsError：
+
+```go
+func returnsError() error {
+    if bad() {
+        return (*MyError)(err)
+    }
+    return nil
+}
+```
+
+## 错误嵌套
+
+Error Wrapping，顾名思义，就是可以一个 error 嵌套另一个 error 的功能，可以根据嵌套的 error 序列，生成一个 error 错误跟踪链，也可以理解为错误堆栈信息。
+
+```go
+e := errors.New("原始错误")
+w := fmt.Errorf("Wrap 了一个错误 %w", e)
+```
+
+Golang 扩展了 fmt.Errorf 函数，加了一个 **%w** 来生成一个 Wrapping Error。
+
+Golang 1.13 引入了 wrapping error 后，同时为 errors 包添加了 3 个工具函数，他们分别是 Unwrap、Is 和 As。
+
+Unwrap 的功能就是为了获得被嵌套的 error。
+
+```go
+func main() {
+    e := errors.New("原始错误")
+    w := fmt.Errorf("Wrap了一个错误 %w", e)
+    fmt.Println(errors.Unwrap(w))
+}
+```
+
+以上这个例子，通过 errors.Unwrap(w)后，返回的其实是个 e，也就是被嵌套的那个 error。
+嵌套可以有很多层，调用一次 errors.Unwrap 函数只能返回最外面的一层 error，如果想获取更里面的，需要调用多次 errors.Unwrap 函数。最终如果一个 error 不是 warpping error，那么返回的是 nil。
+
+```go
+func As(err error, target interface{}) bool
+```
+
+从功能上来看，As 所做的就是遍历 err 嵌套链，从里面找到类型符合的 error，然后把这个 error 赋予 target,这样我们就可以使用转换后的 target 了，这里有值得赋予，所以 target 必须是一个指针。
+
+```go
+func Is(err, target error) bool
+```
+
+- 如果 err 和 target 是同一个，那么返回 true。
+- 如果 err 是一个 wrap error，target 也包含在这个嵌套 error 链中的话，那么也返回 true。
+
+## github.com/pkg/errors 包
+
+```go
+// 新生成一个 error ，带堆栈信息
+func New(message string) error
+// 在 error 上附加上 message 错误信息
+func WithMessage(err error, message string) error
+// error 加上堆栈信息
+func WithStack(err error) error
+// error 加上堆栈和信息和 message 信息
+func Wrap(err error, message string) error
+// 一个 error 可能被多次附上信息，调用 cause 返回最底层的根 error
+func Cause(err error) error
+```
+
+```go
+package main
+
+import (
+	"fmt"
+
+	xerrors "github.com/pkg/errors"
+)
+
+func main() {
+	/*
+		%s %v 功能一样，输出错误信息，不包含堆栈
+		%q 输出的错误信息带引号，不包含堆栈
+		%+v 输出错误信息和堆栈
+	*/
+	e1 := xerrors.New("msg1") // 新生成错误e1，带堆栈信息和msg1
+	e2 := xerrors.WithMessage(e1, "msg2")
+	e3 := xerrors.WithMessage(e2, "msg3")
+	fmt.Printf("%+v\n\n", e1) // 打印底层堆栈信息和msg1
+	fmt.Printf("%+v\n\n", e2) // 打印底层堆栈信息和msg1，msg2
+	fmt.Printf("%+v\n\n", e3) // 打印底层堆栈信息和msg1，msg2，msg3
+	e4 := xerrors.Cause(e3)
+	fmt.Printf("%+v\n\n", e4) // 打印底层堆栈信息和msg1
+}
+```
+
+如果库是底层的库，被多人使用，不应该使用 wrap，而是直接返回，不然别人引用包，也得再引用下这个第三方库。建议只在业务层使用，基础库不用
