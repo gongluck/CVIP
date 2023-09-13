@@ -4,6 +4,7 @@
   - [Go 语言中，错误的定义](#go-语言中错误的定义)
   - [错误嵌套](#错误嵌套)
   - [github.com/pkg/errors 包](#githubcompkgerrors-包)
+  - [errgroup](#errgroup)
 
 ## Go 语言中，错误的定义
 
@@ -115,3 +116,46 @@ func main() {
 ```
 
 如果库是底层的库，被多人使用，不应该使用 wrap，而是直接返回，不然别人引用包，也得再引用下这个第三方库。建议只在业务层使用，基础库不用
+
+## errgroup
+
+```go
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"golang.org/x/sync/errgroup"
+)
+
+func StartUserService() error {
+	fmt.Println("start user service")
+	return errors.New("user")
+}
+
+func StartGoodsService() error {
+	fmt.Println("start goods service")
+	return errors.New("goods")
+}
+
+func StartOrderService() error {
+	fmt.Println("start order service")
+	return errors.New("order")
+}
+
+func main() {
+	gp, _ := errgroup.WithContext(context.Background())
+	gp.Go(StartUserService)
+	gp.Go(StartGoodsService)
+	gp.Go(StartOrderService)
+	if err := gp.Wait(); err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+errgroup 使用 goroutine 去运行了各个子任务，然后等待子任务全部完成，内部就是通过 waitgroup 实现的。并且当有任意一个出现错误时就会记录错误，最终在 wait 返回。
+
+errgroup 还提供了 SetLimit 和 TryGo 方法，通过设定一个并发的上限来确保并发的任务数不会超过限制条件。
