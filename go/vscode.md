@@ -1,6 +1,6 @@
-# VS Code搭建Go环境
+# VS Code 搭建 Go 环境
 
-- [VS Code搭建Go环境](#vs-code搭建go环境)
+- [VS Code 搭建 Go 环境](#vs-code-搭建-go-环境)
   - [设置代理](#设置代理)
   - [智能提示](#智能提示)
 
