@@ -10,23 +10,28 @@ class Solution
 public:
     int removeDuplicates(vector<int> &nums)
     {
-        int fast = 0;
-        int slow = 0;
-        int last = INT_MAX;
-        while (fast < nums.size())
-        {
-            int cur = nums[fast];
-            if (cur == last)
-            {
-                ++fast;
-            }
-            else
-            {
-                nums[slow++] = nums[fast++];
-                last = cur;
-            }
-        }
-        return slow;
+        // int n = nums.size();
+        // if (n <= 1)
+        // {
+        //     return n;
+        // }
+
+        // int slow = 1;
+        // int fast = 1;
+
+        // while (fast < n)
+        // {
+        //     if (nums[fast] != nums[fast - 1])
+        //     {
+        //         nums[slow++] = nums[fast];
+        //     }
+        //     ++fast;
+        // }
+
+        // return slow;
+
+        auto newend = std::unique(nums.begin(), nums.end());
+        return newend - nums.begin();
     }
 };
 // @lc code=end
