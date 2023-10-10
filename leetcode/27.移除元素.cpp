@@ -10,37 +10,26 @@ class Solution
 public:
     int removeElement(vector<int> &nums, int val)
     {
-        //暴力解法
-        // int size = nums.size();
-        // for (int i = 0; i < size; ++i)
-        // {
-        //     if (nums[i] == val)
-        //     {
-        //         --size;
-        //         for (int j = i; j < size; ++j)
-        //         {
-        //             nums[j] = nums[j + 1];
-        //         }
-        //         --i;
-        //     }
-        // }
-        // return size;
-
-        //双指针
-        int fast = 0;
-        int slow = 0;
-        while (fast < nums.size())
+        // 双向指针
+        int left = 0;
+        int right = nums.size() - 1;
+        while (left <= right)
         {
-            if (nums[fast] != val)
+            if (nums[left] != val)
             {
-                nums[slow++] = nums[fast++];
+                ++left;
             }
-            else
+            // else if(nums[right] == val)
+            // {
+            //     --right;
+            // }
+            else 
             {
-                ++fast;
+                nums[left] = nums[right--];
             }
         }
-        return slow;
+
+        return left;
     }
 };
 // @lc code=end
