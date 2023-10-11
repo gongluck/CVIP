@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=26 lang=cpp
+ * @lc app=leetcode.cn id=80 lang=cpp
  *
- * [26] 删除有序数组中的重复项
+ * [80] 删除有序数组中的重复项 II
  */
 
 // @lc code=start
@@ -11,16 +11,16 @@ public:
     int removeDuplicates(vector<int> &nums)
     {
         int n = nums.size();
-        if (n <= 1)
+        if (n <= 2)
         {
             return n;
         }
 
-        int slow = 1;
-        int fast = 1;
+        int fast = 2;
+        int slow = 2;
         while (fast < n)
         {
-            if (nums[fast] != nums[slow - 1])
+            if (nums[fast] != nums[slow -2])
             {
                 nums[slow++] = nums[fast];
             }
@@ -28,9 +28,6 @@ public:
         }
 
         return slow;
-
-        // auto newend = std::unique(nums.begin(), nums.end());
-        // return newend - nums.begin();
     }
 };
 // @lc code=end

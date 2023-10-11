@@ -10,29 +10,28 @@ class Solution
 public:
     int removeElement(vector<int> &nums, int val)
     {
-        // 双向指针
-        // int left = 0;
-        // int right = nums.size() - 1;
-        // while (left <= right)
-        // {
-        //     if (nums[left] != val)
-        //     {
-        //         ++left;
-        //     }
-        //     // else if(nums[right] == val)
-        //     // {
-        //     //     --right;
-        //     // }
-        //     else
-        //     {
-        //         nums[left] = nums[right--];
-        //     }
-        // }
+        int left = 0;
+        int right = nums.size() - 1;
+        while (left <= right)
+        {
+            if (nums[left] != val)
+            {
+                ++left;
+            }
+            // else if(nums[right] == val)
+            // {
+            //     --right;
+            // }
+            else
+            {
+                nums[left] = nums[right--];
+            }
+        }
 
-        // return left;
+        return left;
 
-        auto newend = std::remove(nums.begin(), nums.end(), val);
-        return newend - nums.begin();
+        // auto newend = std::remove(nums.begin(), nums.end(), val);
+        // return newend - nums.begin();
     }
 };
 // @lc code=end
