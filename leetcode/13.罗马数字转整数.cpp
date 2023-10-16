@@ -19,8 +19,6 @@ class Solution
 public:
     int romanToInt(string s)
     {
-        //static char chars[] = {'I', 'V', 'X', 'L', 'C', 'D', 'M'};
-        //static int nums[] = {1, 5, 10, 50, 100, 500, 1000};
         std::map<char, int> cnums{
             {'I', 1},
             {'V', 5},
@@ -31,34 +29,21 @@ public:
             {'M', 1000},
         };
 
-        int last = 0;
-        int curr = 0;
-        int result = 0;
-        for (int i = 0; i < s.size(); ++i)
+        int sums = 0;
+        int pre = 0;
+        int n = s.size();
+        for (int i = 0; i < n; ++i)
         {
-            curr = cnums[s[i]];
-
-            if (last == 0)
+            int val = cnums[s[i]];
+            sums += val;
+            if (pre < val)
             {
-                last = curr;
-                continue;
+                sums -= 2 * pre;
             }
-
-            if (last >= curr)
-            {
-                result += last;
-                last = curr;
-                continue;
-            }
-            else
-            {
-                result += curr - last;
-                last = 0;
-                continue;
-            }
+            pre = val;
         }
 
-        return result + last;
+        return sums;
     }
 };
 // @lc code=end
