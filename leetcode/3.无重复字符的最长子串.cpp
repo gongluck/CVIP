@@ -10,24 +10,23 @@ class Solution
 public:
     int lengthOfLongestSubstring(string s)
     {
+        int result = 0;
+        int n = s.size();
         int left = 0;
         int right = 0;
-        std::map<char, int> window;
-        int res = 0;
+        std::unordered_set<char> sets;
 
-        while (right < s.size())
+        for (; right < n; ++right)
         {
-            ++window[s[right++]];
-
-            while(window[s[right-1]] > 1)
+            while (sets.count(s[right]) != 0)
             {
-                --window[s[left++]];
+                sets.erase(s[left++]);
             }
-
-            res = std::max(res, right - left);
+            result = std::max(result, right - left + 1);
+            sets.insert(s[right]);
         }
 
-        return res;
+        return result;
     }
 };
 // @lc code=end

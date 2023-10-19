@@ -10,37 +10,23 @@ class Solution
 public:
     int minSubArrayLen(int target, vector<int> &nums)
     {
-        // int min = INT_MAX;
-        // for (int i = 0; i < nums.size(); ++i)
-        // {
-        //     int sum = 0;
-        //     for (int j = i; j < nums.size(); ++j)
-        //     {
-        //         sum += nums[j];
-        //         if (sum >= target)
-        //         {
-        //             min = std::min(min, j - i + 1);
-        //             break;
-        //         }
-        //     }
-        // }
-        // return min == INT_MAX ? 0 : min;
+        int result = INT_MAX;
+        int n = nums.size();
+        int left = 0;
+        int right = 0;
+        int sums = 0;
 
-        //滑动窗口
-        int begin = 0;
-        int end = 0;
-        int sum = 0;
-        int min = INT_MAX;
-        for (; end < nums.size(); ++end)
+        while (right < n)
         {
-            sum += nums[end];
-            while (sum >= target)
+            sums += nums[right++];
+            while (sums >= target) // 因为是正整数序列，所以不用判断left<right
             {
-                min = std::min(min, end - begin + 1);
-                sum -= nums[begin++];
-            }
+                result = std::min(right - left, result);
+                sums -= nums[left++];
+            };
         }
-        return min == INT_MAX ? 0 : min;
+
+        return result == INT_MAX ? 0 : result;
     }
 };
 // @lc code=end

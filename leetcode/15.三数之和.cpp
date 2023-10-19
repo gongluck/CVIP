@@ -10,50 +10,46 @@ class Solution
 public:
   vector<vector<int>> threeSum(vector<int> &nums)
   {
-    vector<vector<int>> result;
-    //排序
-    sort(nums.begin(), nums.end());
-    for (int i = 0; i < nums.size(); i++)
+    std::vector<std::vector<int>> result;
+    std::sort(nums.begin(), nums.end());
+    int n = nums.size();
+
+    int first = 0;
+    while (first < n - 2)
     {
-      //此循环第一个数大于0，那么肯定后面的都大于0，三个数的和肯定也大于0
-      if (nums[i] > 0)
+      if (nums[first] > 0)
       {
-        return result;
+        break;
       }
-      //此循环第一个数等于上一轮的第一个数，不会有新增结果集
-      if (i > 0 && nums[i] == nums[i - 1])
+
+      int second = first + 1;
+      int third = n - 1;
+      while (second < third)
       {
-        continue;
-      }
-      //左右指针
-      int left = i + 1;
-      int right = nums.size() - 1;
-      while (right > left)
-      {
-        //偏大
-        if (nums[i] + nums[left] + nums[right] > 0)
+        if (nums[first] + nums[second] + nums[third] > 0)
         {
-          right--;
+          --third;
         }
-        //偏小
-        else if (nums[i] + nums[left] + nums[right] < 0)
+        else if (nums[first] + nums[second] + nums[third] < 0)
         {
-          left++;
+          ++second;
         }
         else
         {
-          //添加结果集
-          result.push_back(vector<int>{nums[i], nums[left], nums[right]});
-
-          left++;
-          while (right > left && nums[left] == nums[left - 1])
-            left++;
-          right--;
-          while (right > left && nums[right] == nums[right + 1])
-            right--;
+          result.push_back(std::vector<int>{nums[first], nums[second], nums[third]});
+          while (++second < third && nums[second] == nums[second - 1])
+          {
+            continue;
+          }
         }
       }
+
+      while (++first < n - 2 && nums[first] == nums[first - 1])
+      {
+        continue;
+      }
     }
+
     return result;
   }
 };
