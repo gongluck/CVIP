@@ -18,55 +18,29 @@ class Solution
 public:
     int search(vector<int> &nums, int target)
     {
-        //[left, right]
-        /*
-        int left = 0;
-        int right = nums.size() - 1;
-        while (left <= right)
-        {
-            int mid = left + ((right - left) >> 1);
-            int cur = nums[mid];
-            if (cur == target)
-            {
-                return mid;
-            }
-            else if (cur < target)
-            {
-                left = mid + 1;
-                continue;
-            }
-            else
-            {
-                right = mid - 1;
-                continue;
-            }
-        }
-        return -1;
-        */
-
-        //[left,right)
+        int result = -1;
         int left = 0;
         int right = nums.size();
+
         while (left < right)
         {
-            int mid = left + ((right - left) >> 2);
-            int cur = nums[mid];
-            if (cur == target)
+            int mid = (left + right) / 2;
+            if (nums[mid] > target)
             {
-                return mid;
+                right = mid;
             }
-            else if (cur < target)
+            else if (nums[mid] < target)
             {
                 left = mid + 1;
-                continue;
             }
             else
             {
-                right = mid;
-                continue;
+                result = mid;
+                break;
             }
         }
-        return -1;
+
+        return result;
     }
 };
 // @lc code=end

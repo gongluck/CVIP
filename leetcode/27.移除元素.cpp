@@ -10,28 +10,43 @@ class Solution
 public:
     int removeElement(vector<int> &nums, int val)
     {
+        // int slow = 0;
+        // int fast = 0;
+        // int n = nums.size();
+
+        // for (; fast < n; ++fast)
+        // {
+        //     if (nums[fast] != val)
+        //     {
+        //         nums[slow++] = nums[fast];
+        //     }
+        // }
+
+        // return slow;
+
         int left = 0;
         int right = nums.size() - 1;
+
         while (left <= right)
         {
             if (nums[left] != val)
             {
                 ++left;
+                continue;
             }
-            // else if(nums[right] == val)
-            // {
-            //     --right;
-            // }
+
+            else if (nums[right] == val)
+            {
+                --right;
+                continue;
+            }
             else
             {
-                nums[left] = nums[right--];
+                std::swap(nums[left++], nums[right]);
             }
         }
 
         return left;
-
-        // auto newend = std::remove(nums.begin(), nums.end(), val);
-        // return newend - nums.begin();
     }
 };
 // @lc code=end

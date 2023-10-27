@@ -10,26 +10,30 @@ class Solution
 public:
     vector<int> sortedSquares(vector<int> &nums)
     {
-        vector<int> res(nums.size(), 0);
-        int l = 0;
-        int r = nums.size() - 1;
-        int pos = nums.size() - 1;
-        while (pos >= 0)
+        int n = nums.size();
+        std::vector<int> result(n);
+        int k = n - 1;
+        int i = 0;
+        int j = n - 1;
+        int powi, powj;
+
+        while (k >= 0)
         {
-            long long ll = nums[l] * nums[l];
-            long long rr = nums[r] * nums[r];
-            if (ll < rr)
+            powi = std::pow(nums[i], 2);
+            powj = std::pow(nums[j], 2);
+            if (powi > powj)
             {
-                res[pos--] = rr;
-                --r;
+                result[k--] = powi;
+                ++i;
             }
             else
             {
-                res[pos--] = ll;
-                ++l;
+                result[k--] = powj;
+                --j;
             }
         }
-        return res;
+
+        return result;
     }
 };
 // @lc code=end

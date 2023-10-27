@@ -7,15 +7,6 @@
 // @lc code=start
 class MyLinkedList
 {
-private:
-    struct Node
-    {
-        int val = 0;
-        Node *next = nullptr;
-    };
-    Node dummy;
-    int size_ = 0;
-
 public:
     MyLinkedList()
     {
@@ -23,41 +14,46 @@ public:
 
     int get(int index)
     {
-        if (index < size_)
-        {
-            auto p = dummy.next;
-            while (index-- > 0)
-            {
-                p = p->next;
-            }
-            return p->val;
-        }
-        else
+        if (index >= size_)
         {
             return -1;
         }
+
+        Node *cur = dummy_.next;
+        while (index--)
+        {
+            cur = cur->next;
+        }
+
+        return cur->val;
     }
 
     void addAtHead(int val)
     {
-        auto head = new Node;
-        head->val = val;
-        head->next = dummy.next;
-        dummy.next = head;
+        Node *node = new (Node);
+        node->val = val;
+        node->next = dummy_.next;
+        dummy_.next = node;
         ++size_;
+
+        return;
     }
 
     void addAtTail(int val)
     {
-        auto tail = &dummy;
-        while (tail && tail->next)
+        Node *cur = &dummy_;
+        while (cur->next != nullptr)
         {
-            tail = tail->next;
+            cur = cur->next;
         }
-        auto p = new Node;
-        p->val = val;
-        tail->next = p;
+
+        Node *node = new (Node);
+        node->val = val;
+        node->next = nullptr;
+        cur->next = node;
         ++size_;
+
+        return;
     }
 
     void addAtIndex(int index, int val)
@@ -66,21 +62,20 @@ public:
         {
             return;
         }
-        if (index == size_)
+
+        Node *cur = &dummy_;
+        while (index--)
         {
-            addAtTail(val);
-            return;
+            cur = cur->next;
         }
-        auto pre = &dummy;
-        while (index-- > 0)
-        {
-            pre = pre->next;
-        }
-        auto p = new Node;
-        p->val = val;
-        p->next = pre->next;
-        pre->next = p;
+
+        Node *node = new (Node);
+        node->val = val;
+        node->next = cur->next;
+        cur->next = node;
         ++size_;
+
+        return;
     }
 
     void deleteAtIndex(int index)
@@ -89,16 +84,29 @@ public:
         {
             return;
         }
-        auto pre = &dummy;
-        while (index-- > 0)
+
+        Node *cur = &dummy_;
+        while (index--)
         {
-            pre = pre->next;
+            cur = cur->next;
         }
-        auto p = pre->next;
-        pre->next = pre->next->next;
-        delete p;
+
+        Node *d = cur->next;
+        cur->next = cur->next->next;
+        delete d;
         --size_;
+
+        return;
     }
+
+private:
+    typedef struct NODE
+    {
+        int val;
+        struct NODE *next = nullptr;
+    } Node;
+    Node dummy_;
+    int size_ = 0;
 };
 
 /**

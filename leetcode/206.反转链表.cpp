@@ -18,18 +18,34 @@
 class Solution
 {
 public:
+    ListNode *reverse(ListNode *pre, ListNode *cur)
+    {
+        if (cur == nullptr)
+        {
+            return pre;
+        }
+
+        auto tmp = cur->next;
+        cur->next = pre;
+        return reverse(cur, tmp);
+    }
+
     ListNode *reverseList(ListNode *head)
     {
-        ListNode *pre = nullptr;
-        auto cur = head;
-        while (cur)
-        {
-            auto tmp = cur->next;
-            cur->next = pre;
-            pre = cur;
-            cur = tmp;
-        }
-        return pre;
+        // ListNode *pre = nullptr;
+        // ListNode *cur = head;
+
+        // while (cur != nullptr)
+        // {
+        //     auto tmp = cur->next;
+        //     cur->next = pre;
+        //     pre = cur;
+        //     cur = tmp;
+        // }
+
+        // return pre;
+
+        return reverse(nullptr, head);
     }
 };
 // @lc code=end

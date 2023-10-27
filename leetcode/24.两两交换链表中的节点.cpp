@@ -20,18 +20,19 @@ class Solution
 public:
     ListNode *swapPairs(ListNode *head)
     {
-        ListNode dummy;
-        dummy.next = head;
-        auto p = &dummy;
-        while (p->next && p->next->next)
+        ListNode dummy{0, head};
+        ListNode *pre = &dummy;
+
+        while (pre->next != nullptr && pre->next->next != nullptr)
         {
-            auto tmp1 = p->next;
-            auto tmp2 = p->next->next;
-            tmp1->next = tmp2->next;
-            tmp2->next = tmp1;
-            p->next = tmp2;
-            p = p->next->next;
+            auto tmp = pre->next->next;
+            pre->next->next = tmp->next;
+            tmp->next = pre->next;
+            pre->next = tmp;
+            
+            pre = tmp->next;
         }
+
         return dummy.next;
     }
 };

@@ -10,47 +10,37 @@ class Solution
 public:
     vector<vector<int>> generateMatrix(int n)
     {
-        vector<vector<int>> res(n, vector<int>(n, 0));
-        int startx = 0;
-        int starty = 0;
-        int track = 1;
-        while (startx < n / 2)
+        std::vector<std::vector<int>> result(n, std::vector<int>(n));
+        int count = 1;
+        int step = 0;
+        int col;
+        int row;
+        while (step < n / 2)
         {
-            int x = startx;
-            int y = starty;
-
-            for (; y < n - starty - 1; ++y)
+            for (row = step, col = step; col < n - step - 1; ++col)
             {
-                res[x][y] = track++;
+                result[row][col] = count++;
             }
-
-            for (; x < n - startx - 1; ++x)
+            for (; row < n - step - 1; ++row)
             {
-                res[x][y] = track++;
+                result[row][col] = count++;
             }
-
-            //std::cout << "x : " << x << ", y : " << y << std::endl;
-
-            for (; y > starty; --y)
+            for (; col > step; --col)
             {
-                res[x][y] = track++;
+                result[row][col] = count++;
             }
-
-            for (; x > startx; --x)
+            for (; row > step; --row)
             {
-                res[x][y] = track++;
+                result[row][col] = count++;
             }
-
-            ++startx;
-            ++starty;
+            ++step;
         }
-
         if (n % 2 == 1)
         {
-            res[startx][starty] = track;
+            result[step][step] = count++;
         }
 
-        return res;
+        return result;
     }
 };
 // @lc code=end
