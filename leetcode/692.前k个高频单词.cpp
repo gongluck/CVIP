@@ -10,44 +10,39 @@ class Solution
 public:
     vector<string> topKFrequent(vector<string> &words, int k)
     {
-        std::unordered_map<std::string, int> h;
-        for (const auto &i : words)
+        std::unordered_map<std::string, int> maps;
+        std::priority_queue<
+            std::pair<std::string, int>,
+            std::vector<std::pair<std::string, int>>,
+            std::function<bool(std::pair<std::string, int> & l, std::pair<std::string, int> & r)>>
+        pq([](std::pair<std::string, int> &l, std::pair<std::string, int> &r) -> bool // 返回true则l沉底
+           {
+                if (l.second != r.second)
+                {
+                    return !(l.second > r.second);//大顶堆
+                }
+                else
+                {
+                    return l.first > r.first; //字典顺序 小顶堆
+                } });
+        std::vector<std::string> result(k);
+        result.resize(0);
+
+        for (const auto &s : words)
         {
-            ++h[i];
+            ++maps[s];
+        }
+        for (const auto &m : maps)
+        {
+            pq.push(m);
+        }
+        while (k-- > 0)
+        {
+            result.push_back(pq.top().first);
+            pq.pop();
         }
 
-        typedef std::pair<std::string, int> Node;
-        auto cmp = [](const Node &a, const Node &b)
-        {
-            if (a.second == b.second)
-            {
-                return a.first < b.first;
-            }
-            else
-            {
-                return a.second > b.second;
-            }
-        };
-        std::priority_queue<Node, std::vector<Node>, decltype(cmp)> p(cmp);
-
-        for (const auto &i : h)
-        {
-            p.push(i);
-            if (p.size() > k)
-            {
-                p.pop();
-            }
-        }
-
-        std::vector<std::string> res;
-        while (!p.empty())
-        {
-            res.push_back(p.top().first);
-            p.pop();
-        }
-        reverse(res.begin(), res.end());
-
-        return res;
+        return result;
     }
 };
 // @lc code=end

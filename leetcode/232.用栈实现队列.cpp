@@ -23,27 +23,29 @@ public:
 
     int pop()
     {
-        auto res = peek();
+        int val = peek();
         out.pop();
-        return res;
+
+        return val;
     }
 
     int peek()
     {
-        if (out.size() <= 0)
+        if (out.empty())
         {
-            while (in.size() > 0)
+            while (!in.empty())
             {
                 out.push(in.top());
                 in.pop();
             }
         }
+
         return out.top();
     }
 
     bool empty()
     {
-        return in.size() == 0 && out.size() == 0;
+        return in.empty() && out.empty();
     }
 };
 

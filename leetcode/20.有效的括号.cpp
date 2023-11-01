@@ -10,40 +10,42 @@ class Solution
 public:
     bool isValid(string s)
     {
-        std::stack<int> stack;
-        for (const auto &i : s)
+        std::stack<char> st;
+
+        for (const auto &c : s)
         {
-            switch (i)
+            switch (c)
             {
             case '(':
             case '[':
             case '{':
-                stack.push(i);
+                st.push(c);
                 break;
             case ')':
-                if (stack.empty() || stack.top() != '(')
+                if (st.empty() || st.top() != '(')
                 {
                     return false;
                 }
-                stack.pop();
+                st.pop();
                 break;
             case ']':
-                if (stack.empty() || stack.top() != '[')
+                if (st.empty() || st.top() != '[')
                 {
                     return false;
                 }
-                stack.pop();
+                st.pop();
                 break;
             case '}':
-                if (stack.empty() || stack.top() != '{')
+                if (st.empty() || st.top() != '{')
                 {
                     return false;
                 }
-                stack.pop();
+                st.pop();
                 break;
             }
         }
-        return stack.empty();
+
+        return st.empty();
     }
 };
 // @lc code=end

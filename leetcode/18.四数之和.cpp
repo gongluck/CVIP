@@ -10,46 +10,55 @@ class Solution
 public:
     vector<vector<int>> fourSum(vector<int> &nums, int target)
     {
-        vector<vector<int>> result;
-        sort(nums.begin(), nums.end());
-        for (int k = 0; k < nums.size(); k++)
+        std::vector<std::vector<int>> result;
+        int n = nums.size();
+
+        std::sort(nums.begin(), nums.end());
+        for (int first = 0; first < n - 3; ++first)
         {
-            if (k > 0 && nums[k] == nums[k - 1])
+            if (first > 0 && nums[first] == nums[first - 1])
             {
                 continue;
             }
-            for (int i = k + 1; i < nums.size(); i++)
+
+            for (int second = first + 1; second < n - 2; ++second)
             {
-                if (i > k + 1 && nums[i] == nums[i - 1])
+                if (second > first + 1 && nums[second] == nums[second - 1])
                 {
                     continue;
                 }
-                int left = i + 1;
-                int right = nums.size() - 1;
-                while (right > left)
+
+                int third = second + 1;
+                int fourth = n - 1;
+                while (third < fourth)
                 {
-                    if (nums[k] + nums[i] > target - (nums[left] + nums[right]))
+                    long long sums = (long long)nums[first] + nums[second] + nums[third] + nums[fourth];
+                    if (sums > target)
                     {
-                        right--;
+                        --fourth;
                     }
-                    else if (nums[k] + nums[i] < target - (nums[left] + nums[right]))
+                    else if (sums < target)
                     {
-                        left++;
+                        ++third;
                     }
                     else
                     {
-                        result.push_back(vector<int>{nums[k], nums[i], nums[left], nums[right]});
-                        while (right > left && nums[right] == nums[right - 1])
-                            right--;
-                        while (right > left && nums[left] == nums[left + 1])
-                            left++;
-
-                        right--;
-                        left++;
+                        result.emplace_back(std::vector<int>{nums[first], nums[second], nums[third], nums[fourth]});
+                        ++third;
+                        while (third < fourth && nums[third] == nums[third - 1])
+                        {
+                            ++third;
+                        }
+                        --fourth;
+                        while (third < fourth && nums[fourth] == nums[fourth + 1])
+                        {
+                            --fourth;
+                        }
                     }
                 }
             }
         }
+
         return result;
     }
 };

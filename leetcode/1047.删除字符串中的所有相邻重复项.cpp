@@ -10,27 +10,25 @@ class Solution
 public:
     string removeDuplicates(string s)
     {
-        std::stack<char> stack;
-        for (const auto &c : s)
+        int n = s.size();
+        int slow = 0;
+        int fast = 0;
+
+        while (fast < n)
         {
-            if (!stack.empty() && stack.top() == c)
+            if (slow > 0 && s[slow - 1] == s[fast])
             {
-                stack.pop();
+                --slow;
+                ++fast;
             }
             else
             {
-                stack.push(c);
+                s[slow++] = s[fast++];
             }
         }
 
-        std::string res;
-        while (!stack.empty())
-        {
-            res += stack.top();
-            stack.pop();
-        }
-        std::reverse(res.begin(), res.end());
-        return res;
+        s.resize(slow);
+        return s;
     }
 };
 // @lc code=end

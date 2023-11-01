@@ -12,18 +12,32 @@ public:
     {
         int N = haystack.size();
         int n = needle.size();
-        int i = 0;
-        for (; i <= N - n; ++i)
+        std::vector<int> next(n, 0);
+
+        for (int i = 1; i < n - 1; ++i)
         {
-            for (int j = 0; j < n; ++j)
+            int j = next[i - 1];
+            while (j > 0 && needle[i] != needle[j])
             {
-                if (haystack[i + j] != needle[j])
+                j = next[j - 1];
+            }
+            if (needle[i] == needle[j])
+            {
+                next[i] = ++j;
+            }
+        }
+
+        for (int i = 0, j = 0; i < N; ++i)
+        {
+            while (j > 0 && haystack[i] != needle[j])
+            {
+                j = next[j - 1];
+            }
+            if (haystack[i] == needle[j])
+            {
+                if (++j == n)
                 {
-                    break;
-                }
-                else if (j == n - 1)
-                {
-                    return i;
+                    return i - n + 1;
                 }
             }
         }

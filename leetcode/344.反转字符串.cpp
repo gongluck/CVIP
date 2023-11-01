@@ -10,14 +10,14 @@ class Solution
 public:
     void reverseString(vector<char> &s)
     {
-        //库函数
-        // std::reverse(s.begin(), s.end());
-
         int n = s.size();
-        for (int left = 0, right = n - 1; left < right; ++left, --right)
+
+        for (int i = 0, j = n - 1; i < j; ++i, --j)
         {
-            std::swap(s[left], s[right]);
+            std::swap(s[i], s[j]);
         }
+
+        return;
     }
 };
 // @lc code=end

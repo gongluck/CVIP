@@ -20,7 +20,8 @@ public:
     {
         auto fast = head;
         auto slow = head;
-        while (fast && fast->next)
+
+        while (fast != nullptr && fast->next != nullptr)
         {
             fast = fast->next->next;
             slow = slow->next;
@@ -29,7 +30,7 @@ public:
                 slow = head;
                 while (true)
                 {
-                    if (slow == fast)
+                    if (fast == slow)
                     {
                         return fast;
                     }

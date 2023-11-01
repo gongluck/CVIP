@@ -10,17 +10,23 @@ class Solution
 public:
     vector<int> intersection(vector<int> &nums1, vector<int> &nums2)
     {
-        std::unordered_set<int> s1(nums1.begin(), nums1.end());
-        std::unordered_set<int> both;
+        std::vector<int> result;
+        bool exist[10001] = {false};
+
+        for (const auto &i : nums1)
+        {
+            exist[i] = true;
+        }
         for (const auto &i : nums2)
         {
-            if (s1.count(i) > 0)
+            if (exist[i])
             {
-                both.insert(i);
+                result.push_back(i);
+                exist[i] = false;
             }
         }
-        std::vector<int> res(both.begin(), both.end());
-        return res;
+
+        return result;
     }
 };
 // @lc code=end

@@ -10,31 +10,25 @@ class Solution
 public:
     bool isAnagram(string s, string t)
     {
-        std::unordered_map<char, int> charnums;
-        for (const auto &c : s)
-        {
-            ++charnums[c];
-        }
-        for (const auto &c : t)
-        {
-            auto it = charnums.find(c);
-            if (it == charnums.end())
-            {
-                return false;
-            }
-            if (--it->second == 0)
-            {
-                charnums.erase(it);
-            }
-        }
-        if (charnums.size() > 0)
+        if (s.size() != t.size())
         {
             return false;
         }
-        else
+
+        int sets[26] = {0};
+        for (const auto &i : s)
         {
-            return true;
+            ++sets[i - 'a'];
         }
+        for (const auto &i : t)
+        {
+            if (sets[i - 'a']-- <= 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 };
 // @lc code=end

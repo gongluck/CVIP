@@ -10,19 +10,25 @@ class Solution
 public:
     vector<int> twoSum(vector<int> &nums, int target)
     {
-        std::unordered_map<int, int> visited;
-        for (int i = 0; i < nums.size(); ++i)
+        std::vector<int> result(2, -1);
+        std::unordered_map<int, int> maps;
+        int n = nums.size();
+
+        for (int i = 0; i < n; ++i)
         {
-            if (visited.count(target - nums[i]) > 0)
+            if (maps.count(target - nums[i]) > 0)
             {
-                return {visited[target - nums[i]], i};
+                result[0] = maps[target - nums[i]];
+                result[1] = i;
+                break;
             }
             else
             {
-                visited.insert({nums[i], i});
+                maps[nums[i]] = i;
             }
         }
-        return {-1, -1};
+
+        return result;
     }
 };
 // @lc code=end

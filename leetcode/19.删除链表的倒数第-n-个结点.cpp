@@ -20,25 +20,23 @@ class Solution
 public:
     ListNode *removeNthFromEnd(ListNode *head, int n)
     {
-        ListNode dummy;
-        dummy.next = head;
+        ListNode dummy(0, head);
         auto fast = &dummy;
         auto slow = &dummy;
 
-        while (n-- > 0 && fast)
+        while (fast->next != nullptr)
         {
             fast = fast->next;
+            if (n-- <= 0)
+            {
+                slow = slow->next;
+            }
         }
 
-        while (fast && fast->next)
-        {
-            fast = fast->next;
-            slow = slow->next;
-        }
+        auto tmp = slow->next->next;
+        delete slow->next;
+        slow->next = tmp;
 
-        auto del = slow->next;
-        slow->next = slow->next->next;
-        delete del;
         return dummy.next;
     }
 };

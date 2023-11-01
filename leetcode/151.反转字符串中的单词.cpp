@@ -11,37 +11,44 @@ public:
     string reverseWords(string s)
     {
         int n = s.size();
-        std::deque<std::string> d;
-        std::string word;
-        std::string result;
 
-        for (int i = 0; i < n; ++i)
+        std::reverse(s.begin(), s.end());
+        for (int start = 0; start < n;)
         {
-            char c = s[i];
-            if (c != ' ')
+            if (s[start] == ' ')
             {
-                word += c;
+                ++start;
+                continue;
             }
-            else if (word.size() > 0)
+
+            int end = start + 1;
+            while (end < n && s[end] != ' ')
             {
-                d.push_front(word);
-                word.clear();
+                ++end;
             }
-        }
-        if (word.size() > 0)
-        {
-            d.push_front(word);
-            word.clear();
+
+            if (end - start > 1)
+            {
+                std::reverse(s.begin() + start, s.begin() + end);
+            }
+
+            start = end + 1;
         }
 
-        while (!d.empty())
+        int fast = 0;
+        int slow = 0;
+        while (fast < n)
         {
-            result += d.front();
-            d.pop_front();
-            if (!d.empty())
-                result += ' ';
+            if (s[fast] != ' ' || (slow > 0 && fast < n - 1 && s[fast + 1] != ' '))
+            {
+                s[slow++] = s[fast];
+            }
+
+            ++fast;
         }
-        return result;
+        s.resize(slow);
+
+        return s;
     }
 };
 // @lc code=end

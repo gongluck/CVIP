@@ -10,41 +10,49 @@ class Solution
 public:
     int evalRPN(vector<string> &tokens)
     {
-        std::stack<int> stack;
+        std::stack<int> st;
+
         for (const auto &s : tokens)
         {
-            if (s == "+" ||
-                s == "-" ||
-                s == "*" ||
-                s == "/")
+            if (s == "+")
             {
-                auto num1 = stack.top();
-                stack.pop();
-                auto num2 = stack.top();
-                stack.pop();
-                if (s == "+")
-                {
-                    stack.push(num1 + num2);
-                }
-                else if (s == "-")
-                {
-                    stack.push(num2 - num1);
-                }
-                else if (s == "*")
-                {
-                    stack.push(num1 * num2);
-                }
-                else if (s == "/")
-                {
-                    stack.push(num2 / num1);
-                }
+                auto n2 = st.top();
+                st.pop();
+                auto n1 = st.top();
+                st.pop();
+                st.push(n1 + n2);
+            }
+            else if (s == "-")
+            {
+                auto n2 = st.top();
+                st.pop();
+                auto n1 = st.top();
+                st.pop();
+                st.push(n1 - n2);
+            }
+            else if (s == "*")
+            {
+                auto n2 = st.top();
+                st.pop();
+                auto n1 = st.top();
+                st.pop();
+                st.push(n1 * n2);
+            }
+            else if (s == "/")
+            {
+                auto n2 = st.top();
+                st.pop();
+                auto n1 = st.top();
+                st.pop();
+                st.push(n1 / n2);
             }
             else
             {
-                stack.push(std::stoi(s));
+                st.push(std::atoi(s.c_str()));
             }
         }
-        return stack.top();
+
+        return st.top();
     }
 };
 // @lc code=end

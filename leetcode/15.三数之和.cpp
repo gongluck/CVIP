@@ -11,42 +11,48 @@ public:
   vector<vector<int>> threeSum(vector<int> &nums)
   {
     std::vector<std::vector<int>> result;
-    std::sort(nums.begin(), nums.end());
     int n = nums.size();
 
-    int first = 0;
-    while (first < n - 2)
+    std::sort(nums.begin(), nums.end());
+    for (int i = 0; i < n - 2; ++i)
     {
-      if (nums[first] > 0)
+      if (nums[i] > 0)
       {
         break;
       }
 
-      int second = first + 1;
-      int third = n - 1;
-      while (second < third)
+      int left = i + 1;
+      int right = n - 1;
+      while (left < right)
       {
-        if (nums[first] + nums[second] + nums[third] > 0)
+        int sums = nums[i] + nums[left] + nums[right];
+        if (sums == 0)
         {
-          --third;
+          result.emplace_back(std::vector<int>{nums[i], nums[left], nums[right]});
+          while (left < right && nums[left] == nums[left + 1])
+          {
+            ++left;
+          }
+          ++left;
+          while (left < right && nums[right] == nums[right - 1])
+          {
+            --right;
+          }
+          --right;
         }
-        else if (nums[first] + nums[second] + nums[third] < 0)
+        else if (sums > 0)
         {
-          ++second;
+          --right;
         }
         else
         {
-          result.push_back(std::vector<int>{nums[first], nums[second], nums[third]});
-          while (++second < third && nums[second] == nums[second - 1])
-          {
-            continue;
-          }
+          ++left;
         }
       }
 
-      while (++first < n - 2 && nums[first] == nums[first - 1])
+      while (i < n - 2 && nums[i] == nums[i + 1])
       {
-        continue;
+        ++i;
       }
     }
 
