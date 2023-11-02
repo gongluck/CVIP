@@ -21,36 +21,36 @@ class Solution
 public:
     vector<vector<int>> levelOrder(TreeNode *root)
     {
-        vector<vector<int>> res;
-        if (root == nullptr)
-        {
-            return res;
-        }
-        std::queue<struct TreeNode *> q;
-        q.push(root);
+        std::vector<std::vector<int>> result;
+        std::queue<TreeNode *> qu;
 
-        while (!q.empty())
+        if (root != nullptr)
         {
-            auto n = q.size();
-            std::vector<int> tmp;
+            qu.push(root);
+        }
+
+        while (!qu.empty())
+        {
+            int n = qu.size();
+            std::vector<int> ret(n);
             for (int i = 0; i < n; ++i)
             {
-                auto cur = q.front();
-                q.pop();
-                tmp.push_back(cur->val);
-                if (cur->left != nullptr)
+                auto node = qu.front();
+                if (node->left != nullptr)
                 {
-                    q.push(cur->left);
+                    qu.push(node->left);
                 }
-                if (cur->right != nullptr)
+                if (node->right != nullptr)
                 {
-                    q.push(cur->right);
+                    qu.push(node->right);
                 }
+                ret[i] = node->val;
+                qu.pop();
             }
-            res.push_back(tmp);
+            result.emplace_back(ret);
         }
 
-        return res;
+        return result;
     }
 };
 // @lc code=end
