@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=98 lang=cpp
+ * @lc app=leetcode.cn id=530 lang=cpp
  *
- * [98] 验证二叉搜索树
+ * [530] 二叉搜索树的最小绝对差
  */
 
 // @lc code=start
@@ -19,24 +19,26 @@
 class Solution
 {
 public:
-    bool valid(TreeNode *root, long min, long max)
+    int difference(TreeNode *root, TreeNode *&pre)
     {
         if (root == nullptr)
         {
-            return true;
+            return INT_MAX;
         }
 
-        if (root->val <= min || root->val >= max)
+        auto result = difference(root->left, pre);
+        if (pre != nullptr)
         {
-            return false;
+            result = std::min(result, std::abs(root->val - pre->val));
         }
-
-        return valid(root->left, min, root->val) ? valid(root->right, root->val, max) : false;
+        pre = root;
+        return std::min(result, difference(root->right, pre));
     }
 
-    bool isValidBST(TreeNode *root)
+    int getMinimumDifference(TreeNode *root)
     {
-        return valid(root, LONG_MIN, LONG_MAX);
+        TreeNode *pre = nullptr;
+        return difference(root, pre);
     }
 };
 // @lc code=end

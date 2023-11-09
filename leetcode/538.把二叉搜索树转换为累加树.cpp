@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=700 lang=cpp
+ * @lc app=leetcode.cn id=538 lang=cpp
  *
- * [700] 二叉搜索树中的搜索
+ * [538] 把二叉搜索树转换为累加树
  */
 
 // @lc code=start
@@ -19,14 +19,26 @@
 class Solution
 {
 public:
-    TreeNode *searchBST(TreeNode *root, int val)
+    void convert(TreeNode *root, int &pre)
     {
-        if (root == nullptr || root->val == val)
+        if (root == nullptr)
         {
-            return root;
+            return;
         }
 
-        return root->val < val ? searchBST(root->right, val) : searchBST(root->left, val);
+        convert(root->right, pre);
+        root->val += pre;
+        pre = root->val;
+        convert(root->left, pre);
+
+        return;
+    }
+
+    TreeNode *convertBST(TreeNode *root)
+    {
+        int pre = 0;
+        convert(root, pre);
+        return root;
     }
 };
 // @lc code=end

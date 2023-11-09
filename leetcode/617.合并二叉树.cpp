@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=700 lang=cpp
+ * @lc app=leetcode.cn id=617 lang=cpp
  *
- * [700] 二叉搜索树中的搜索
+ * [617] 合并二叉树
  */
 
 // @lc code=start
@@ -19,14 +19,23 @@
 class Solution
 {
 public:
-    TreeNode *searchBST(TreeNode *root, int val)
+    TreeNode *mergeTrees(TreeNode *root1, TreeNode *root2)
     {
-        if (root == nullptr || root->val == val)
+        if (root1 == nullptr)
         {
-            return root;
+            return root2;
+        }
+        if (root2 == nullptr)
+        {
+            return root1;
         }
 
-        return root->val < val ? searchBST(root->right, val) : searchBST(root->left, val);
+        root1->val += root2->val;
+        root1->left = mergeTrees(root1->left, root2->left);
+        root1->right = mergeTrees(root1->right, root2->right);
+        // delete root2;
+
+        return root1;
     }
 };
 // @lc code=end

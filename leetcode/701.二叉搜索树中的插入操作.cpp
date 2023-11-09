@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=700 lang=cpp
+ * @lc app=leetcode.cn id=701 lang=cpp
  *
- * [700] 二叉搜索树中的搜索
+ * [701] 二叉搜索树中的插入操作
  */
 
 // @lc code=start
@@ -19,14 +19,23 @@
 class Solution
 {
 public:
-    TreeNode *searchBST(TreeNode *root, int val)
+    TreeNode *insertIntoBST(TreeNode *root, int val)
     {
-        if (root == nullptr || root->val == val)
+        if (root == nullptr)
         {
-            return root;
+            return (new TreeNode(val));
         }
 
-        return root->val < val ? searchBST(root->right, val) : searchBST(root->left, val);
+        if (val < root->val)
+        {
+            root->left = insertIntoBST(root->left, val);
+        }
+        else
+        {
+            root->right = insertIntoBST(root->right, val);
+        }
+
+        return root;
     }
 };
 // @lc code=end

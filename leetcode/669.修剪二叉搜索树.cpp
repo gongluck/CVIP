@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=98 lang=cpp
+ * @lc app=leetcode.cn id=669 lang=cpp
  *
- * [98] 验证二叉搜索树
+ * [669] 修剪二叉搜索树
  */
 
 // @lc code=start
@@ -19,24 +19,28 @@
 class Solution
 {
 public:
-    bool valid(TreeNode *root, long min, long max)
+    TreeNode *trimBST(TreeNode *root, int low, int high)
     {
         if (root == nullptr)
         {
-            return true;
+            return nullptr;
         }
 
-        if (root->val <= min || root->val >= max)
+        if (root->val < low)
         {
-            return false;
+            return trimBST(root->right, low, high);
+        }
+        else if (root->val > high)
+        {
+            return trimBST(root->left, low, high);
+        }
+        else
+        {
+            root->left = trimBST(root->left, low, high);
+            root->right = trimBST(root->right, low, high);
         }
 
-        return valid(root->left, min, root->val) ? valid(root->right, root->val, max) : false;
-    }
-
-    bool isValidBST(TreeNode *root)
-    {
-        return valid(root, LONG_MIN, LONG_MAX);
+        return root;
     }
 };
 // @lc code=end
