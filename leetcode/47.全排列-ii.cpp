@@ -1,7 +1,7 @@
 /*
- * @lc app=leetcode.cn id=46 lang=cpp
+ * @lc app=leetcode.cn id=47 lang=cpp
  *
- * [46] 全排列
+ * [47] 全排列 II
  */
 
 // @lc code=start
@@ -18,7 +18,7 @@ public:
 
         for (int i = 0; i < nums.size(); ++i)
         {
-            if (selected[i])
+            if (selected[i] || (i > 0 && nums[i] == nums[i - 1] && !selected[i - 1])) // !selected[i-1] 代表还在同一层
             {
                 continue;
             }
@@ -31,12 +31,13 @@ public:
         }
     }
 
-    vector<vector<int>> permute(vector<int> &nums)
+    vector<vector<int>> permuteUnique(vector<int> &nums)
     {
         std::vector<std::vector<int>> result;
         std::vector<int> steps;
         std::vector<bool> selected(nums.size(), false);
 
+        std::sort(nums.begin(), nums.end());
         perm(result, nums, selected, steps);
 
         return result;

@@ -16,77 +16,64 @@ using namespace std;
 class Solution
 {
 public:
-    std::vector<std::vector<std::string>> res;
-    bool canuse(const std::vector<std::string> &board, int row, int col)
+    bool canuse(const std::vector<std::string> &steps, int col, int n)
     {
-        int n = board.size();
-        //行冲突不用检查
-        
-        //检查列冲突
-        for (int i = 0; i < row; ++i)
+        for (int row = 0; row < steps.size(); ++row)
         {
-            if (board[i][col] == 'Q')
+            if (steps[row][col] == 'Q')
             {
                 return false;
             }
         }
 
-        //左上角
-        for (int i = row - 1, j = col - 1; i >= 0 && j >= 0; --i, --j)
+        int row = steps.size();
+        for (int r = row - 1, c = col - 1; r >= 0 && c >= 0; r -= 1, c -= 1)
         {
-            if (board[i][j] == 'Q')
+            if (steps[r][c] == 'Q')
             {
                 return false;
             }
         }
-
-        //右上角
-        for (int i = row - 1, j = col + 1; i >= 0 && j < n; --i, ++j)
+        for (int r = row - 1, c = col + 1; r >= 0 && c < n; r -= 1, c += 1)
         {
-            if (board[i][j] == 'Q')
+            if (steps[r][c] == 'Q')
             {
                 return false;
             }
         }
-
-        //左下角不用检查
-        //右下角不用检查
 
         return true;
     }
-    void dfs(std::vector<std::string> &board, int row)
+
+    void solve(std::vector<std::vector<std::string>> &result, int n, std::vector<std::string> &steps)
     {
-        //深度遍历结束
-        if (row >= board.size())
+        if (steps.size() == n)
         {
-            //增加决策结果
-            res.push_back(board);
+            result.emplace_back(steps);
             return;
         }
 
-        //遍历候选决策
-        int n = board[row].size();
         for (int i = 0; i < n; ++i)
         {
-            //检查候选项
-            if (canuse(board, row, i))
+            if (canuse(steps, i, n))
             {
-                //决策
-                board[row][i] = 'Q';
-                //深度递进决策
-                dfs(board, row + 1);
-                //撤销决策
-                board[row][i] = '.';
+                std::string s(n, '.');
+                s[i] = 'Q';
+                steps.emplace_back(s);
+                solve(result, n, steps);
+                steps.pop_back();
             }
         }
     }
+
     vector<vector<string>> solveNQueens(int n)
     {
-        //空棋盘
-        std::vector<std::string> board(n, std::string(n, '.'));
-        //逐行深度遍历
-        dfs(board, 0);
-        return res;
+        std::vector<std::vector<std::string>> result;
+        std::vector<std::string> steps;
+
+        solve(result, n, steps);
+
+        return result;
     }
 };
 // @lc code=end

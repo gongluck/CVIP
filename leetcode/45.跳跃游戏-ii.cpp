@@ -10,20 +10,25 @@ class Solution
 public:
     int jump(vector<int> &nums)
     {
-        int n = nums.size();
         int steps = 0;
-        for (int right = n - 1; right > 0;)
+        int cover = 0;
+
+        for (int start = 0; start <= cover; ++steps)
         {
-            for (int left = 0; left < right; ++left)
+            if (cover >= nums.size() - 1)
             {
-                if (left + nums[left] >= right)
-                {
-                    ++steps;
-                    right = left;
-                    break;
-                }
+                break;
             }
+
+            int maxcover = cover;
+            for (int i = start; i <= cover; ++i)
+            {
+                maxcover = std::max(maxcover, i + nums[i]);
+            }
+            start = cover + 1;
+            cover = maxcover;
         }
+
         return steps;
     }
 };

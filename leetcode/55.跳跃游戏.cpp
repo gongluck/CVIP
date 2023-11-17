@@ -10,19 +10,18 @@ class Solution
 public:
     bool canJump(vector<int> &nums)
     {
-        int n = nums.size();
-        int rightmost = 0;
-        for (int i = 0; i < n; ++i)
+        int cover = 0;
+
+        for (int i = 0; i <= cover; ++i)
         {
-            if (i <= rightmost)
+            if (cover >= nums.size() - 1)
             {
-                rightmost = std::max(rightmost, nums[i] + i);
-                if (rightmost >= n - 1)
-                {
-                    return true;
-                }
+                return true;
             }
+
+            cover = std::max(cover, i + nums[i]);
         }
+
         return false;
     }
 };

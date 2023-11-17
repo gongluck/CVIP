@@ -8,57 +8,67 @@
 class Solution
 {
 public:
-    bool canuse(vector<vector<char>> &board, int row, int col, int use)
+    bool canuse(const std::vector<std::vector<char>> &board, int row, int col, int n, char c)
     {
-        for (int i = 0; i < 9; ++i)
+        for (int i = 0; i < n; ++i)
         {
-            if (board[i][col] == use)
-            {
-                return false;
-            }
-            if (board[row][i] == use)
-            {
-                return false;
-            }
-            if (board[(row / 3) * 3 + i / 3][(col / 3) * 3 + i % 3] == use)
+            if (board[i][col] == c || board[row][i] == c ||
+                board[(row / 3) * 3 + i / 3][(col / 3) * 3 + i % 3] == c)
             {
                 return false;
             }
         }
+
+        for (int i = 0; i < 3; ++i)
+        {
+            for (int j = 0; j < 3; ++j)
+            {
+                if (board[(row / 3) * 3 + i][(col / 3) * 3 + j] == c)
+                {
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
-    bool dp(vector<vector<char>> &board, int row, int col)
+
+    bool solve(std::vector<std::vector<char>> &board, int row, int col, int n)
     {
-        if (col == 9)
+        if (col == n)
         {
             row += 1;
             col = 0;
         }
-        if (row == 9)
+        if (row >= n)
         {
             return true;
         }
+
         if (board[row][col] != '.')
         {
-            return dp(board, row, col + 1);
+            return solve(board, row, col + 1, n);
         }
-        for (int i = '1'; i <= '9'; ++i)
+
+        for (auto c = '1'; c <= '9'; ++c)
         {
-            if (canuse(board, row, col, i))
+            if (canuse(board, row, col, n, c))
             {
-                board[row][col] = i;
-                if (dp(board, row, col + 1))
+                board[row][col] = c;
+                if (solve(board, row, col + 1, n))
                 {
                     return true;
                 }
                 board[row][col] = '.';
             }
         }
+
         return false;
     }
+
     void solveSudoku(vector<vector<char>> &board)
     {
-        dp(board, 0, 0);
+        solve(board, 0, 0, board.size());
     }
 };
 // @lc code=end

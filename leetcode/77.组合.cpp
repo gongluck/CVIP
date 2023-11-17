@@ -8,27 +8,34 @@
 class Solution
 {
 public:
-    vector<vector<int>> res;
-    void dp(int n, int k, int pos, vector<int> &track)
+    void travel(std::vector<std::vector<int>> &result, std::vector<int> &steps, int start, int n, int k)
     {
-        if (track.size() == k)
+        if (steps.size() == k)
         {
-            res.push_back(track);
+            result.emplace_back(steps);
             return;
         }
 
-        for (int i = pos; i <= n; ++i)
+        auto maxindex = n - (k - steps.size()) + 1;
+        for (int i = start; i <= maxindex; ++i)
         {
-            track.push_back(i);
-            dp(n, k, i + 1, track);
-            track.pop_back();
+            if (k - steps.size() > n - i + 1)
+            {
+                break;
+            }
+            steps.push_back(i);
+            travel(result, steps, i + 1, n, k);
+            steps.pop_back();
         }
     }
+
     vector<vector<int>> combine(int n, int k)
     {
-        vector<int> track;
-        dp(n, k, 1, track);
-        return res;
+        std::vector<std::vector<int>> result;
+        std::vector<int> steps;
+
+        travel(result, steps, 1, n, k);
+        return result;
     }
 };
 // @lc code=end

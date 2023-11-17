@@ -10,14 +10,17 @@ class Solution
 public:
     int maxProfit(vector<int> &prices)
     {
-        int n = prices.size();
-        int ret = 0;
-        for (int i = 1; i < n; ++i)
+        int result = 0;
+
+        for (int i = 1; i < prices.size(); ++i)
         {
-            ret += std::max(0, prices[i] - prices[i - 1]);
+            if (prices[i] > prices[i - 1])
+            {
+                result += prices[i] - prices[i - 1];
+            }
         }
 
-        return ret;
+        return result;
     }
 };
 // @lc code=end
