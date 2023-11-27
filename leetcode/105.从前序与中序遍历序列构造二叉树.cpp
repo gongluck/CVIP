@@ -22,31 +22,33 @@
 class Solution
 {
 public:
-    TreeNode *dfs(std::unordered_map<int, int> &indexmap,
-                  vector<int> &preorder, int prestart, int prend,
-                  vector<int> &inorder, int instart, int inend)
+    TreeNode *build(std::unordered_map<int, int> &maps,
+                    const std::vector<int> &preorder, int pstart, int pend,
+                    const std::vector<int> &inorder, int istart, int iend)
     {
-        //没有root节点
-        if (prestart >= prend)
+        if (pstart >= pend)
         {
             return nullptr;
         }
 
-        auto root = new TreeNode(preorder[prestart]);
-        auto leftsize = indexmap[root->val] - instart;
-        root->left = dfs(indexmap, preorder, prestart + 1, prestart + 1 + leftsize, inorder, instart, indexmap[root->val]);
-        root->right = dfs(indexmap, preorder, prestart + 1 + leftsize, prend, inorder, indexmap[root->val] + 1, inend);
+        auto node = new TreeNode(preorder[pstart]);
+        auto index = maps[node->val];
+        auto leftlen = index - istart;
+        node->left = build(maps, preorder, pstart + 1, pstart + 1 + leftlen, inorder, istart, index);
+        node->right = build(maps, preorder, pstart + 1 + leftlen, pend, inorder, index + 1, iend);
 
-        return root;
+        return node;
     }
+
     TreeNode *buildTree(vector<int> &preorder, vector<int> &inorder)
     {
-        std::unordered_map<int, int> indexmap;
+        std::unordered_map<int, int> maps;
         for (int i = 0; i < inorder.size(); ++i)
         {
-            indexmap[inorder[i]] = i;
+            maps[inorder[i]] = i;
         }
-        return dfs(indexmap, preorder, 0, preorder.size(), inorder, 0, inorder.size());
+
+        return build(maps, preorder, 0, preorder.size(), inorder, 0, inorder.size());
     }
 };
 // @lc code=end

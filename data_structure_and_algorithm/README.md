@@ -6,6 +6,7 @@
   - [数据结构](#数据结构)
   - [排序算法](#排序算法)
   - [查找算法](#查找算法)
+  - [leetcode](#leetcode)
 
 ## 总纲
 
@@ -18,3 +19,7 @@
 ## [排序算法](./sort.md)
 
 ## [查找算法](./search.md)
+
+## [leetcode](../leetcode)
+
+  - [DAY47：动态规划（十）零钱兑换Ⅱ+组合总和Ⅳ（完全背包求方案总数类型，排列+组合）](https://blog.csdn.net/CFY1226/article/details/131731198)

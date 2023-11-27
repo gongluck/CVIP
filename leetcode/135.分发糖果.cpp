@@ -10,34 +10,24 @@ class Solution
 public:
     int candy(vector<int> &ratings)
     {
+        int result = 0;
         int n = ratings.size();
-        int sum = 0;
+        std::vector<int> nums(n);
 
-        std::vector<int> left(n, 1);
-
+        nums[0] = 1;
         for (int i = 1; i < n; ++i)
         {
-            if (ratings[i] > ratings[i - 1])
-            {
-                left[i] = left[i - 1] + 1;
-            }
+            nums[i] = ratings[i] > ratings[i - 1] ? nums[i - 1] + 1 : 1;
         }
 
-        int right = 0;
-        for (int i = n - 1; i >= 0; --i)
+        result += nums[n - 1];
+        for (int i = n - 2; i >= 0; --i)
         {
-            if (i < n - 1 && ratings[i] > ratings[i + 1])
-            {
-                ++right;
-            }
-            else
-            {
-                right = 1;
-            }
-            sum += std::max(left[i], right);
+            nums[i] = ratings[i] > ratings[i + 1] ? std::max(nums[i + 1] + 1, nums[i]) : nums[i];
+            result += nums[i];
         }
 
-        return sum;
+        return result;
     }
 };
 // @lc code=end

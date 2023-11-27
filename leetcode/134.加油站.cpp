@@ -10,35 +10,34 @@ class Solution
 public:
     int canCompleteCircuit(vector<int> &gas, vector<int> &cost)
     {
-        int ret = -1;
+        int result = -1;
         int n = gas.size();
 
         for (int i = 0; i < n; ++i)
         {
-            int hasgas = 0;
+            int left = 0;
             int step = 0;
-            for (; step < n; ++step)
+
+            for (step = 0; step < n; ++step)
             {
-                int index = (i + step) % n;
-                hasgas += gas[index];
-                if (hasgas < cost[index])
+                left += gas[(i + step) % n] - cost[(i + step) % n];
+                if (left < 0)
                 {
                     break;
                 }
-                hasgas -= cost[index];
             }
-            if (step == n) // 已走n步则找出答案
+
+            if (step == n)
             {
-                ret = i;
-                break;
+                return i;
             }
             else
             {
-                i += step; // 可以越过中间的步数
+                i += step;
             }
         }
 
-        return ret;
+        return result;
     }
 };
 // @lc code=end

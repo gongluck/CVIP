@@ -10,38 +10,24 @@ class Solution
 public:
     bool canPartition(vector<int> &nums)
     {
-        int sum = 0;
-        for (const auto &i : nums)
-        {
-            sum += i;
-        }
-        if (sum % 2 == 1)
+        int target = std::accumulate(nums.begin(), nums.end(), 0);
+        if (target % 2 == 1)
         {
             return false;
         }
+        target /= 2;
 
-        std::vector<std::vector<bool>> dp(nums.size() + 1, std::vector<bool>(sum + 1, false));
-        for (int i = 0; i < nums.size() + 1; ++i)
+        std::vector<bool> dp(target + 1, false);
+        dp[0] = true;
+        for (auto n : nums)
         {
-            dp[i][0] = true;
-        }
-
-        for (int i = 1; i < nums.size() + 1; ++i)
-        {
-            for (int j = 1; j < sum + 1; ++j)
+            for (int t = target; t >= n; --t)
             {
-                if (j < nums[i - 1])
-                {
-                    dp[i][j] = dp[i - 1][j];
-                }
-                else
-                {
-                    dp[i][j] = dp[i - 1][j - nums[i - 1]] || dp[i - 1][j];
-                }
+                dp[t] = dp[t] || dp[t - n];
             }
         }
 
-        return dp[nums.size()][sum / 2];
+        return dp[target];
     }
 };
 // @lc code=end
