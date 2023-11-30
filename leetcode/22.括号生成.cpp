@@ -8,30 +8,36 @@
 class Solution
 {
 public:
-    vector<string> res;
-    void dp(int left, int right, string &track)
+    void generate(std::vector<std::string> &result, int index, int n, std::string &steps, int leftused, int rightused)
     {
-        if (left < 0 || right < 0 || left > right)
+        if (leftused > n || rightused > leftused)
         {
             return;
         }
-        if (left == 0 && right == 0)
+
+        if (rightused == n)
         {
-            res.push_back(track);
+            result.push_back(steps);
+            return;
         }
 
-        track.push_back('(');
-        dp(left - 1, right, track);
-        track.pop_back();
-        track.push_back(')');
-        dp(left, right - 1, track);
-        track.pop_back();
+        steps[index] = '(';
+        generate(result, index + 1, n, steps, leftused + 1, rightused);
+
+        steps[index] = ')';
+        generate(result, index + 1, n, steps, leftused, rightused + 1);
     }
+
     vector<string> generateParenthesis(int n)
     {
-        std::string track;
-        dp(n, n, track);
-        return res;
+        std::vector<std::string> result;
+        std::string steps(2 * n, '.');
+        steps[0] = '(';
+        steps[2 * n - 1] = ')';
+
+        generate(result, 1, n, steps, 1, 0);
+
+        return result;
     }
 };
 // @lc code=end

@@ -10,24 +10,22 @@ class Solution
 public:
     int fib(int n)
     {
-        if(n == 0)
+        if (n <= 1)
         {
-            return 0;
-        }
-        else if(n == 1 || n == 2)
-        {
-            return 1;
+            return n;
         }
 
-        int n1 = 0;
-        int n2 = 1;
+        int pre2 = 0;
+        int pre1 = 1;
+
         for (int i = 2; i <= n; ++i)
         {
-            n2 = n1 + n2;
-            n1 = n2 - n1;
-            n1 >= 1;
+            auto cur = pre2 + pre1;
+            pre2 = pre1;
+            pre1 = cur;
         }
-        return n2;
+
+        return pre1;
     }
 };
 // @lc code=end

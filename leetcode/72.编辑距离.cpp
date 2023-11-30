@@ -10,33 +10,35 @@ class Solution
 public:
     int minDistance(string word1, string word2)
     {
-        std::vector<std::vector<int>> dp(word2.size() + 1, std::vector(word1.size() + 1, 0));
+        int m = word1.size();
+        int n = word2.size();
+        std::vector<int> dp(n + 1, 0);
 
-        for(int i = 0; i<word2.size()+1; ++i)
+        for (int i = 0; i <= n; ++i)
         {
-            dp[i][0] = i;
-        }
-        for(int i = 0; i<word1.size()+1; ++i)
-        {
-            dp[0][i] = i;
+            dp[i] = i;
         }
 
-        for (int i = 0; i < word2.size(); ++i)
+        for (int i = 1; i <= m; ++i)
         {
-            for (int j = 0; j < word1.size(); ++j)
+            int leftup = dp[0]; // dp[i-1,j-1]
+            dp[0] = i;
+            for (int j = 1; j <= n; ++j)
             {
-                if (word1[j] == word2[i])
+                int tmp = dp[j];
+                if (word1[i - 1] == word2[j - 1])
                 {
-                    dp[i + 1][j + 1] = dp[i][j];
+                    dp[j] = leftup;
                 }
                 else
                 {
-                    dp[i + 1][j + 1] = std::min(dp[i][j], std::min(dp[i+1][j], dp[i][j+1])) + 1;
+                    dp[j] = std::min(dp[j], std::min(dp[j - 1], leftup)) + 1;
                 }
+                leftup = tmp;
             }
         }
 
-        return dp[word2.size()][word1.size()];
+        return dp[n];
     }
 };
 // @lc code=end

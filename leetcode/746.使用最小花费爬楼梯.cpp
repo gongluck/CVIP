@@ -15,7 +15,7 @@ public:
 
         for (int i = 2; i <= cost.size(); ++i)
         {
-            int cur = std::min(pre2 + cost[i - 2], pre1 + cost[i - 1]);
+            auto cur = std::min(pre2 + cost[i - 2], pre1 + cost[i - 1]);
             pre2 = pre1;
             pre1 = cur;
         }

@@ -10,24 +10,20 @@ class Solution
 public:
     int longestCommonSubsequence(string text1, string text2)
     {
-        std::vector<std::vector<int>> dp(text2.size() + 1, std::vector<int>(text1.size() + 1, 0));
+        int m = text2.size();
+        std::vector<int> dp(m + 1, 0);
 
-        for (int i = 0; i < text2.size(); ++i)
+        for (const auto &c : text1)
         {
-            for (int j = 0; j < text1.size(); ++j)
+            for (int j = 0, pre = 0; j < m; ++j)
             {
-                if (text1[j] == text2[i])
-                {
-                    dp[i + 1][j + 1] = dp[i][j] + 1;
-                }
-                else
-                {
-                    dp[i+1][j+1] = std::max(dp[i][j+1], dp[i+1][j]);
-                }
+                auto tmp = dp[j + 1];
+                dp[j + 1] = text2[j] == c ? pre + 1 : std::max(dp[j], dp[j + 1]);
+                pre = tmp;
             }
         }
 
-        return dp[text2.size()][text1.size()];
+        return dp[m];
     }
 };
 // @lc code=end

@@ -10,18 +10,22 @@ class Solution
 public:
     int climbStairs(int n)
     {
-        int pre2 = 1;
-        int pre1 = 1;
-        int cur = 1;
-
-        for (int i = 1; i < n; ++i)
+        if (n <= 2)
         {
-            cur = pre1 + pre2;
+            return n;
+        }
+
+        int pre2 = 1;
+        int pre1 = 2;
+
+        for (int i = 3; i <= n; ++i)
+        {
+            auto cur = pre2 + pre1;
             pre2 = pre1;
             pre1 = cur;
         }
 
-        return cur;
+        return pre1;
     }
 };
 // @lc code=end
