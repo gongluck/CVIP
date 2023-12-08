@@ -18,22 +18,27 @@ class Solution
 public:
     int lengthOfLIS(vector<int> &nums)
     {
-        std::vector<int> dp(nums.size(), 1);
-        int res = 1;
+        int n = nums.size();
+        std::vector<int> dp(n, 1);
 
-        for (int i = 1; i < nums.size(); ++i)
+        for (int i = 1; i < n; ++i)
         {
             for (int j = 0; j < i; ++j)
             {
                 if (nums[j] < nums[i])
                 {
                     dp[i] = std::max(dp[i], dp[j] + 1);
-                    res = std::max(res, dp[i]);
                 }
             }
         }
 
-        return res;
+        int result = INT_MIN;
+        for (int i = 0; i < n; ++i)
+        {
+            result = std::max(result, dp[i]);
+        }
+
+        return result;
     }
 };
 // @lc code=end
