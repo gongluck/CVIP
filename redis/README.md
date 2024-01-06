@@ -1,10 +1,8 @@
-# Redis源码
+# Redis
 
-- [Redis源码](#redis源码)
-  - [Redis数据结构](#redis数据结构)
-  - [Redis对象](#redis对象)
-  - [Redis数据库](#redis数据库)
-
-## [Redis数据结构](./struct.md)
-## [Redis对象](./object.md)
-## [Redis数据库](./database.md)
+- [x] [Redis 基础](./1.base.md)
+- [x] [Redis 数据结构](./2.struct.md)
+- [x] [Redis 对象](./3.object.md)
+- [x] [Redis 限流](./4.current-limiting.md)
+- [x] [Redis 分布式锁](./5.distributed-lock.md)
+- [x] [Redis 高可用](./6.high-availability.md) 
