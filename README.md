@@ -34,9 +34,9 @@
   - [x] [汇编](./cpp/assembly.md)
   - [x] [C++对象模型](./cpp/objectmodel.md)
 - [x] [Go](./go/)
+- [x] [MySQL](./mysql/)
 - [ ] 开源库源码
   - [x] [STL 源码](./stl/)
-  - [x] [Redis 源码](./redis/)
   - [ ] [xv6 源码](./linux/xv6.md)
   - [ ] [Linux 源码](./linux/linux.md)
 - [x] [计算机网络](./network/)

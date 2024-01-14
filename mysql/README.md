@@ -7,3 +7,4 @@
 - [x] [事务](./5.transaction.md)
 - [x] [死锁](./6.dead-lock.md)
 - [x] [MVCC](./7.mvcc.md)
+- [x] [高可用](./8.high-availability.md)
