@@ -1,17 +1,5 @@
 # CVIP
 
-`C++`开发相关技术整理
-
-- [CVIP](#cvip)
-  - [Stargazers over time](#stargazers-over-time)
-  - [chapters and sections](#chapters-and-sections)
-  - [源码和注释](#源码和注释)
-  - [QR Code](#qr-code)
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/gongluck/CVIP.svg)](https://starchart.cc/gongluck/CVIP)
-
 ## chapters and sections
 
 - [x] [数据结构与算法](./data_structure_and_algorithm/)
@@ -36,6 +24,7 @@
 - [x] [Go](./go/)
 - [x] [Redis](./redis/)
 - [x] [MySQL](./mysql/)
+- [x] [Kafka](./kafka/)
 - [ ] 开源库源码
   - [x] [STL 源码](./stl/)
   - [ ] [xv6 源码](./linux/xv6.md)
@@ -50,14 +39,19 @@
   - [x] [网络模型](./network/network_model.md)
 - [x] [工具](./tools/)
   - [x] [BPF](./tools/bpf.md)
-  - [x] [jenkins](./jenkins/) 
+  - [x] [jenkins](./jenkins/)
 
 ## 源码和注释
 
 [源码和注释](https://github.com/gongluck/sourcecode)
 
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/gongluck/CVIP.svg)](https://starchart.cc/gongluck/CVIP)
+
 ## QR Code
 
 <center>
-  <img src="https://github.com/gongluck/images/blob/main/CVIP.png" width="200"/><img src="https://github.com/gongluck/images/blob/main/wx.png" width="200"/><img src="https://github.com/gongluck/images/blob/main/zfb.png" width="200"/>
+<img src="./WX.jpg" width="150" height="200" />
+<img src="./CVIP.png" width="150" height="200" />
 </center>
