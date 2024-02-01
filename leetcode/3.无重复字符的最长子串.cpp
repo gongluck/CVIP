@@ -11,19 +11,26 @@ public:
     int lengthOfLongestSubstring(string s)
     {
         int result = 0;
-        int n = s.size();
         int left = 0;
         int right = 0;
-        std::unordered_set<char> sets;
+        bool exist[128] = {false};
 
-        for (; right < n; ++right)
+        while (right < s.size())
         {
-            while (sets.count(s[right]) != 0)
+            if (exist[s[right]])
             {
-                sets.erase(s[left++]);
+                while (s[left] != s[right])
+                {
+                    exist[s[left]] = false;
+                    ++left;
+                }
+                ++left;
             }
+            exist[s[right]] = true;
+
             result = std::max(result, right - left + 1);
-            sets.insert(s[right]);
+
+            ++right;
         }
 
         return result;

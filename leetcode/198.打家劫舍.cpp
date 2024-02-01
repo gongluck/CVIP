@@ -10,19 +10,22 @@ class Solution
 public:
     int rob(vector<int> &nums)
     {
-        // pre2 pre1 cur
-        int pre2 = 0;
-        int pre1 = nums[0];
-        int cur = nums[0];
-
-        for (int i = 1; i < nums.size(); ++i)
+        int n = nums.size();
+        if (n == 1)
         {
-            cur = std::max(pre2 + nums[i], pre1);
-            pre2 = pre1;
-            pre1 = cur;
+            return nums[0];
         }
 
-        return cur;
+        std::vector<int> dp(n);
+        dp[0] = nums[0];
+        dp[1] = std::max(dp[0], nums[1]);
+
+        for (int i = 2; i < n; ++i)
+        {
+            dp[i] = std::max(dp[i - 1], dp[i - 2] + nums[i]);
+        }
+
+        return dp[n - 1];
     }
 };
 // @lc code=end

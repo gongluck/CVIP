@@ -24,16 +24,16 @@ public:
             return root;
         }
 
-        auto left = lowestCommonAncestor(root->left, p, q);
-        auto right = lowestCommonAncestor(root->right, p, q);
+        auto l = lowestCommonAncestor(root->left, p, q);
+        auto r = lowestCommonAncestor(root->right, p, q);
 
-        if (left != nullptr && right != nullptr)
+        if (l && r)
         {
             return root;
         }
         else
         {
-            return left != nullptr ? left : right;
+            return l ? l : r;
         }
     }
 };

@@ -28,20 +28,15 @@ public:
         {
             auto nodes = st.top();
             st.pop();
-
-            if ((nodes.first == nullptr && nodes.second != nullptr) ||
-                (nodes.first != nullptr && nodes.second == nullptr) ||
-                (nodes.first != nullptr && nodes.second != nullptr && nodes.first->val != nodes.second->val))
+            if (nodes.first != nodes.second &&
+                (nodes.first == nullptr || nodes.second == nullptr || nodes.first->val != nodes.second->val))
             {
                 return false;
             }
-            else
+            if (nodes.first != nullptr && nodes.second != nullptr)
             {
-                if (nodes.first != nullptr && nodes.second != nullptr)
-                {
-                    st.push(std::make_pair(nodes.first->left, nodes.second->right));
-                    st.push(std::make_pair(nodes.first->right, nodes.second->left));
-                }
+                st.push(std::make_pair(nodes.first->left, nodes.second->right));
+                st.push(std::make_pair(nodes.first->right, nodes.second->left));
             }
         }
 

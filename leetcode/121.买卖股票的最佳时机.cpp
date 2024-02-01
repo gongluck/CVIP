@@ -10,16 +10,16 @@ class Solution
 public:
     int maxProfit(vector<int> &prices)
     {
+        int result = 0;
         int min = INT_MAX;
-        int max = INT_MIN;
 
-        for (const auto &price : prices)
+        for (const auto &p : prices)
         {
-            min = std::min(min, price);
-            max = std::max(max, price - min);
+            min = std::min(min, p);
+            result = std::max(result, p - min);
         }
 
-        return max;
+        return result;
     }
 };
 // @lc code=end

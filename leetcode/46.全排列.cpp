@@ -8,36 +8,37 @@
 class Solution
 {
 public:
-    void perm(std::vector<std::vector<int>> &result, const std::vector<int> &nums, std::vector<bool> &selected, std::vector<int> &steps)
+    void perm(const std::vector<int> &nums, std::vector<int> &steps,
+              std::unordered_map<int, bool> &selected,
+              std::vector<std::vector<int>> &result)
     {
         if (steps.size() == nums.size())
         {
-            result.emplace_back(steps);
+            result.push_back(steps);
             return;
         }
-
-        for (int i = 0; i < nums.size(); ++i)
+        for (const auto &n : nums)
         {
-            if (selected[i])
+            if (selected[n])
             {
                 continue;
             }
-
-            steps.push_back(nums[i]);
-            selected[i] = true;
-            perm(result, nums, selected, steps);
-            selected[i] = false;
+            // std::cout << "select: " << n << std::endl;
+            steps.push_back(n);
+            selected[n] = true;
+            perm(nums, steps, selected, result);
             steps.pop_back();
+            selected[n] = false;
         }
     }
 
     vector<vector<int>> permute(vector<int> &nums)
     {
         std::vector<std::vector<int>> result;
+        std::unordered_map<int, bool> selected;
         std::vector<int> steps;
-        std::vector<bool> selected(nums.size(), false);
 
-        perm(result, nums, selected, steps);
+        perm(nums, steps, selected, result);
 
         return result;
     }

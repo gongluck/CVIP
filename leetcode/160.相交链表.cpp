@@ -18,44 +18,15 @@ class Solution
 public:
     ListNode *getIntersectionNode(ListNode *headA, ListNode *headB)
     {
-        int lenA = 0;
-        int lenB = 0;
-        auto pA = headA;
-        auto pB = headB;
-        while (pA)
+        auto a = headA;
+        auto b = headB;
+        while (a != b)
         {
-            ++lenA;
-            pA = pA->next;
-        }
-        while (pB)
-        {
-            ++lenB;
-            pB = pB->next;
+            a = (a ? a->next : headB);
+            b = (b ? b->next : headA);
         }
 
-        if (lenA < lenB)
-        {
-            std::swap(lenA, lenB);
-            std::swap(headA, headB);
-        }
-        pA = headA;
-        pB = headB;
-        int skip = lenA - lenB;
-        while (skip-- > 0)
-        {
-            pA = pA->next;
-        }
-        while (pA)
-        {
-            if (pA == pB)
-            {
-                return pA;
-            }
-            pA = pA->next;
-            pB = pB->next;
-        }
-
-        return nullptr;
+        return a;
     }
 };
 // @lc code=end

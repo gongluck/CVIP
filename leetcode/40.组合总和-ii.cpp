@@ -8,9 +8,9 @@
 class Solution
 {
 public:
-    void combin(std::vector<std::vector<int>> &result, const std::vector<int> &candidates, int target, std::vector<int> &steps, int sums, int index)
+    void combin(std::vector<int> &candidates, int index, std::vector<int> &steps, int target, int sum, std::vector<std::vector<int>> &result)
     {
-        if (sums == target)
+        if (sum == target)
         {
             result.emplace_back(steps);
             return;
@@ -18,17 +18,18 @@ public:
 
         for (int i = index; i < candidates.size(); ++i)
         {
-            if (sums + candidates[i] > target)
-            {
-                break;
-            }
-            if (i > index /*不是这一层的第一个数*/ && candidates[i] == candidates[i - 1])
+            if (i > index && candidates[i] == candidates[i - 1])
             {
                 continue;
             }
 
+            if (sum + candidates[i] > target)
+            {
+                break;
+            }
+
             steps.push_back(candidates[i]);
-            combin(result, candidates, target, steps, sums + candidates[i], i + 1);
+            combin(candidates, i + 1, steps, target, sum + candidates[i], result);
             steps.pop_back();
         }
     }
@@ -39,7 +40,8 @@ public:
         std::vector<int> steps;
 
         std::sort(candidates.begin(), candidates.end());
-        combin(result, candidates, target, steps, 0, 0);
+
+        combin(candidates, 0, steps, target, 0, result);
 
         return result;
     }

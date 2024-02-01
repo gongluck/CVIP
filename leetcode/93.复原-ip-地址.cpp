@@ -8,19 +8,15 @@
 class Solution
 {
 public:
-    bool checknum(const std::string &s, int start, int end)
+    bool valid(const std::string &s, int start, int end)
     {
-        if (end - start > 2 || start > end)
-        {
-            return false;
-        }
-        if (start != end && s[start] == '0')
+        if (end - start > 1 && s[start] == '0')
         {
             return false;
         }
 
-        auto n = std::stoi(std::string(s.c_str() + start, end - start + 1));
-        if (n < 0 || n > 255)
+        int val = std::atoi(s.substr(start, end - start).c_str());
+        if (val < 0 || val > 255)
         {
             return false;
         }
@@ -28,40 +24,41 @@ public:
         return true;
     }
 
-    void ipaddr(std::vector<std::string> &result, std::vector<std::string> &ip, const std::string &s, int index)
+    void dfs(const std::string &s, int start, int end,
+             int steps, std::string &ip,
+             std::vector<std::string> &result)
     {
-        if (ip.size() == 3)
+        if (start >= end)
         {
-            if (checknum(s, index, s.size() - 1))
+            return;
+        }
+        if (steps == 3)
+        {
+            if (valid(s, start, end))
             {
-                result.emplace_back(ip[0] + "." + ip[1] + "." + ip[2] + "." + s.substr(index, s.size() - index));
+                result.push_back(ip + s.substr(start, end));
             }
             return;
         }
-
-        for (int i = index; i < index + 3 && i < s.size(); ++i)
+        auto oldsize = ip.size();
+        for (int i = 0; i < 3; ++i)
         {
-            if (!checknum(s, index, i))
+            if (!valid(s, start, start + 1 + i))
             {
                 break;
             }
-            if (s.size() - i - 1 > 3 * (3 - ip.size()))
-            {
-                continue;
-            }
 
-            ip.push_back(s.substr(index, i - index + 1));
-            ipaddr(result, ip, s, i + 1);
-            ip.pop_back();
+            ip += s.substr(start, 1 + i) + ".";
+            dfs(s, start + 1 + i, end, steps + 1, ip, result);
+            ip.resize(oldsize);
         }
     }
 
     vector<string> restoreIpAddresses(string s)
     {
         std::vector<std::string> result;
-        std::vector<std::string> ip;
-
-        ipaddr(result, ip, s, 0);
+        std::string ip;
+        dfs(s, 0, s.size(), 0, ip, result);
 
         return result;
     }

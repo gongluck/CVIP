@@ -7,15 +7,7 @@
 // @lc code=start
 class MyQueue
 {
-private:
-    std::stack<int> in;
-    std::stack<int> out;
-
 public:
-    MyQueue()
-    {
-    }
-
     void push(int x)
     {
         in.push(x);
@@ -23,30 +15,47 @@ public:
 
     int pop()
     {
-        int val = peek();
-        out.pop();
-
-        return val;
+        if (empty())
+        {
+            return -1;
+        }
+        else
+        {
+            auto val = peek();
+            out.pop();
+            return val;
+        }
     }
 
     int peek()
     {
-        if (out.empty())
+        if (empty())
         {
-            while (!in.empty())
-            {
-                out.push(in.top());
-                in.pop();
-            }
+            return -1;
         }
-
-        return out.top();
+        else
+        {
+            if (out.empty())
+            {
+                while (!in.empty())
+                {
+                    auto val = in.top();
+                    in.pop();
+                    out.push(val);
+                }
+            }
+            return out.top();
+        }
     }
 
     bool empty()
     {
         return in.empty() && out.empty();
     }
+
+private:
+    std::stack<int> in;
+    std::stack<int> out;
 };
 
 /**
