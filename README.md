@@ -19,6 +19,7 @@
 - [x] [Redis](./redis/)
 - [x] [MySQL](./mysql/)
 - [x] [Kafka](./kafka/)
+- [x] [Mosquitto](./mosquitto/)
 
 ---
 
