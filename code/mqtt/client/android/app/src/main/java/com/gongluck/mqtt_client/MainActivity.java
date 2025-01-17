@@ -30,7 +30,6 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     static String TAG = "MQTT_Client";
-
     private MqttClient mClient;
     private String mBroker = "tcp://192.168.33.94:1883";
     private String mClientId = UUID.randomUUID().toString();
@@ -70,9 +69,9 @@ public class MainActivity extends AppCompatActivity {
             // 是否清除会话
             connOpts.setCleanStart(true);
             // 心跳间隔，单位为秒
-            connOpts.setKeepAliveInterval(300);
+            connOpts.setKeepAliveInterval(30);
             // 连接超时时间，单位为秒
-            connOpts.setConnectionTimeout(30);
+            connOpts.setConnectionTimeout(60);
             // 是否自动重连
             connOpts.setAutomaticReconnect(true);
             //https://docs.emqx.com/zh/emqx/latest/design/inflight-window-and-message-queue.html
