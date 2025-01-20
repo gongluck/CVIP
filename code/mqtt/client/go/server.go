@@ -55,6 +55,7 @@ func startClient(cliCfg autopaho.ClientConfig, id string) {
 	cliCfg.ClientID = id
 	cliCfg.OnConnectionUp = func(cm *autopaho.ConnectionManager, c *paho.Connack) {
 		fmt.Println(id, " OnConnectionUp: ", c)
+		subscribe(cm, "+")
 	}
 	cliCfg.OnConnectError = func(err error) { fmt.Println(id, " OnConnectError: ", err) }
 	cliCfg.OnPublishReceived = []func(paho.PublishReceived) (bool, error){
@@ -92,7 +93,6 @@ func startClient(cliCfg autopaho.ClientConfig, id string) {
 	if err = c.AwaitConnection(context.Background()); err != nil {
 		fmt.Printf("AwaitConnection %s, error: %v\n", id, err)
 	}
-	subscribe(c, "+")
 }
 
 func subscribe(client *autopaho.ConnectionManager, id string) {
